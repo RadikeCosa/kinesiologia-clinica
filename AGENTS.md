@@ -26,7 +26,7 @@ Dependencies point inward:
 
 ## Current status
 
-Only the technical foundation and a server-side FHIR health check are implemented. Do not claim that authentication, patients, visits, PWA, offline sync or reports exist until the code proves it.
+The technical foundation, server-side FHIR health check and read-only active-patient adapter are implemented. There is no clinical UI yet. Do not claim that authentication, visits, PWA, offline sync or reports exist until the code proves it.
 
 ## Privacy
 
@@ -48,6 +48,7 @@ Run the smallest relevant checks:
 ```bash
 npm run lint
 npm run test
+npm run test:integration:fhir
 FHIR_BASE_URL=http://localhost:8081/fhir npm run build
 ```
 

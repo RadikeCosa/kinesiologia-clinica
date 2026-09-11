@@ -4,7 +4,7 @@
 
 Este repositorio es el reemplazo privado de `/admin`. El frontend se construye desde cero y el admin anterior sigue siendo el respaldo operativo hasta alcanzar las condiciones de corte.
 
-La fundación inicial contiene una pantalla no clínica, bloqueo de indexación, pruebas unitarias y un chequeo server-side de disponibilidad FHIR. Todavía no implementa autenticación, pacientes, visitas, PWA, offline ni informes.
+La fundación contiene una pantalla no clínica, bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y el primer corte de lectura de pacientes activos. Todavía no implementa autenticación, interfaz clínica, visitas, PWA, offline ni informes.
 
 ## Capas
 
@@ -55,6 +55,8 @@ Ingresar
 ```
 
 Se portarán reglas y pruebas de forma selectiva desde el proyecto anterior. No se copiarán layouts, formularios ni componentes de `/admin` como base visual.
+
+El primer tramo ya implementado resuelve `EpisodeOfCare` activos, carga sus `Patient` relacionados y compone un modelo de aplicación propio. El contrato detallado está en `docs/fhir-adapter.md`.
 
 ## Evolución prevista
 

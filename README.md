@@ -18,11 +18,14 @@ Fundación técnica inicial:
 - separación entre UI, aplicación, dominio e infraestructura;
 - integración FHIR exclusivamente server-side;
 - endpoint de salud sin exposición de datos sensibles;
+- núcleo FHIR inyectable, paginación y errores sanitizados;
+- lectura de `Patient` y tratamientos activos con `EpisodeOfCare`;
+- caso de uso probado para listar pacientes activos;
 - bloqueo de indexación para toda la aplicación;
 - pruebas unitarias iniciales;
 - documentación de producto, arquitectura y privacidad.
 
-Todavía no están implementados autenticación, pacientes, visitas, PWA, sincronización offline ni generación de informes. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
+Todavía no están implementados autenticación, interfaz de pacientes, visitas, PWA, sincronización offline ni generación de informes. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
 
 ## Desarrollo local
 
@@ -42,6 +45,7 @@ Requiere Node.js 20.19 o superior.
 ```bash
 npm run lint
 npm run test
+npm run test:integration:fhir
 FHIR_BASE_URL=http://localhost:8081/fhir npm run build
 ```
 
