@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# local environment
+.env*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# testing
+/coverage
+
+# editor and OS
+.DS_Store
+*.swp
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# local agent artifacts
+.codex/
+.codex-review/
