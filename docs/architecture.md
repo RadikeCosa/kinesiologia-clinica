@@ -39,6 +39,8 @@ La respuesta pública del endpoint solo indica:
 
 No expone la URL FHIR, payloads clínicos ni detalles internos del error.
 
+La infraestructura Docker vive fuera de este repositorio. Su operación segura está documentada en `docs/local-fhir.md`.
+
 ## Primer corte vertical
 
 El siguiente hito funcional será:

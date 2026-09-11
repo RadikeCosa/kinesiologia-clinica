@@ -7,7 +7,9 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev",
+    "dev:fhir-dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev",
+    "dev:fhir-real": "FHIR_BASE_URL=http://localhost:8080/fhir next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

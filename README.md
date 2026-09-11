@@ -28,13 +28,14 @@ Todavía no están implementados autenticación, pacientes, visitas, PWA, sincro
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
 La pantalla inicial estará disponible en `http://localhost:3000`. `GET /api/health` comprueba la disponibilidad de HAPI FHIR sin revelar su URL.
 
 Requiere Node.js 20.19 o superior.
+
+`npm run dev` usa el HAPI descartable de `8081`. El acceso a datos reales locales requiere la selección explícita `npm run dev:fhir-real` y no debe utilizarse durante desarrollo o pruebas.
 
 ## Verificación
 
