@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { canRenderLocalClinicalSurface } from "@/infrastructure/runtime/local-clinical-surface";
 
 const foundations = [
   {
@@ -16,6 +17,8 @@ const foundations = [
 ];
 
 export default function Home() {
+  const localClinicalSurfaceEnabled = canRenderLocalClinicalSurface();
+
   return (
     <main className="shell">
       <section className="intro" aria-labelledby="page-title">
@@ -44,6 +47,12 @@ export default function Home() {
       <Link className="diagnostic-link" href="/diagnostico/passkeys">
         Comprobar compatibilidad con passkeys
       </Link>
+
+      {localClinicalSurfaceEnabled ? (
+        <Link className="primary-link" href="/patients">
+          Ver pacientes ficticios activos
+        </Link>
+      ) : null}
     </main>
   );
 }

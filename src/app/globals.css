@@ -107,6 +107,18 @@ h1 {
   text-underline-offset: 0.2em;
 }
 
+.primary-link {
+  display: flex;
+  width: fit-content;
+  margin-top: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 0.8rem;
+  color: var(--surface);
+  background: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .back-link {
   margin: 0 0 2.5rem;
 }
@@ -203,4 +215,138 @@ h1 {
 
 .diagnostic-note {
   box-shadow: none;
+}
+
+.clinical-shell {
+  padding-block: clamp(2rem, 7vw, 5rem);
+}
+
+.clinical-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.clinical-header h1,
+.clinical-shell > h1 {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+}
+
+.clinical-back-link {
+  flex: none;
+  margin-top: 0;
+}
+
+.list-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: clamp(2.5rem, 7vw, 5rem);
+}
+
+.list-heading h2,
+.list-heading p {
+  margin: 0;
+}
+
+.list-heading h2 {
+  font-size: 1.15rem;
+}
+
+.list-heading p,
+.patient-card p,
+.clinical-footnote,
+.empty-state p {
+  color: var(--muted);
+}
+
+.patient-list {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patient-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 0.75rem 2rem rgb(24 53 45 / 5%);
+}
+
+.patient-card h3,
+.patient-card p {
+  margin: 0;
+}
+
+.patient-card h3 {
+  font-size: 1.15rem;
+}
+
+.patient-card p {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  color: var(--accent);
+  background: #e2f2eb;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.patient-card .data-quality-warning {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  color: #8a5a13;
+}
+
+.empty-state {
+  max-width: 44rem;
+  margin-top: clamp(2.5rem, 7vw, 5rem);
+  padding: 2rem;
+  border: 1px dashed var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.empty-state h2,
+.empty-state p {
+  margin: 0;
+}
+
+.empty-state p {
+  margin-top: 0.75rem;
+  line-height: 1.6;
+}
+
+.clinical-footnote {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 42rem) {
+  .clinical-header,
+  .list-heading {
+    display: block;
+  }
+
+  .clinical-back-link {
+    margin-top: 1.5rem;
+  }
+
+  .list-heading p {
+    margin-top: 0.4rem;
+  }
 }

@@ -21,12 +21,13 @@ Fundación técnica inicial:
 - núcleo FHIR inyectable, paginación y errores sanitizados;
 - lectura de `Patient` y tratamientos activos con `EpisodeOfCare`;
 - caso de uso probado para listar pacientes activos;
+- lista clínica local de solo lectura contra el seed ficticio de `8081`;
 - diagnóstico no clínico de compatibilidad WebAuthn por dispositivo;
 - bloqueo de indexación para toda la aplicación;
 - pruebas unitarias iniciales;
 - documentación de producto, arquitectura y privacidad.
 
-Todavía no están implementados autenticación, interfaz de pacientes, visitas, PWA, sincronización offline ni generación de informes. El diagnóstico WebAuthn no crea credenciales ni sesiones. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
+Todavía no están implementados autenticación, ficha de paciente, visitas, PWA, sincronización offline ni generación de informes. La lista de pacientes solo se habilita localmente contra el endpoint descartable de `8081`; Vercel no expone esa ruta clínica. El diagnóstico WebAuthn no crea credenciales ni sesiones. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
 
 ## Desarrollo local
 

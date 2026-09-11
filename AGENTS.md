@@ -26,7 +26,7 @@ Dependencies point inward:
 
 ## Current status
 
-The technical foundation, server-side FHIR health check, read-only active-patient adapter and a non-clinical WebAuthn capability diagnostic are implemented. The diagnostic does not create credentials or sessions. There is no clinical UI yet. Do not claim that authentication, visits, PWA, offline sync or reports exist until the code proves it.
+The technical foundation, server-side FHIR health check, read-only active-patient adapter, local-only fictional active-patient list and a non-clinical WebAuthn capability diagnostic are implemented. The patient list is allowed only against `http://localhost:8081/fhir` and is blocked on Vercel; the diagnostic does not create credentials or sessions. There is no patient detail yet. Do not claim that authentication, visits, PWA, offline sync or reports exist until the code proves it.
 
 ## Privacy
 

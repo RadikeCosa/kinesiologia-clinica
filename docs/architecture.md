@@ -4,7 +4,7 @@
 
 Este repositorio es el reemplazo privado de `/admin`. El frontend se construye desde cero y el admin anterior sigue siendo el respaldo operativo hasta alcanzar las condiciones de corte.
 
-La fundación contiene una pantalla no clínica, bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y el primer corte de lectura de pacientes activos. Todavía no implementa autenticación, interfaz clínica, visitas, PWA, offline ni informes.
+La fundación contiene una pantalla no clínica, bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y el primer corte de lectura de pacientes activos. Esa lectura ya tiene una lista local de solo lectura, habilitada exclusivamente contra el HAPI descartable de `8081` y bloqueada en Vercel. Todavía no implementa autenticación, ficha clínica, visitas, PWA, offline ni informes.
 
 ## Capas
 
