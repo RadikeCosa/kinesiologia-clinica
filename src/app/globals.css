@@ -97,3 +97,110 @@ h1 {
   font-size: 0.9rem;
   line-height: 1.5;
 }
+
+.diagnostic-link,
+.back-link {
+  display: inline-flex;
+  margin-top: 1.25rem;
+  color: var(--accent);
+  font-weight: 700;
+  text-underline-offset: 0.2em;
+}
+
+.back-link {
+  margin: 0 0 2.5rem;
+}
+
+.diagnostic-shell {
+  padding-block: clamp(2rem, 8vw, 5rem);
+}
+
+.diagnostic-shell h1 {
+  max-width: 54rem;
+  font-size: clamp(2.25rem, 6vw, 4.75rem);
+}
+
+.diagnostic-panel,
+.diagnostic-note,
+.diagnostic-message {
+  max-width: 48rem;
+  margin-top: 2rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface);
+  box-shadow: 0 1rem 3rem rgb(24 53 45 / 6%);
+}
+
+.diagnostic-panel h2,
+.diagnostic-note h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.diagnostic-results {
+  margin: 2rem 0;
+  border-block: 1px solid var(--border);
+}
+
+.diagnostic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.diagnostic-row:last-child {
+  border-bottom: 0;
+}
+
+.diagnostic-row dt {
+  color: var(--muted);
+}
+
+.diagnostic-row dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.diagnostic-row dd[data-result="positive"] {
+  color: var(--accent);
+}
+
+.diagnostic-row dd[data-result="negative"],
+.diagnostic-message-error {
+  color: #9d3428;
+}
+
+.diagnostic-row dd[data-result="unknown"] {
+  color: var(--muted);
+}
+
+.diagnostic-explanation,
+.diagnostic-note p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.secondary-button {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.75rem;
+  color: var(--accent);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  color: var(--surface);
+  background: var(--accent);
+}
+
+.diagnostic-note {
+  box-shadow: none;
+}

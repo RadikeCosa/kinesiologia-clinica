@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const foundations = [
   {
     title: "Pacientes activos",
@@ -38,6 +40,10 @@ export default function Home() {
         El acceso clínico todavía no está habilitado. Esta versión valida la
         base técnica antes de incorporar información de pacientes.
       </p>
+
+      <Link className="diagnostic-link" href="/diagnostico/passkeys">
+        Comprobar compatibilidad con passkeys
+      </Link>
     </main>
   );
 }

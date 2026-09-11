@@ -21,11 +21,12 @@ Fundación técnica inicial:
 - núcleo FHIR inyectable, paginación y errores sanitizados;
 - lectura de `Patient` y tratamientos activos con `EpisodeOfCare`;
 - caso de uso probado para listar pacientes activos;
+- diagnóstico no clínico de compatibilidad WebAuthn por dispositivo;
 - bloqueo de indexación para toda la aplicación;
 - pruebas unitarias iniciales;
 - documentación de producto, arquitectura y privacidad.
 
-Todavía no están implementados autenticación, interfaz de pacientes, visitas, PWA, sincronización offline ni generación de informes. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
+Todavía no están implementados autenticación, interfaz de pacientes, visitas, PWA, sincronización offline ni generación de informes. El diagnóstico WebAuthn no crea credenciales ni sesiones. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
 
 ## Desarrollo local
 

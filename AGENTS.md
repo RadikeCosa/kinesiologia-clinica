@@ -26,7 +26,7 @@ Dependencies point inward:
 
 ## Current status
 
-The technical foundation, server-side FHIR health check and read-only active-patient adapter are implemented. There is no clinical UI yet. Do not claim that authentication, visits, PWA, offline sync or reports exist until the code proves it.
+The technical foundation, server-side FHIR health check, read-only active-patient adapter and a non-clinical WebAuthn capability diagnostic are implemented. The diagnostic does not create credentials or sessions. There is no clinical UI yet. Do not claim that authentication, visits, PWA, offline sync or reports exist until the code proves it.
 
 ## Privacy
 
