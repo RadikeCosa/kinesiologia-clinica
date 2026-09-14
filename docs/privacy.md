@@ -21,9 +21,7 @@ La aplicación utiliza un solo `FHIR_BASE_URL` server-side por ejecución. Si fa
 
 Todavía deben existir y probarse:
 
-- autenticación;
-- sesión persistente con expiración razonable;
-- revocación de dispositivos;
+- validación de autenticación, expiración, recuperación y revocación en teléfono y computadora;
 - HTTPS privado;
 - almacenamiento offline protegido;
 - separación técnica entre demo y real;

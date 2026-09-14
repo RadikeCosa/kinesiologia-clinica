@@ -26,7 +26,7 @@ Dependencies point inward:
 
 ## Current status
 
-The technical foundation, server-side FHIR health check, read-only active-patient adapter, local-only fictional active-patient list and a non-clinical WebAuthn capability diagnostic are implemented. The patient list is allowed only against `http://localhost:8081/fhir` and is blocked on Vercel; the diagnostic does not create credentials or sessions. There is no patient detail yet. Do not claim that authentication, visits, PWA, offline sync or reports exist until the code proves it.
+The technical foundation, server-side FHIR health check, active-patient adapter, local-only fictional patient context and online visit pilot, WebAuthn capability diagnostic, and passkey authentication code are implemented. Clinical pages and the visit action are allowed only against `http://localhost:8081/fhir` and are blocked on Vercel. The visit pilot writes a finished Encounter and optional functional metrics, then re-reads them. Authentication uses a single provisioned account, per-device sessions and recovery codes, but real passkey enrollment, recovery and revocation still need validation on Ubuntu and Android. Do not claim that offline sync, PWA, reports, or real-data readiness exist until the code proves it.
 
 ## Privacy
 

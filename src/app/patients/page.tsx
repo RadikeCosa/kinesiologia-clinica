@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { listActivePatients } from "@/application/patients/list-active-patients";
 import { createActivePatientDependencies } from "@/infrastructure/fhir/create-active-patient-dependencies";
 import { canRenderLocalClinicalSurface } from "@/infrastructure/runtime/local-clinical-surface";
+import { requireClinicalSession } from "@/infrastructure/auth/auth-http";
 import { presentActivePatients } from "./active-patient-list.presenter";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default async function ActivePatientsPage() {
   if (!canRenderLocalClinicalSurface()) {
     notFound();
   }
+  await requireClinicalSession();
 
   const patients = presentActivePatients(
     await listActivePatients(createActivePatientDependencies()),
@@ -31,9 +33,7 @@ export default async function ActivePatientsPage() {
             Tratamientos en curso disponibles para continuar el trabajo clínico.
           </p>
         </div>
-        <Link className="back-link clinical-back-link" href="/">
-          Volver al inicio
-        </Link>
+        <Link className="back-link clinical-back-link" href="/configuracion/dispositivos">Dispositivos</Link>
       </header>
 
       {patients.length === 0 ? (
@@ -57,7 +57,7 @@ export default async function ActivePatientsPage() {
             {patients.map((patient) => (
               <li className="patient-card" key={patient.id}>
                 <div>
-                  <h3>{patient.displayName}</h3>
+                  <h3><Link href={`/patients/${encodeURIComponent(patient.id)}`}>{patient.displayName}</Link></h3>
                   <p>Tratamiento iniciado el {patient.treatmentStartLabel}</p>
                 </div>
                 <span className="status-badge">Activo</span>

@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <main className="shell">
       <section className="intro" aria-labelledby="page-title">
-        <p className="eyebrow">Aplicación privada · Fundación inicial</p>
+        <p className="eyebrow">Aplicación privada · Piloto local</p>
         <h1 id="page-title">Registrar una vez. Comunicar y reportar sin volver a escribir.</h1>
         <p className="lede">
           Nueva superficie clínico-operativa, pensada primero para el teléfono
@@ -40,8 +40,8 @@ export default function Home() {
       </section>
 
       <p className="status">
-        El acceso clínico todavía no está habilitado. Esta versión valida la
-        base técnica antes de incorporar información de pacientes.
+        El piloto clínico solo está disponible localmente con datos ficticios.
+        Todavía falta proteger el acceso antes de incorporar datos reales.
       </p>
 
       <Link className="diagnostic-link" href="/diagnostico/passkeys">
@@ -49,8 +49,8 @@ export default function Home() {
       </Link>
 
       {localClinicalSurfaceEnabled ? (
-        <Link className="primary-link" href="/patients">
-          Ver pacientes ficticios activos
+        <Link className="primary-link" href="/ingresar">
+          Ingresar al piloto local
         </Link>
       ) : null}
     </main>

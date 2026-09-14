@@ -37,8 +37,8 @@ function groupTreatmentsByPatient(
 }
 
 export async function listActivePatients(dependencies: {
-  patients: PatientRepository;
-  treatments: TreatmentRepository;
+  patients: Pick<PatientRepository, "listByIds">;
+  treatments: Pick<TreatmentRepository, "listActive">;
 }): Promise<ActivePatientListItem[]> {
   const activeTreatments = await dependencies.treatments.listActive();
   const treatmentsByPatient = groupTreatmentsByPatient(activeTreatments);

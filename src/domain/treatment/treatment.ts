@@ -4,6 +4,15 @@ export interface Treatment {
   status: "active" | "finished";
   startDate: string;
   endDate?: string;
+  clinicalContext?: {
+    initialFunctionalStatus?: string;
+    therapeuticGoals?: string;
+    frameworkPlan?: string;
+  };
+  diagnosisReferences?: Array<{
+    kind: "medical_reference" | "kinesiologic_diagnosis";
+    conditionId: string;
+  }>;
 }
 
 function toSafeTimestamp(value: string): number | null {

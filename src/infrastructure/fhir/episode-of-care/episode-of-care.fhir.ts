@@ -8,4 +8,9 @@ export interface FhirEpisodeOfCare extends FhirResource {
     start?: string;
     end?: string;
   };
+  extension?: Array<{ url?: string; valueString?: string }>;
+  diagnosis?: Array<{
+    condition?: { reference?: string };
+    role?: { coding?: Array<{ system?: string; code?: string }> };
+  }>;
 }

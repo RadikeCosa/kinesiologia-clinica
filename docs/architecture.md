@@ -4,7 +4,7 @@
 
 Este repositorio es el reemplazo privado de `/admin`. El frontend se construye desde cero y el admin anterior sigue siendo el respaldo operativo hasta alcanzar las condiciones de corte.
 
-La fundación contiene una pantalla no clínica, bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y el primer corte de lectura de pacientes activos. Esa lectura ya tiene una lista local de solo lectura, habilitada exclusivamente contra el HAPI descartable de `8081` y bloqueada en Vercel. Todavía no implementa autenticación, ficha clínica, visitas, PWA, offline ni informes.
+La fundación contiene una pantalla no clínica, bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y un piloto clínico online: pacientes activos, contexto, visitas finalizadas y métricas opcionales. Las rutas y la escritura se habilitan exclusivamente contra el HAPI descartable de `8081` y se bloquean en Vercel. El acceso con passkeys, sesiones persistentes, revocación y recuperación está implementado, pendiente de validar con credenciales reales en ambos dispositivos. Todavía no implementa PWA, offline ni informes.
 
 ## Capas
 
@@ -56,7 +56,7 @@ Ingresar
 
 Se portarán reglas y pruebas de forma selectiva desde el proyecto anterior. No se copiarán layouts, formularios ni componentes de `/admin` como base visual.
 
-El primer tramo ya implementado resuelve `EpisodeOfCare` activos, carga sus `Patient` relacionados y compone un modelo de aplicación propio. El contrato detallado está en `docs/fhir-adapter.md`.
+El primer tramo resuelve `EpisodeOfCare` activos, carga sus `Patient` relacionados y compone un modelo de aplicación propio. El piloto siguiente lee el contexto de tratamiento, registra visitas finalizadas con identidad estable y vuelve a leer cada escritura confirmada. Falta validar la experiencia desde el teléfono y proteger el acceso antes de cualquier dato real. El contrato detallado está en `docs/fhir-adapter.md`.
 
 ## Evolución prevista
 

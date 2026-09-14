@@ -121,14 +121,29 @@ La prueba hace `PUT` idempotente de dos recursos ficticios:
 
 Después ejecuta el caso de uso completo y verifica el resultado. Si se proporciona otro endpoint —incluido `8080`— la suite aborta antes de escribir.
 
-## Alcance pendiente
+## Primer flujo online con datos ficticios
+
+El piloto local agrega:
+
+- contexto longitudinal de `EpisodeOfCare` mediante las extensiones heredadas y diagnósticos referenciados en `Condition`;
+- lectura de visitas `Encounter` existentes, incluidas extensiones clínicas y notas legacy;
+- escritura de visitas finalizadas mediante `PUT Encounter/visit-{UUID}`; el mismo `clientVisitId` se conserva al reintentar y un contenido distinto con esa identidad produce conflicto;
+- modo de captura (`live` o `retrospective`) y hora de registro en extensiones locales `encounter-capture-mode-v1` y `encounter-recorded-at-v1`;
+- métricas funcionales opcionales en `Observation`, con ID estable por visita y tipo de métrica;
+- relectura desde HAPI de la visita y las métricas antes de mostrar confirmación.
+
+El formulario permite iniciar y finalizar en el momento o cargar horarios retrospectivos. La acción y las rutas clínicas están limitadas al entorno local ficticio `8081` y exigen una sesión vigente. El piloto no ofrece borradores ni acceso a datos reales.
+
+La prueba `clinical-visit.fhir.integration.test.ts` escribe solo datos ficticios en `8081`, repite una visita y verifica que se conserva un único `Encounter` y una única métrica.
+
+## Alcance pendiente antes de retirar `/admin`
 
 Para completar el adaptador mínimo previo a podar `/admin` todavía faltan:
 
-1. contexto clínico de `EpisodeOfCare` y `Condition`;
-2. lectura y escritura de visitas con `Encounter`;
-3. métricas con `Observation`;
-4. identificador idempotente de visita;
-5. prueba contractual de crear y volver a leer una visita completa.
+1. autenticación, sesiones y revocación en teléfono y computadora;
+2. borradores, PWA, sincronización offline y resolución de conflictos;
+3. edición controlada de visitas confirmadas y compatibilidad con datos anteriores;
+4. resúmenes, informes y funciones administrativas necesarias para el corte;
+5. validación de dispositivo, infraestructura privada, backup y reversión.
 
 `ServiceRequest`, `Practitioner` y `DocumentReference` pertenecen a etapas posteriores de la V1.

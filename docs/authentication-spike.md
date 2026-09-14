@@ -24,16 +24,16 @@ Un autenticador local disponible permite avanzar al ensayo completo. Si WebAuthn
 
 La API del navegador no puede confirmar por sí sola que una passkey se sincronizará entre Ubuntu y el teléfono.
 
-## Segunda capa pendiente
+## Resultado y segunda capa
 
-Después de probar la ruta en ambos dispositivos:
+El diagnóstico de compatibilidad funcionó en Chrome de Ubuntu y Android según la prueba del profesional en la sesión anterior. Se eligieron `@simplewebauthn/server` y `@simplewebauthn/browser`; el servidor registra y verifica credenciales, conserva sesiones por navegador en SQLite y permite revocación y recuperación con códigos de un solo uso. La recuperación reemplaza las passkeys y los códigos anteriores y revoca todas las sesiones.
 
-1. elegir el proveedor o librería WebAuthn;
-2. crear una cuenta profesional provisionada sin registro público;
-3. registrar y verificar criptográficamente una passkey en el servidor;
-4. comprobar el acceso desde ambos dispositivos;
-5. persistir una sesión independiente por dispositivo;
-6. probar expiración, cierre de sesión y revocación;
-7. definir una recuperación que no dependa de un único teléfono.
+Queda validar con credenciales reales en ambos dispositivos:
+
+1. registrar la primera passkey y guardar los códigos de recuperación;
+2. ingresar desde teléfono y computadora, con sesiones independientes;
+3. revocar una sesión y una passkey, y comprobar que el acceso deja de funcionar;
+4. recuperar el acceso y comprobar que las passkeys y sesiones anteriores ya no sirven;
+5. comprobar la expiración y el acceso HTTPS privado provisto por Casa.
 
 La autenticación completa debe proteger páginas, endpoints y casos de uso antes de renderizar información clínica.
