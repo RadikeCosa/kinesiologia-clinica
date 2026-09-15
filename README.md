@@ -26,6 +26,7 @@ Fundación técnica inicial:
 - reintentos de visita con identidad estable, métricas funcionales opcionales y relectura de confirmación desde HAPI;
 - diagnóstico no clínico de compatibilidad WebAuthn por dispositivo;
 - acceso con passkeys para una cuenta profesional provisionada, sesiones por dispositivo, revocación y recuperación con códigos de un solo uso;
+- laboratorio local autenticado de la futura pantalla inicial, con las vistas `Hoy` y `Pacientes`, seis escenarios ficticios y simulaciones sin persistencia;
 - bloqueo de indexación para toda la aplicación;
 - pruebas unitarias iniciales;
 - documentación de producto, arquitectura y privacidad.
@@ -41,6 +42,8 @@ npm run dev
 ```
 
 La pantalla inicial estará disponible en `http://localhost:3000`. `GET /api/health` comprueba la disponibilidad de HAPI FHIR sin revelar su URL.
+
+Después de ingresar, `http://localhost:3000/laboratorio/inicio` permite revisar el concepto de la futura pantalla inicial. Usa una hora fija y datos ficticios en memoria para comparar un día habitual, trabajo pendiente, cambios de agenda, datos incompletos, un día vacío y un directorio extenso. No lee ni escribe FHIR, no abre mapas ni inicia comunicaciones. La ruta solo existe en desarrollo local contra `8081` y exige una sesión clínica válida.
 
 Requiere Node.js 20.19 o superior.
 

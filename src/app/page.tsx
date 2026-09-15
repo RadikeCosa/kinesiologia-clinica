@@ -41,7 +41,8 @@ export default function Home() {
 
       <p className="status">
         El piloto clínico solo está disponible localmente con datos ficticios.
-        Todavía falta proteger el acceso antes de incorporar datos reales.
+        El acceso con passkeys está implementado y todavía debe validarse por completo
+        antes de incorporar datos reales.
       </p>
 
       <Link className="diagnostic-link" href="/diagnostico/passkeys">
@@ -49,9 +50,16 @@ export default function Home() {
       </Link>
 
       {localClinicalSurfaceEnabled ? (
-        <Link className="primary-link" href="/ingresar">
-          Ingresar al piloto local
-        </Link>
+        <>
+          <Link className="primary-link" href="/ingresar">
+            Ingresar al piloto local
+          </Link>
+          {process.env.NODE_ENV === "development" ? (
+            <Link className="diagnostic-link" href="/laboratorio/inicio">
+              Abrir laboratorio de la pantalla inicial
+            </Link>
+          ) : null}
+        </>
       ) : null}
     </main>
   );
