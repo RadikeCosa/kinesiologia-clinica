@@ -92,10 +92,12 @@ describe("visit workflow use cases", () => {
   it("sends evaluations and procedures in the same finish operation", async () => {
     const active: Visit = { id: "visit-clinical", patientId: patient.id, treatmentId: treatment.id, status: "in-progress", startedAt: "2026-09-15T13:00:00.000Z", captureMode: "live", version: "1" };
     const { dependencies, workflow } = setup([active]);
-    await finishVisit({ visitId: active.id, expectedVersion: "1", clinicalNote: note, metrics: [], clinicalEntries: {
-      evaluations: [{ clientId: "11111111-1111-4111-8111-111111111111", seriesId: "22222222-2222-4222-8222-222222222222", domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Moderada" } }],
-      procedures: [{ family: "manual-therapy" }],
-    } }, dependencies);
+    await finishVisit({
+      visitId: active.id, expectedVersion: "1", clinicalNote: note, metrics: [], clinicalEntries: {
+        evaluations: [{ clientId: "11111111-1111-4111-8111-111111111111", seriesId: "22222222-2222-4222-8222-222222222222", domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Moderada" } }],
+        procedures: [{ family: "manual-therapy" }],
+      }
+    }, dependencies);
     expect(workflow.finish.mock.calls[0]?.[2]).toHaveLength(1);
     expect(workflow.finish.mock.calls[0]?.[3]).toHaveLength(1);
   });

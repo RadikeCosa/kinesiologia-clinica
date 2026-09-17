@@ -58,7 +58,7 @@ export class ActiveVisitError extends Error {
   constructor(readonly activeVisit: Visit) { super("Ya existe una visita en curso."); }
 }
 
-export class VisitStateError extends Error {}
+export class VisitStateError extends Error { }
 
 async function requireContext(patientId: string, treatmentId: string, dependencies: Dependencies) {
   const [patient, treatment] = await Promise.all([dependencies.patients.getById(patientId), dependencies.treatments.getById(treatmentId)]);

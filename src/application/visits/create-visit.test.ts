@@ -27,7 +27,7 @@ function dependencies(existing: Visit | null = null) {
     patients: { getById: vi.fn(async () => ({ id: input.patientId, givenName: "Persona", familyName: "Ficticia" })), listByIds: vi.fn(async () => []) },
     treatments: { getById: vi.fn(async () => ({ id: input.treatmentId, patientId: input.patientId, status: "active" as const, startDate: "2026-09-14" })), listActive: vi.fn(async () => []) },
     visits: { getById: vi.fn(async () => saved), listByPatientId: vi.fn(async () => []), put },
-    metrics: { listByVisitId: vi.fn(async () => []), putIfAbsent: vi.fn(async () => {}) },
+    metrics: { listByVisitId: vi.fn(async () => []), putIfAbsent: vi.fn(async () => { }) },
     evaluations: { listByVisitId: vi.fn(async () => evaluations), listByPatientId: vi.fn(async () => evaluations), putIfAbsent: vi.fn(async (value: ClinicalEvaluation) => { evaluations.push(value); }) },
     procedures: { listByVisitId: vi.fn(async () => procedures), putIfAbsent: vi.fn(async (value: PerformedProcedure) => { procedures.push(value); }) },
     workflow,
