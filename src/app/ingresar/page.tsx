@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  if (await currentSession()) redirect("/patients");
+  if (await currentSession()) redirect("/inicio");
   const config = readAuthConfig();
   const provisioned = config ? openAuthStore(config).listPasskeys().length > 0 : false;
   return <main className="shell clinical-shell">

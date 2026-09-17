@@ -7,6 +7,7 @@ import {
 } from "@/features/clinical-home/clinical-home.scenarios";
 import {
   filterDirectory,
+  formatFriendlyDateTime,
   presentToday,
 } from "@/features/clinical-home/clinical-home.presenter";
 import type {
@@ -66,7 +67,7 @@ function TodayCard({
         </div>
 
         {item.actualStart ? <p className="home-detail">Inicio real: {item.actualStart}{item.actualEnd ? ` · Finalizó: ${item.actualEnd}` : ""}</p> : null}
-        {item.displayState === "past-unresolved" ? <p className="home-attention">Todavía no hay una visita registrada.</p> : null}
+        {item.displayState === "past-unresolved" ? <p className="home-attention">El horario acordado pasó; la visita puede comenzar ahora o registrarse si ya se realizó.</p> : null}
         {item.displayState === "documentation-pending" ? <p className="home-attention">La atención terminó; falta confirmar la evolución.</p> : null}
         {item.displayState === "sync-pending" ? <p className="home-attention">Guardada en el dispositivo; falta sincronizar.</p> : null}
         {item.displayState === "sync-error" ? <p className="home-attention">No se pudo sincronizar. El registro sigue guardado en el dispositivo.</p> : null}
@@ -110,7 +111,7 @@ function PatientCard({
       <div><dt>Dirección</dt><dd>{patient.address ?? "Sin dirección registrada"}</dd></div>
       <div><dt>Teléfono</dt><dd>{patient.phone ?? "Sin teléfono registrado"}</dd></div>
       <div><dt>Frecuencia</dt><dd>{patient.treatment.frequency ?? "Sin frecuencia registrada"}</dd></div>
-      {patient.treatment.nextVisitLabel ? <div><dt>Próxima visita</dt><dd>{patient.treatment.nextVisitLabel}</dd></div> : null}
+      {patient.treatment.nextVisit ? <div><dt>Próxima visita</dt><dd>{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</dd></div> : null}
     </dl>
     <div className="home-actions">
       {patient.treatment.status === "active" ? <button className="home-primary-action" type="button" onClick={onRegister}>Registrar visita</button> : null}
@@ -165,7 +166,7 @@ export function ClinicalHomeLab({ initialScenarioId }: { initialScenarioId: stri
     { title: "Pendientes anteriores", items: today.previousPending },
     { title: "Horarios de hoy", items: today.timed },
     { title: "Sin horario definido", items: today.withoutTime },
-    { title: "Cambios del día", items: today.changes },
+    { title: "Actualizaciones de hoy", items: today.changes },
   ].filter((section) => section.items.length);
 
   return <main className="home-lab-shell">
@@ -199,7 +200,7 @@ export function ClinicalHomeLab({ initialScenarioId }: { initialScenarioId: stri
     {overlay ? <div className="lab-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOverlay(null); }}><section className="lab-dialog" role="dialog" aria-modal="true" aria-labelledby="lab-dialog-title">
       <button className="dialog-close" type="button" onClick={() => setOverlay(null)} aria-label="Cerrar">×</button>
       {overlay.kind === "picker" ? <><p className="eyebrow">Registrar visita</p><h2 id="lab-dialog-title">Elegí un paciente activo</h2><div className="patient-picker-list">{scenario.patients.filter((patient) => patient.treatment.status === "active").map((patient) => <button type="button" key={patient.id} onClick={() => setOverlay({ kind: "context", patient })}><strong>{patient.displayName}</strong><span>{sessionProgress(patient, true)}</span></button>)}</div></> : null}
-      {overlay.kind === "context" ? <><p className="eyebrow">Antes de comenzar</p><h2 id="lab-dialog-title">{overlay.patient.displayName}</h2><p>{overlay.patient.treatment.nextVisitLabel ?? "Visita no programada"} · Sesión prevista {sessionProgress(overlay.patient, true)}</p>{overlay.patient.precautions?.length ? <div className="context-alert"><strong>Precauciones</strong><ul>{overlay.patient.precautions.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}{overlay.patient.accessInstructions ? <div className="context-block"><strong>Indicaciones para ingresar</strong><p>{overlay.patient.accessInstructions}</p></div> : null}{overlay.patient.latestPlan ? <div className="context-block"><strong>Continuidad desde la última visita</strong><p>{overlay.patient.lastVisitLabel}</p><p>{overlay.patient.latestPlan}</p></div> : null}<div className="dialog-actions"><button className="home-primary-action" type="button" onClick={() => startVisit(overlay.patient)}>Comenzar visita ahora</button><button type="button" onClick={() => showBoundary("Carga retrospectiva", "El acceso a la carga retrospectiva queda visible, pero su formulario no forma parte de este primer laboratorio.")}>Cargar una visita realizada</button></div></> : null}
+      {overlay.kind === "context" ? <><p className="eyebrow">Antes de comenzar</p><h2 id="lab-dialog-title">{overlay.patient.displayName}</h2><p>{overlay.patient.treatment.nextVisit ? formatFriendlyDateTime(overlay.patient.treatment.nextVisit.date, overlay.patient.treatment.nextVisit.time) : "Visita no programada"} · Sesión prevista {sessionProgress(overlay.patient, true)}</p>{overlay.patient.precautions?.length ? <div className="context-alert"><strong>Precauciones</strong><ul>{overlay.patient.precautions.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}{overlay.patient.accessInstructions ? <div className="context-block"><strong>Indicaciones para ingresar</strong><p>{overlay.patient.accessInstructions}</p></div> : null}{overlay.patient.latestPlan ? <div className="context-block"><strong>Continuidad desde la última visita</strong><p>{overlay.patient.lastVisitLabel}</p><p>{overlay.patient.latestPlan}</p></div> : null}<div className="dialog-actions"><button className="home-primary-action" type="button" onClick={() => startVisit(overlay.patient)}>Comenzar visita ahora</button><button type="button" onClick={() => showBoundary("Carga diferida", "El acceso para registrar una visita ya realizada queda visible, pero su formulario no forma parte de este laboratorio.")}>Registrar una visita realizada</button></div></> : null}
       {overlay.kind === "contact" ? <><p className="eyebrow">Contacto simulado</p><h2 id="lab-dialog-title">{overlay.patient.displayName}</h2><p>{overlay.patient.phone}</p><div className="dialog-actions"><button type="button" onClick={() => showBoundary("Llamar", "En la aplicación conectada, esta acción abrirá el teléfono. El laboratorio no realiza llamadas.")}>Llamar</button><button type="button" onClick={() => showBoundary("WhatsApp", "En la aplicación conectada, esta acción abrirá WhatsApp. El laboratorio no envía mensajes.")}>Enviar WhatsApp</button></div></> : null}
       {overlay.kind === "map" ? <><p className="eyebrow">Ubicación simulada</p><h2 id="lab-dialog-title">Cómo llegar</h2><p>{overlay.patient.address}</p><p>En la aplicación conectada esta acción abrirá el mapa. El laboratorio no comparte direcciones con servicios externos.</p></> : null}
       {overlay.kind === "boundary" ? <><p className="eyebrow">Límite de la simulación</p><h2 id="lab-dialog-title">{overlay.title}</h2><p>{overlay.message}</p><button className="home-primary-action" type="button" onClick={() => setOverlay(null)}>Entendido</button></> : null}

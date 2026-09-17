@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createVisit } from "@/application/visits/create-visit";
 import { getPatientContext } from "@/application/patients/get-patient-context";
 import { createFhirClient } from "@/infrastructure/fhir/core/fhir.client";
@@ -8,6 +8,9 @@ import { createFhirTreatmentRepository } from "@/infrastructure/fhir/episode-of-
 import { createFhirConditionRepository } from "@/infrastructure/fhir/condition/fhir-condition.repository";
 import { createFhirVisitRepository } from "@/infrastructure/fhir/encounter/fhir-visit.repository";
 import { createFhirMetricRepository } from "@/infrastructure/fhir/observation/fhir-metric.repository";
+import { createFhirClinicalEvaluationRepository } from "@/infrastructure/fhir/observation/fhir-clinical-evaluation.repository";
+import { createFhirPerformedProcedureRepository } from "@/infrastructure/fhir/procedure/fhir-performed-procedure.repository";
+import { createFhirClinicalWorkflowRepository } from "@/infrastructure/fhir/encounter/fhir-clinical-workflow.repository";
 
 const SAFE_FHIR_DEV_URL = "http://localhost:8081/fhir";
 const configuredUrl = process.env.FHIR_INTEGRATION_BASE_URL?.replace(/\/$/, "");
@@ -24,10 +27,16 @@ describeIntegration("clinical visit FHIR contract", () => {
     conditions: createFhirConditionRepository(client),
     visits: createFhirVisitRepository(client),
     metrics: createFhirMetricRepository(client),
+    evaluations: createFhirClinicalEvaluationRepository(client),
+    procedures: createFhirPerformedProcedureRepository(client),
+    workflow: createFhirClinicalWorkflowRepository(client),
   };
   const patientId = "fixture-visit-patient";
   const treatmentId = "fixture-visit-treatment";
   const conditionId = "fixture-visit-condition";
+  const clientVisitId = randomUUID();
+  const secondClientVisitId = randomUUID();
+  const seriesId = randomUUID();
 
   beforeAll(async () => {
     await client.put(`Patient/${patientId}`, {
@@ -53,6 +62,27 @@ describeIntegration("clinical visit FHIR contract", () => {
     });
   });
 
+  afterAll(async () => {
+    const observation = await dependencies.metrics.listByVisitId(`visit-${clientVisitId}`);
+    for (const metric of observation) {
+      const response = await fetch(`${SAFE_FHIR_DEV_URL}/Observation/${metric.id}`, { headers: { Accept: "application/fhir+json" } });
+      if (response.ok) {
+        const resource = await response.json();
+        await fetch(`${SAFE_FHIR_DEV_URL}/Observation/${metric.id}`, { method: "PUT", headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" }, body: JSON.stringify({ ...resource, status: "entered-in-error" }) });
+      }
+    }
+    const visitResponse = await fetch(`${SAFE_FHIR_DEV_URL}/Encounter/visit-${clientVisitId}`, { headers: { Accept: "application/fhir+json" } });
+    if (visitResponse.ok) {
+      const visit = await visitResponse.json();
+      await fetch(`${SAFE_FHIR_DEV_URL}/Encounter/visit-${clientVisitId}`, { method: "PUT", headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" }, body: JSON.stringify({ ...visit, status: "entered-in-error" }) });
+    }
+    const treatmentResponse = await fetch(`${SAFE_FHIR_DEV_URL}/EpisodeOfCare/${treatmentId}`, { headers: { Accept: "application/fhir+json" } });
+    if (treatmentResponse.ok) {
+      const treatment = await treatmentResponse.json();
+      await fetch(`${SAFE_FHIR_DEV_URL}/EpisodeOfCare/${treatmentId}`, { method: "PUT", headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" }, body: JSON.stringify({ ...treatment, status: "finished", period: { ...treatment.period, end: "2026-09-15" } }) });
+    }
+  });
+
   it("reads treatment context and diagnosis without exposing FHIR resources", async () => {
     const context = await getPatientContext(patientId, dependencies);
     expect(context?.treatment.clinicalContext?.therapeuticGoals).toBe("Objetivo ficticio de prueba");
@@ -62,29 +92,39 @@ describeIntegration("clinical visit FHIR contract", () => {
   });
 
   it("writes, retries without duplication, and re-reads a complete visit and metric", async () => {
-    const clientVisitId = randomUUID();
     const input = {
       clientVisitId, patientId, treatmentId,
       captureMode: "retrospective" as const,
       startedAt: "2026-09-14T14:00:00.000Z",
       endedAt: "2026-09-14T14:45:00.000Z",
       clinicalNote: {
-        subjective: "Estado inicial ficticio",
+        statusAndResponse: "Estado y respuesta ficticios",
         intervention: "Intervención ficticia",
-        assessment: "Respuesta ficticia",
         nextPlan: "Continuidad ficticia",
       },
       metrics: [{ code: "pain_nrs_0_10" as const, value: 3 }],
+      clinicalEntries: { evaluations: [{ clientId: randomUUID(), seriesId, domain: "joint-mobility" as const, name: "Flexión ficticia", result: { kind: "quantity" as const, value: 90, unit: "grados" } }], procedures: [{ family: "therapeutic-exercise" as const }] },
     };
     const first = await createVisit(input, dependencies);
     const retry = await createVisit(input, dependencies);
     expect(retry.visit.id).toBe(first.visit.id);
-    expect(retry.visit.clinicalNote?.assessment).toBe(input.clinicalNote.assessment);
+    expect(retry.visit.clinicalNote?.statusAndResponse).toBe(input.clinicalNote.statusAndResponse);
     expect(retry.visit.captureMode).toBe("retrospective");
     expect(retry.metrics).toContainEqual(expect.objectContaining({ code: "pain_nrs_0_10", value: 3 }));
     const visits = await dependencies.visits.listByPatientId(patientId);
     expect(visits.filter((visit) => visit.id === first.visit.id)).toHaveLength(1);
     const metrics = await dependencies.metrics.listByVisitId(first.visit.id);
     expect(metrics.filter((metric) => metric.code === "pain_nrs_0_10")).toHaveLength(1);
+  });
+
+  it("stores two visits as one longitudinal evaluation series", async () => {
+    const result = await createVisit({
+      clientVisitId: secondClientVisitId, patientId, treatmentId, captureMode: "retrospective", startedAt: "2026-09-15T14:00:00.000Z", endedAt: "2026-09-15T14:45:00.000Z",
+      clinicalNote: { statusAndResponse: "Segunda respuesta ficticia", intervention: "Segunda intervención ficticia" }, metrics: [],
+      clinicalEntries: { evaluations: [{ clientId: randomUUID(), seriesId, domain: "joint-mobility", name: "Flexión ficticia", result: { kind: "quantity", value: 100, unit: "grados" } }], procedures: [{ family: "manual-therapy" }] },
+    }, dependencies);
+    const evaluations = await dependencies.evaluations.listByPatientId(patientId);
+    expect(evaluations.filter((item) => item.seriesId === seriesId)).toHaveLength(2);
+    expect(await dependencies.procedures.listByVisitId(result.visit.id)).toHaveLength(1);
   });
 });

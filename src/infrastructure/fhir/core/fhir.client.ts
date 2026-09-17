@@ -6,6 +6,7 @@ export interface FhirClient {
   get<TResponse>(path: string): Promise<TResponse>;
   post<TResponse>(path: string, body: unknown): Promise<TResponse>;
   put<TResponse>(path: string, body: unknown): Promise<TResponse>;
+  transaction<TResponse>(body: unknown): Promise<TResponse>;
 }
 
 export interface CreateFhirClientOptions {
@@ -105,5 +106,7 @@ export function createFhirClient(options: CreateFhirClientOptions): FhirClient {
       request<TResponse>("POST", path, body),
     put: <TResponse>(path: string, body: unknown) =>
       request<TResponse>("PUT", path, body),
+    transaction: <TResponse>(body: unknown) =>
+      request<TResponse>("POST", "", body),
   };
 }

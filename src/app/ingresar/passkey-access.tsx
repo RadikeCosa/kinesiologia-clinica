@@ -35,7 +35,7 @@ export function PasskeyAccess({ mode }: { mode: AccessMode }) {
         const options = await post("login/options", {});
         const result = await startAuthentication({ optionsJSON: options as unknown as Parameters<typeof startAuthentication>[0]["optionsJSON"] });
         await post("login/verify", { response: result });
-        router.replace("/patients"); router.refresh();
+        router.replace("/inicio"); router.refresh();
       } else {
         const prefix = mode === "recovery" ? "recovery" : "registration";
         const options = await post(`${prefix}/options`, mode === "bootstrap" ? { bootstrapToken } : mode === "recovery" ? { code: recoveryCode } : {});
@@ -44,7 +44,7 @@ export function PasskeyAccess({ mode }: { mode: AccessMode }) {
         if (Array.isArray(verified.recoveryCodes) && verified.recoveryCodes.length) {
           setCodes(verified.recoveryCodes.filter((item): item is string => typeof item === "string"));
         } else {
-          router.replace(mode === "register" ? "/configuracion/dispositivos" : "/patients"); router.refresh();
+          router.replace(mode === "register" ? "/configuracion/dispositivos" : "/inicio"); router.refresh();
         }
       }
     } catch {
@@ -58,7 +58,7 @@ export function PasskeyAccess({ mode }: { mode: AccessMode }) {
     <h2>Guardá estos códigos de recuperación</h2>
     <p>Se muestran una sola vez. Cada código permite recuperar el acceso y registrar una passkey nueva. Guardalos fuera del teléfono.</p>
     <ol className="recovery-codes">{codes.map((code) => <li key={code}><code>{code}</code></li>)}</ol>
-    <Link className="primary-link" href="/patients">Ya los guardé</Link>
+    <Link className="primary-link" href="/inicio">Ya los guardé</Link>
   </section>;
 
   return <section className="clinical-panel access-panel">

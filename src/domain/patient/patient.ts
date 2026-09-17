@@ -3,6 +3,8 @@ export interface Patient {
   givenName: string;
   familyName: string;
   phone?: string;
+  address?: string;
+  accessInstructions?: string;
   updatedAt?: string;
 }
 

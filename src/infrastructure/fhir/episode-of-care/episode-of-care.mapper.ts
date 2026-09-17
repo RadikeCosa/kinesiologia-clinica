@@ -31,10 +31,16 @@ export function mapFhirEpisodeOfCare(
   return {
     id: episode.id?.trim() || "",
     patientId: extractIdFromReference(episode.patient?.reference) || "",
-    status: episode.status,
+    status: episode.status === "onhold" ? "paused" : episode.status,
     startDate: episode.period?.start?.trim() || "",
     endDate: episode.period?.end?.trim() || undefined,
     clinicalContext: readContext(episode),
     diagnosisReferences: readDiagnoses(episode),
+    plannedFrequency: episode.extension?.find((entry) => entry.url === `${CONTEXT_BASE}episodeofcare-planned-frequency-v1`)?.valueString?.trim() || undefined,
+    plannedSessionCount: episode.extension?.find((entry) => entry.url === `${CONTEXT_BASE}episodeofcare-planned-session-count-v1`)?.valuePositiveInt,
+    precautions: (() => {
+      const values = episode.extension?.filter((entry) => entry.url === `${CONTEXT_BASE}episodeofcare-precaution-v1`).map((entry) => entry.valueString?.trim()).filter((value): value is string => Boolean(value)) ?? [];
+      return values.length ? values : undefined;
+    })(),
   };
 }

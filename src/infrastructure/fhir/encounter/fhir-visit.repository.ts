@@ -23,6 +23,11 @@ export function createFhirVisitRepository(client: FhirClient): VisitRepository {
       });
       return resources.map(mapFhirEncounter).filter((visit) => visit.patientId === patientId && visit.id);
     },
+    async listInProgress() {
+      const query = new URLSearchParams({ status: "in-progress", _sort: "-date", _count: "20" });
+      const resources = await readAllResourcesByType<FhirEncounter>({ client, path: `Encounter?${query}`, resourceType: "Encounter" });
+      return resources.map(mapFhirEncounter).filter((visit) => visit.id && visit.status === "in-progress");
+    },
     async put(visit) {
       await client.put<FhirEncounter>(`Encounter/${visit.id}`, mapVisitToFhir(visit));
     },

@@ -3,6 +3,7 @@
 
 # next.js
 /.next/
+/.next-e2e/
 /out/
 
 # production
@@ -21,6 +22,8 @@ yarn-error.log*
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
 
 # editor and OS
 .DS_Store
@@ -33,3 +36,5 @@ next-env.d.ts
 # local agent artifacts
 .codex/
 .codex-review/
+/.agents/
+/skills-lock.json

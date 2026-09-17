@@ -12,4 +12,6 @@ export interface FhirPatient extends FhirResource {
     system?: string;
     value?: string;
   }>;
+  address?: Array<{ text?: string }>;
+  extension?: Array<{ url?: string; valueString?: string }>;
 }

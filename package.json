@@ -7,14 +7,17 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev",
-    "dev:fhir-dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev",
-    "dev:fhir-real": "FHIR_BASE_URL=http://localhost:8080/fhir next dev",
+    "dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev --webpack",
+    "dev:fhir-dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev --webpack",
+    "dev:fhir-real": "FHIR_BASE_URL=http://localhost:8080/fhir next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
     "test:integration:fhir": "FHIR_INTEGRATION_BASE_URL=http://localhost:8081/fhir vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "seed:clinical-home": "node scripts/seed-clinical-home.mjs",
+    "reset:fhir-dev": "node scripts/reset-fhir-dev.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -28,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20.19.14",

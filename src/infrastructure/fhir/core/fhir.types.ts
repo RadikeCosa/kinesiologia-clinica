@@ -1,6 +1,7 @@
 export interface FhirResource {
   resourceType: string;
   id?: string;
+  meta?: { versionId?: string; lastUpdated?: string };
 }
 
 export interface FhirBundleEntry<
@@ -8,6 +9,12 @@ export interface FhirBundleEntry<
 > {
   fullUrl?: string;
   resource?: TResource;
+  request?: {
+    method: "PUT" | "POST";
+    url: string;
+    ifMatch?: string;
+  };
+  response?: { status?: string; location?: string; etag?: string };
 }
 
 export interface FhirBundle<

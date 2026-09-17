@@ -1,7 +1,7 @@
 export interface Treatment {
   id: string;
   patientId: string;
-  status: "active" | "finished";
+  status: "active" | "paused" | "finished";
   startDate: string;
   endDate?: string;
   clinicalContext?: {
@@ -13,6 +13,9 @@ export interface Treatment {
     kind: "medical_reference" | "kinesiologic_diagnosis";
     conditionId: string;
   }>;
+  plannedFrequency?: string;
+  plannedSessionCount?: number;
+  precautions?: string[];
 }
 
 function toSafeTimestamp(value: string): number | null {

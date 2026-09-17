@@ -27,6 +27,8 @@ export function mapFhirPatient(patient: FhirPatient): Patient {
       patient.telecom
         ?.find((entry) => entry.system === "phone")
         ?.value?.trim() || undefined,
+    address: patient.address?.[0]?.text?.trim() || undefined,
+    accessInstructions: patient.extension?.find((entry) => entry.url === "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/patient-home-access-instructions-v1")?.valueString?.trim() || undefined,
     updatedAt: patient.meta?.lastUpdated?.trim() || undefined,
   };
 }

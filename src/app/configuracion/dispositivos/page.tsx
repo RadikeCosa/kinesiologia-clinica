@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function DevicesPage() {
   await requireClinicalSession();
   return <main className="shell clinical-shell">
-    <Link className="back-link" href="/patients">Volver a pacientes</Link>
+    <Link className="back-link" href="/inicio">Volver al inicio</Link>
     <p className="eyebrow">Acceso privado</p>
     <h1>Dispositivos y passkeys</h1>
     <p className="lede">Cada navegador autorizado tiene una sesión propia. Si perdés un dispositivo, revocá su sesión y la passkey correspondiente.</p>

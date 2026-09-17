@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listActivePatients } from "@/application/patients/list-active-patients";
 import { createFhirClient } from "@/infrastructure/fhir/core/fhir.client";
 import { createFhirTreatmentRepository } from "@/infrastructure/fhir/episode-of-care/fhir-treatment.repository";
@@ -36,6 +36,11 @@ describeIntegration("active patients FHIR contract", () => {
       patient: { reference: `Patient/${patientId}` },
       period: { start: "2026-09-11" },
     });
+  });
+
+  afterAll(async () => {
+    await fetch(`${SAFE_FHIR_DEV_URL}/EpisodeOfCare/${treatmentId}`, { method: "DELETE" });
+    await fetch(`${SAFE_FHIR_DEV_URL}/Patient/${patientId}`, { method: "DELETE" });
   });
 
   it("writes fixtures through HAPI and reads the active patient use case", async () => {

@@ -22,3 +22,10 @@ export function buildActiveTreatmentsSearch(): string {
     new URLSearchParams({ status: "active", _count: "200" }),
   );
 }
+
+export function buildDirectoryTreatmentsSearch(): string {
+  return buildResourceSearchPath(
+    "EpisodeOfCare",
+    new URLSearchParams({ status: "active,onhold,finished", _count: "200" }),
+  );
+}

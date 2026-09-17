@@ -10,6 +10,51 @@
   --border: #d8e4df;
 }
 
+/* Brief clinical record */
+.visit-entry-shell { max-width: 48rem; }
+.visit-context-strip { display: grid; gap: 0.35rem; padding: 0.8rem 1rem; border-left: 4px solid var(--accent); border-radius: 0.6rem; background: #edf6f2; }
+.visit-context-strip p { margin: 0; line-height: 1.45; }
+.visit-context-strip details { color: var(--muted); font-size: 0.82rem; }
+.auto-textarea { min-height: 5rem; resize: none; overflow: hidden; }
+.clinical-module { border: 1px solid var(--border); border-radius: 0.8rem; background: #fbfdfc; }
+.clinical-module > summary, .module-heading { width: 100%; min-height: 3.25rem; padding: 0.8rem 1rem; border: 0; color: var(--ink); background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
+.module-heading { display: flex; justify-content: space-between; }
+.clinical-module > label, .clinical-module > .procedure-options, .clinical-module[open] > label { margin: 0 1rem 1rem; }
+.clinical-quick-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1rem 0.8rem; }
+.clinical-quick-actions select { flex: 1 1 15rem; }
+.evaluation-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 1rem 0.65rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; background: white; }
+.evaluation-card strong, .evaluation-card span { display: block; }
+.evaluation-card span { margin-top: 0.2rem; color: var(--muted); font-size: 0.82rem; }
+.text-button { border: 0; color: var(--accent); background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
+.evaluation-editor { display: grid; gap: 0.9rem; margin: 0 1rem 1rem; padding: 1rem; border-radius: 0.7rem; background: #edf3f0; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.procedure-options { display: grid; gap: 0.65rem; }
+.procedure-options > label { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 1fr); align-items: center; gap: 0.75rem; }
+.mobile-final-action .submit-button { width: 100%; }
+.field-error { color: #9f2f25; font-size: 0.82rem; font-weight: 700; }
+.module-error { margin: 0 1rem 1rem; }
+.visit-detail-group { margin-top: 1.3rem; }
+.visit-detail-group h3 { margin-bottom: 0.5rem; }
+.evaluation-series-list { display: grid; gap: 1rem; }
+.evaluation-series-list article { padding: 0.9rem; border: 1px solid var(--border); border-radius: 0.7rem; }
+.evaluation-series-list h3 { margin: 0; }
+.evaluation-series-list ol { margin: 0.7rem 0 0; padding-left: 1.25rem; }
+.evaluation-series-list li { padding: 0.3rem; }
+.evaluation-series-list li span, .evaluation-series-list li small { display: block; }
+.evaluation-series-list li small { color: var(--muted); }
+
+@media (max-width: 42rem) {
+  .visit-entry-shell { width: calc(100% - 1rem); padding-top: 0.65rem; padding-bottom: 6rem; }
+  .visit-entry-shell > .eyebrow { margin-bottom: 0.25rem; }
+  .visit-entry-shell > h1 { margin: 0; font-size: 1.65rem; }
+  .visit-entry-shell > .lede { margin: 0.35rem 0 0.85rem; font-size: 0.9rem; }
+  .form-grid { grid-template-columns: 1fr; }
+  .evaluation-card { align-items: start; }
+  .procedure-options > label { grid-template-columns: 1fr; }
+  .mobile-final-action { position: sticky; z-index: 5; bottom: 0; margin: 0 -0.5rem -0.5rem; padding: 0.65rem; border-top: 1px solid var(--border); background: rgb(246 250 248 / 94%); backdrop-filter: blur(8px); }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -376,6 +421,35 @@ h1 {
 .visit-list span { margin-left: 0.75rem; color: var(--muted); }
 .visit-detail { margin-top: 2.5rem; }
 
+.patient-detail-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.patient-detail-heading .lede { margin-top: 0.85rem; }
+.patient-detail-actions { display: flex; flex: none; align-items: center; gap: 0.9rem; }
+.patient-detail-actions .primary-link, .patient-detail-actions .diagnostic-link { margin-top: 0; }
+.patient-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 2rem; overflow: hidden; border: 1px solid var(--border); border-radius: 1.1rem; background: var(--border); }
+.patient-summary > div { min-height: 6rem; padding: 1rem 1.15rem; background: var(--surface); }
+.patient-summary span, .patient-summary strong { display: block; }
+.patient-summary span { color: var(--muted); font-size: 0.78rem; }
+.patient-summary strong { margin-top: 0.45rem; line-height: 1.35; }
+.patient-pending-note { grid-column: 1 / -1; margin: 0; padding: 0.7rem 1.15rem; color: #72551d; background: #fff8e7; font-size: 0.85rem; font-weight: 700; }
+.patient-detail-grid { grid-template-columns: minmax(16rem, 0.8fr) minmax(22rem, 1.2fr); margin-top: 1rem; }
+.patient-visits-panel { grid-column: 1 / -1; }
+.compact-context-list { gap: 0.75rem; }
+.patient-contact-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+.patient-diagnoses { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.patient-diagnoses h3 { margin: 0; font-size: 0.95rem; }
+.patient-diagnoses ul { display: grid; gap: 0.6rem; margin: 0.8rem 0 0; padding: 0; list-style: none; }
+.patient-diagnoses li { line-height: 1.45; }
+.patient-diagnoses li span { display: block; color: var(--muted); font-size: 0.76rem; }
+.patient-panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.patient-panel-heading h2, .patient-panel-heading p { margin: 0; }
+.patient-panel-heading p { margin-top: 0.35rem; color: var(--muted); font-size: 0.85rem; }
+.patient-panel-heading .primary-link { flex: none; margin-top: 0; }
+.patient-visit-list { margin: 1.25rem 0 0; padding: 0; list-style: none; }
+.patient-visit-list li { padding: 0.9rem 0; border-top: 1px solid var(--border); }
+.patient-visit-list li > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.patient-visit-list p { margin: 0.55rem 0 0; color: var(--ink); }
+.patient-visit-list small { display: block; margin-top: 0.35rem; color: var(--muted); line-height: 1.45; }
+
 .visit-form { display: grid; gap: 1.25rem; max-width: 44rem; margin-top: 2rem; }
 .visit-form label { display: grid; gap: 0.5rem; font-weight: 700; }
 .visit-form input[type="datetime-local"],
@@ -498,6 +572,7 @@ h1 {
   border-radius: 0.9rem;
   background: #e8f0ed;
 }
+.home-tabs-three { grid-template-columns: repeat(3, 1fr); }
 
 .home-tabs button,
 .directory-filters button,
@@ -579,6 +654,18 @@ h1 {
 .context-block p { margin: 0.45rem 0 0; color: var(--muted); line-height: 1.5; }
 .dialog-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
 
+.button-link { display: inline-flex; align-items: center; justify-content: center; min-height: 2.7rem; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: #f8fbfa; font-weight: 700; text-decoration: none; }
+.home-dialog { width: min(calc(100% - 2rem), 34rem); max-height: calc(100dvh - 2rem); overflow: auto; padding: 2rem; border: 0; border-radius: 1rem; color: var(--ink); background: var(--surface); box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 24%); }
+.home-dialog::backdrop { background: rgb(14 35 29 / 52%); }
+.home-dialog h2 { margin: 0 2.5rem 1rem 0; }
+.home-form { display: grid; gap: 1rem; }
+.home-form label { display: grid; gap: 0.4rem; color: var(--muted); font-size: 0.85rem; font-weight: 700; }
+.home-form input, .home-form select, .home-form textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: white; font: inherit; }
+.home-form .home-confirm { display: flex; grid-template-columns: auto 1fr; align-items: center; color: #624711; }
+.home-form .home-confirm input { width: 1.1rem; height: 1.1rem; }
+.clinical-home-real button:focus-visible, .clinical-home-real a:focus-visible, .home-dialog button:focus-visible, .home-dialog input:focus-visible, .home-dialog select:focus-visible, .home-dialog textarea:focus-visible { outline: 3px solid #d49b2d; outline-offset: 2px; }
+.danger-zone { margin-top: 1rem; }
+
 @media (max-width: 42rem) {
   .home-lab-shell { width: min(100% - 1rem, 64rem); padding-top: 0.5rem; }
   .lab-banner, .home-header, .home-view-heading { align-items: stretch; flex-direction: column; }
@@ -593,4 +680,268 @@ h1 {
   .home-actions .home-primary-action { flex-basis: 100%; }
   .lab-overlay { padding: 0; }
   .lab-dialog { width: 100%; max-height: 92dvh; border-radius: 1.25rem 1.25rem 0 0; }
+  .home-dialog { width: 100%; max-height: 92dvh; margin: auto 0 0; border-radius: 1.25rem 1.25rem 0 0; }
+}
+
+/* Operational home: compact seven-day view */
+.operational-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.operational-header p { margin: 0 0 0.2rem; color: var(--muted); font-size: 0.82rem; }
+.operational-header h1 { margin: 0; font-size: clamp(2rem, 6vw, 3.2rem); line-height: 0.95; }
+.schedule-shortcut { min-height: 2.75rem; padding: 0.65rem 0.9rem; border: 1px solid var(--accent); border-radius: 0.7rem; font: inherit; font-weight: 800; cursor: pointer; }
+.clinical-home-real .home-tabs { margin-top: 1rem; }
+.operational-day { margin-top: 0.9rem; }
+.week-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; }
+.week-strip button {
+  min-width: 0;
+  min-height: 4.4rem;
+  padding: 0.45rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  font: inherit;
+  cursor: pointer;
+}
+.week-strip button span, .week-strip button strong, .week-strip button small { display: block; }
+.week-strip button span { overflow: hidden; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
+.week-strip button strong { margin-top: 0.15rem; color: var(--ink); font-size: 1rem; }
+.week-strip button small { width: 1.25rem; min-height: 1.25rem; margin: 0.2rem auto 0; border-radius: 999px; color: var(--muted); font-size: 0.7rem; line-height: 1.25rem; }
+.week-strip button[aria-pressed="true"] { border-color: var(--accent); color: white; background: var(--accent); box-shadow: 0 0.5rem 1.2rem rgb(22 122 91 / 18%); }
+.week-strip button[aria-pressed="true"] strong { color: white; }
+.week-strip button[aria-pressed="true"] small { color: var(--accent); background: white; }
+.day-heading { display: flex; align-items: end; justify-content: space-between; margin-top: 1.15rem; }
+.day-heading p { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.85rem; }
+.operational-section { margin-top: 1.25rem; }
+.operational-section > h3 { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.55rem; font-size: 0.92rem; }
+.operational-section > h3 span { display: inline-grid; min-width: 1.45rem; height: 1.45rem; place-items: center; border-radius: 999px; color: #72551d; background: #fbefce; font-size: 0.72rem; }
+.priority-section > h3 { color: var(--accent); }
+.attention-section > h3 { color: #72551d; }
+.visit-card { padding: 0.9rem 1rem; }
+.visit-card-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.visit-time { color: var(--accent); font-size: 1rem; }
+.visit-card-main { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-top: 0.55rem; }
+.visit-card-main h3 { font-size: 1.08rem; }
+.visit-card-main .treatment-progress { flex: none; margin: 0; }
+.visit-card .home-address { margin-top: 0.45rem; }
+.visit-actions { display: grid; gap: 0.55rem; margin-top: 0.8rem; }
+.visit-clinical-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 0.45rem; }
+.visit-clinical-actions form { display: contents; }
+.visit-utility-actions { display: flex; justify-content: flex-end; gap: 0.45rem; }
+.visit-actions button, .visit-actions .button-link { min-height: 2.75rem; padding: 0.62rem 0.78rem; border: 1px solid var(--border); border-radius: 0.65rem; font: inherit; font-weight: 750; cursor: pointer; }
+.visit-clinical-actions .home-primary-action, .visit-clinical-actions .button-link { width: 100%; }
+.visit-actions .more-action { min-width: 3.5rem; color: var(--ink); background: #f8fbfa; }
+.visit-card.state-in-progress { border-color: var(--accent); box-shadow: 0 0 0 2px rgb(22 122 91 / 10%); }
+.visit-card.state-past-unresolved, .visit-card.state-documentation-pending { border-color: #dfc37e; }
+.day-empty { margin-top: 1.2rem; padding: 1.25rem; border: 1px dashed var(--border); border-radius: 1rem; background: var(--surface); text-align: center; }
+.day-empty h3, .day-empty p { margin: 0; }
+.day-empty p { margin-top: 0.35rem; color: var(--muted); }
+.day-empty button { min-height: 2.75rem; margin-top: 1rem; padding: 0.65rem 0.9rem; border: 1px solid var(--accent); border-radius: 0.7rem; font: inherit; font-weight: 800; }
+.history-group { margin-top: 1rem; border: 1px solid var(--border); border-radius: 0.85rem; background: color-mix(in srgb, var(--surface) 78%, transparent); }
+.history-group summary { min-height: 2.9rem; padding: 0.75rem 1rem; font-weight: 750; cursor: pointer; }
+.history-group summary span { float: right; color: var(--muted); }
+.history-list { border-top: 1px solid var(--border); }
+.history-row { display: grid; grid-template-columns: 4.4rem 1fr auto; gap: 0.75rem; padding: 0.75rem 1rem; color: var(--muted); font-size: 0.86rem; }
+.history-list-with-date .history-row { grid-template-columns: 7.2rem 1fr auto; }
+.history-row + .history-row { border-top: 1px solid var(--border); }
+.history-row strong { color: var(--ink); }
+.history-row strong a, .patient-name-link { color: inherit; text-underline-offset: 0.2em; }
+.patient-name-link:hover, .patient-name-link:focus-visible { color: var(--accent); }
+.visit-card-main .patient-name-link, .directory-card .patient-name-link, .agenda-card .patient-name-link { font-weight: 850; text-decoration-thickness: 0.08em; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.visit-card-main .patient-name-link { font-size: 1.08rem; }
+.visit-contact-details { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.45rem; }
+.visit-contact-details button { min-height: 2.75rem; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: 0.86rem; text-align: left; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 0.2em; cursor: pointer; }
+.visit-contact-details button span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; text-decoration: none; }
+.action-sheet-context { color: var(--muted); line-height: 1.5; }
+.action-sheet-list { display: grid; gap: 0.5rem; }
+.action-sheet-list button, .action-sheet-list a { display: flex; width: 100%; min-height: 3rem; align-items: center; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 0.7rem; color: var(--ink); background: #f8fbfa; font: inherit; font-weight: 750; text-align: left; text-decoration: none; cursor: pointer; }
+.action-sheet-list form { display: contents; }
+.location-instructions { margin: 1rem 0; padding: 0.85rem; border-radius: 0.7rem; background: #edf6f2; }
+.location-instructions p { margin: 0.35rem 0 0; color: var(--muted); line-height: 1.45; }
+.pain-quick-action { color: var(--accent); border-color: var(--accent); background: #edf6f2; }
+.visit-record-link, .history-detail-link { color: var(--accent); font-size: 0.84rem; font-weight: 800; text-underline-offset: 0.2em; }
+.patient-visit-list .visit-record-link { display: inline-block; margin-top: 0.65rem; }
+.history-row { grid-template-columns: 4.4rem minmax(8rem, 1fr) auto auto; align-items: center; }
+.history-list-with-date .history-row { grid-template-columns: 7.2rem minmax(8rem, 1fr) auto auto; }
+.visit-record-shell { max-width: 58rem; }
+.visit-record-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 0.55rem; margin: 1.25rem 0; }
+.visit-record-summary div { padding: 0.85rem; border: 1px solid var(--border); border-radius: 0.75rem; background: rgb(255 255 255 / 72%); }
+.visit-record-summary span, .visit-record-summary strong { display: block; }
+.visit-record-summary span { color: var(--muted); font-size: 0.72rem; }
+.visit-record-summary strong { margin-top: 0.3rem; font-size: 0.9rem; line-height: 1.35; }
+.visit-time-range { margin-right: 0.25rem; color: var(--ink); font-size: 1.1rem; }
+.record-badge { display: inline-flex; align-items: center; min-height: 2rem; padding: 0.35rem 0.65rem; border-radius: 999px; color: var(--accent); background: #e2f2eb; font-size: 0.8rem; font-weight: 800; }
+.punctuality-delayed { color: #72551d; background: #fbefce; }
+.punctuality-severely-delayed { color: #8b342b; background: #f7dfdc; }
+.punctuality-none { color: var(--muted); background: #e9edeb; }
+.visit-detail-heading { padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.visit-detail-heading .eyebrow { margin-bottom: 0.35rem; }
+.visit-detail-heading h2 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.7rem); }
+.visit-narrative-section { padding: 1.3rem 0; border-bottom: 1px solid var(--border); }
+.visit-narrative-section:last-child { border-bottom: 0; }
+.visit-narrative-section > h3, .visit-narrative-section .visit-section-heading h3 { margin: 0; color: var(--accent); font-size: 1.05rem; font-weight: 850; }
+.visit-narrative-section > p { margin: 0.6rem 0 0; color: var(--ink); font-size: 1rem; line-height: 1.65; }
+.evaluation-section { padding-top: 1.4rem; }
+.procedure-family-block { margin-top: 1rem; }
+.procedure-family-block h4 { margin: 0; color: var(--muted); font-size: 0.8rem; }
+.visit-section-heading { display: flex; align-items: center; justify-content: space-between; }
+.visit-section-heading h3 { margin: 0; }
+.visit-section-heading span { display: inline-grid; min-width: 1.6rem; height: 1.6rem; place-items: center; border-radius: 999px; color: var(--accent); background: #e2f2eb; font-size: 0.78rem; font-weight: 800; }
+.visit-evaluation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+.visit-evaluation-card { padding: 1rem; border: 1px solid var(--border); border-radius: 0.75rem; background: #fbfdfc; }
+.visit-evaluation-card.is-pain { border-color: #86bca9; background: #edf7f3; }
+.visit-evaluation-card h4 { margin: 0.2rem 0; font-size: 1rem; }
+.visit-evaluation-card > div > span { color: var(--muted); font-size: 0.75rem; }
+.visit-evaluation-card > div > strong { color: var(--accent); font-size: 1.2rem; }
+.visit-evaluation-card dl { display: grid; gap: 0.4rem; margin: 0.8rem 0 0; padding-top: 0.7rem; border-top: 1px solid var(--border); }
+.visit-evaluation-card dl div { display: grid; grid-template-columns: 7rem 1fr; gap: 0.5rem; }
+.visit-evaluation-card dt { color: var(--muted); font-size: 0.75rem; }
+.visit-evaluation-card dd { margin: 0; font-size: 0.84rem; }
+.evaluation-history-link { display: inline-block; margin-top: 0.85rem; color: var(--accent); font-size: 0.82rem; font-weight: 800; text-underline-offset: 0.2em; }
+.procedure-tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; list-style: none; }
+.procedure-tag-list li { padding: 0.5rem 0.7rem; border-radius: 999px; color: var(--accent); background: #e2f2eb; font-size: 0.84rem; font-weight: 750; }
+.visit-operational-detail { padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.patient-evaluations-panel { scroll-margin-top: 1rem; }
+.patient-evaluations-panel > .eyebrow { margin-bottom: 0.35rem; }
+.patient-evaluations-panel > h2 { margin: 0; }
+.panel-introduction { color: var(--muted); line-height: 1.5; }
+.evaluation-series-list article { scroll-margin-top: 1rem; }
+
+/* Monthly agenda and compact patient directory */
+.agenda-view, .patients-view { margin-top: 1.15rem; }
+.month-heading { display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; align-items: center; gap: 0.75rem; }
+.month-heading > div { text-align: center; }
+.month-heading h2 { margin: 0; font-size: 1.35rem; }
+.month-heading > div a { display: inline-block; margin-top: 0.25rem; color: var(--accent); font-size: 0.82rem; font-weight: 800; text-underline-offset: 0.2em; }
+.month-navigation { display: grid; width: 2.75rem; min-height: 2.75rem; place-items: center; border: 1px solid var(--border); border-radius: 0.7rem; color: var(--ink); background: var(--surface); font-size: 1.6rem; font-weight: 800; text-decoration: none; }
+.month-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; margin-top: 1rem; }
+.calendar-weekday { padding-block: 0.25rem; color: var(--muted); font-size: 0.72rem; font-weight: 800; text-align: center; }
+.month-calendar button { position: relative; display: grid; min-width: 0; min-height: 3.3rem; place-items: center; padding: 0.3rem; border: 1px solid var(--border); border-radius: 0.7rem; color: var(--ink); background: color-mix(in srgb, var(--surface) 82%, transparent); font: inherit; font-weight: 800; cursor: pointer; }
+.month-calendar button small { position: absolute; right: 0.25rem; bottom: 0.2rem; display: grid; min-width: 1.15rem; height: 1.15rem; place-items: center; border-radius: 999px; color: var(--accent); background: #e2f2eb; font-size: 0.65rem; }
+.month-calendar button.is-today { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+.month-calendar button[aria-pressed="true"] { border-color: var(--accent); color: white; background: var(--accent); }
+.month-calendar button[aria-pressed="true"] small { color: var(--accent); background: white; }
+.calendar-empty { min-height: 3.3rem; }
+.agenda-pending { margin-top: 1.25rem; }
+.agenda-pending-list { border-top: 1px solid var(--border); }
+.agenda-pending-list div { display: grid; grid-template-columns: minmax(9rem, auto) 1fr; gap: 0.75rem; padding: 0.75rem 1rem; }
+.agenda-pending-list div + div { border-top: 1px solid var(--border); }
+.agenda-pending-list span { color: var(--muted); font-size: 0.84rem; }
+.agenda-pending-list a { color: var(--ink); font-weight: 800; text-underline-offset: 0.2em; }
+.agenda-selected-day { margin-top: 1.5rem; }
+.agenda-day-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+.agenda-day-heading p, .agenda-day-heading h2 { margin: 0; }
+.agenda-day-heading p { color: var(--muted); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.agenda-day-heading h2 { margin-top: 0.15rem; font-size: 1.3rem; }
+.agenda-day-heading > span { color: var(--muted); font-size: 0.84rem; }
+.agenda-day-list { display: grid; gap: 0.65rem; }
+.agenda-card { display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; align-items: center; gap: 1rem; padding: 0.85rem 1rem; }
+.agenda-card-time strong, .agenda-card-time span { display: block; }
+.agenda-card-time strong { color: var(--accent); }
+.agenda-card-time span { margin-top: 0.2rem; color: var(--muted); font-size: 0.75rem; }
+.agenda-card-patient { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.agenda-card-patient h3 { min-width: 0; }
+.agenda-more { min-width: 3.5rem; min-height: 2.75rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: #f8fbfa; font: inherit; font-weight: 800; cursor: pointer; }
+.directory-tools-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.directory-tools-heading .directory-search { flex: 1; margin-top: 0; }
+.directory-tools-heading > p { flex: none; margin: 0 0 0.75rem; color: var(--muted); font-size: 0.84rem; }
+.directory-filters { flex-wrap: wrap; overflow: visible; }
+.patient-fact-wide { grid-column: 1 / -1; }
+.patient-facts dd .inline-text-action, .inline-contact-actions { margin-left: 0.6rem; }
+.inline-text-action, .inline-contact-actions a { display: inline-flex; align-items: center; min-height: 2.75rem; margin-block: -0.65rem; color: var(--accent); font-size: 0.82rem; font-weight: 800; text-underline-offset: 0.2em; }
+.inline-contact-actions { display: inline-flex; align-items: center; gap: 0.6rem; }
+.access-instructions summary { color: var(--accent); font-size: 0.84rem; font-weight: 800; cursor: pointer; }
+.access-instructions p { margin: 0.5rem 0 0; color: var(--ink); font-size: 0.9rem; }
+.directory-primary-actions { margin-top: 0.9rem; }
+.patient-treatment-summary { display: grid; gap: 0.2rem; text-align: right; }
+.patient-treatment-summary strong { font-size: 0.9rem; }
+.patient-treatment-summary span { color: var(--muted); font-size: 0.78rem; }
+.patient-next-visit { display: flex; align-items: baseline; gap: 0.45rem; margin: 0.8rem 0 0; font-size: 0.88rem; font-weight: 750; }
+.patient-next-visit span { color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+.patient-precautions { display: flex; gap: 0.6rem; margin-top: 0.8rem; padding: 0.65rem 0.75rem; border-left: 3px solid #d9b768; border-radius: 0.5rem; color: #624711; background: #fff8e7; font-size: 0.84rem; line-height: 1.4; }
+.patient-precautions strong { flex: none; }
+.patient-location-fact .access-instructions { margin-top: 0.2rem; }
+
+@media (min-width: 42.01rem) {
+  .visit-actions { display: flex; align-items: end; justify-content: space-between; }
+  .visit-clinical-actions { display: flex; flex-wrap: wrap; }
+  .visit-clinical-actions form { display: block; }
+  .visit-clinical-actions .home-primary-action, .visit-clinical-actions .button-link { width: auto; min-width: 9.5rem; }
+}
+
+@media (max-width: 42rem) {
+  .clinical-home-real.home-lab-shell { width: calc(100% - 1rem); padding-top: 0.65rem; }
+  .operational-header { align-items: center; }
+  .operational-header p { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .operational-header h1 { font-size: 2rem; }
+  .schedule-shortcut { flex: none; }
+  .clinical-home-real .home-tabs { margin-top: 0.75rem; }
+  .clinical-home-real .home-tabs button { min-height: 2.75rem; padding: 0.55rem 0.3rem; }
+  .operational-day { margin-top: 0.7rem; }
+  .week-strip { display: flex; margin-inline: -0.5rem; padding: 0 0.5rem 0.25rem; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .week-strip::-webkit-scrollbar { display: none; }
+  .week-strip button { flex: 0 0 3.75rem; min-height: 4rem; scroll-snap-align: start; }
+  .day-heading { margin-top: 0.75rem; }
+  .operational-section { margin-top: 1rem; }
+  .visit-card { padding: 0.8rem 0.85rem; }
+  .visit-card-main { align-items: start; margin-top: 0.35rem; }
+  .visit-card-main h3 { font-size: 1.05rem; }
+  .visit-card-main .patient-name-link { font-size: 1.05rem; }
+  .visit-card-main .treatment-progress { max-width: 7rem; font-size: 0.8rem; text-align: right; }
+  .visit-contact-details { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .visit-contact-details button { min-height: 2.4rem; }
+  .visit-clinical-actions { grid-template-columns: 1fr; }
+  .visit-utility-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .visit-utility-actions .button-link { width: 100%; }
+  .history-row, .history-list-with-date .history-row { grid-template-columns: 4.8rem 1fr; }
+  .history-row span:nth-of-type(2), .history-detail-link { grid-column: 2; }
+  .home-action-sheet { width: 100%; max-height: 88dvh; margin: auto 0 0; border-radius: 1.25rem 1.25rem 0 0; }
+  .agenda-view, .patients-view { margin-top: 0.8rem; }
+  .month-calendar { gap: 0.25rem; margin-inline: -0.1rem; }
+  .month-calendar button, .calendar-empty { min-height: 2.9rem; }
+  .month-calendar button { border-radius: 0.6rem; }
+  .agenda-pending-list div { grid-template-columns: 1fr; gap: 0.2rem; }
+  .agenda-day-heading { align-items: start; }
+  .agenda-day-heading h2 { font-size: 1.15rem; }
+  .agenda-card { grid-template-columns: minmax(0, 1fr) auto; gap: 0.55rem; padding: 0.8rem; }
+  .agenda-card-time { grid-column: 1; display: flex; align-items: baseline; gap: 0.5rem; }
+  .agenda-card-time span { margin: 0; }
+  .agenda-card-patient { grid-column: 1 / -1; grid-row: 2; }
+  .agenda-more { grid-column: 2; grid-row: 1; }
+  .directory-tools-heading { align-items: stretch; flex-direction: column; gap: 0.45rem; }
+  .directory-tools-heading > p { margin: 0; }
+  .directory-filters { margin: 0.75rem 0; }
+  .directory-card { padding: 0.9rem; }
+  .patient-treatment-summary { max-width: 8rem; }
+  .patient-next-visit { align-items: start; flex-direction: column; gap: 0.15rem; }
+  .patient-precautions { display: grid; gap: 0.2rem; }
+  .patient-facts { gap: 0.7rem; margin-top: 0.8rem; }
+  .patient-facts dd .inline-text-action, .inline-contact-actions { margin-left: 0.45rem; }
+  .directory-primary-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .directory-primary-actions form { display: contents; }
+  .directory-primary-actions .home-primary-action { min-width: 0; }
+  .patient-detail-heading { display: block; }
+  .patient-detail-actions { margin-top: 1.25rem; }
+  .patient-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .patient-detail-grid { grid-template-columns: 1fr; }
+  .patient-visits-panel { grid-column: auto; }
+  .patient-panel-heading { display: block; }
+  .patient-panel-heading .primary-link { margin-top: 1rem; }
+  .patient-visit-list li > div { display: block; }
+  .patient-visit-list span { display: block; margin: 0.3rem 0 0; }
+  .visit-record-shell { width: calc(100% - 1rem); padding-top: 1rem; }
+  .visit-record-shell > .back-link { margin-bottom: 1.2rem; }
+  .visit-record-shell > .eyebrow { margin-bottom: 0.35rem; }
+  .visit-record-shell > h1 { font-size: 2.15rem; line-height: 1; }
+  .visit-record-date { margin-top: 0.55rem; font-size: 0.88rem; }
+  .visit-record-summary { gap: 0.45rem; margin: 0.9rem 0 1rem; }
+  .visit-time-range { flex-basis: 100%; font-size: 1.05rem; }
+  .visit-detail { padding: 1rem; }
+  .visit-narrative-section { padding: 1.05rem 0; }
+  .visit-evaluation-list { grid-template-columns: 1fr; }
+  .visit-evaluation-card dl div { grid-template-columns: 1fr; gap: 0.1rem; }
 }

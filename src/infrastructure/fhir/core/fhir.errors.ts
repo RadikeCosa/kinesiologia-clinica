@@ -21,6 +21,8 @@ export class FhirClientError extends Error {
     this.method = input.method;
     this.path = input.path;
     this.status = input.status;
-    this.safeMessage = "No se pudo acceder al servidor clínico en este momento.";
+    this.safeMessage = input.status === 412
+      ? "El registro cambió en otro dispositivo. Recargá la pantalla antes de continuar."
+      : "No se pudo acceder al servidor clínico en este momento.";
   }
 }

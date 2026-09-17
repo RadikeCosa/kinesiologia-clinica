@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { submitVisit, type VisitActionState } from "./actions";
+import { ClinicalVisitFields } from "../clinical-visit-fields";
+import type { ClinicalEvaluation } from "@/domain/visit/clinical-entry";
 
 const initialState: VisitActionState = { error: null };
 
@@ -16,9 +18,9 @@ function toIso(local: string) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
-export function VisitForm({ patientId, treatmentId, clientVisitId }: { patientId: string; treatmentId: string; clientVisitId: string }) {
+export function VisitForm({ patientId, treatmentId, clientVisitId, appointmentId, initialMode = "live", priorEvaluations = [], precautions, lastPlan }: { patientId: string; treatmentId: string; clientVisitId: string; appointmentId?: string; initialMode?: "live" | "retrospective"; priorEvaluations?: ClinicalEvaluation[]; precautions?: string; lastPlan?: string }) {
   const [state, action, pending] = useActionState(submitVisit, initialState);
-  const [mode, setMode] = useState<"live" | "retrospective">("live");
+  const [mode, setMode] = useState<"live" | "retrospective">(initialMode);
   const [startedAt, setStartedAt] = useState("");
   const [endedAt, setEndedAt] = useState("");
 
@@ -26,13 +28,14 @@ export function VisitForm({ patientId, treatmentId, clientVisitId }: { patientId
     <input type="hidden" name="patientId" value={patientId} />
     <input type="hidden" name="treatmentId" value={treatmentId} />
     <input type="hidden" name="clientVisitId" value={clientVisitId} />
+    {appointmentId ? <input type="hidden" name="appointmentId" value={appointmentId} /> : null}
     <input type="hidden" name="captureMode" value={mode} />
     <input type="hidden" name="startedAt" value={toIso(startedAt)} />
     <input type="hidden" name="endedAt" value={toIso(endedAt)} />
 
-    <fieldset className="mode-options"><legend>¿Cuándo registrás la visita?</legend>
-      <label><input type="radio" checked={mode === "live"} onChange={() => setMode("live")} /> En el momento</label>
-      <label><input type="radio" checked={mode === "retrospective"} onChange={() => setMode("retrospective")} /> Retrospectiva</label>
+    <fieldset className="mode-options"><legend>¿Cómo registrás la visita?</legend>
+      <label><input type="radio" checked={mode === "live"} onChange={() => setMode("live")} /> En vivo</label>
+      <label><input type="radio" checked={mode === "retrospective"} onChange={() => setMode("retrospective")} /> Carga diferida</label>
     </fieldset>
 
     <div className="form-row">
@@ -43,13 +46,9 @@ export function VisitForm({ patientId, treatmentId, clientVisitId }: { patientId
       <label>Salida<input type="datetime-local" value={endedAt} onChange={(event) => setEndedAt(event.target.value)} required /></label>
       {mode === "live" ? <button className="secondary-button" type="button" onClick={() => setEndedAt(localDateTimeNow())}>Finalizar ahora</button> : null}
     </div>
-    <label>Estado inicial<textarea name="subjective" maxLength={2000} required rows={3} /></label>
-    <label>Intervención realizada<textarea name="intervention" maxLength={2000} required rows={3} /></label>
-    <label>Respuesta del paciente<textarea name="assessment" maxLength={2000} required rows={3} /></label>
-    <label>Continuidad o próximo plan<textarea name="nextPlan" maxLength={2000} rows={3} /></label>
-    <label>Dolor NRS (opcional, 0 a 10)<input name="pain" type="number" min={0} max={10} step={1} /></label>
+    <ClinicalVisitFields priorEvaluations={priorEvaluations} precautions={precautions} lastPlan={lastPlan} errors={state.fieldErrors}/>
     {state.error ? <p className="form-error" role="alert">{state.error}</p> : null}
-    <button className="submit-button" type="submit" disabled={pending || !startedAt || !endedAt}>{pending ? "Confirmando…" : "Confirmar visita"}</button>
+    <div className="mobile-final-action"><button className="submit-button" type="submit" disabled={pending || !startedAt || !endedAt}>{pending ? "Confirmando…" : "Finalizar visita"}</button></div>
     <p className="clinical-footnote">El registro se confirma solo después de volver a leerlo desde HAPI FHIR. Si hubo un problema de red, reintentá desde este formulario para conservar la misma identidad de visita.</p>
   </form>;
 }

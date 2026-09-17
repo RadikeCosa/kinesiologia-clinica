@@ -14,7 +14,7 @@ const DEFINITIONS = {
   gait_duration_minutes: { code: "gait-duration-minutes", display: "Marcha (minutos)", unit: "min" },
 } as const;
 
-interface FhirObservation extends FhirResource {
+export interface FhirObservation extends FhirResource {
   resourceType: "Observation";
   status: string;
   subject?: { reference?: string };
@@ -37,7 +37,7 @@ function mapObservation(resource: FhirObservation): FunctionalMetric | null {
   };
 }
 
-function toFhir(metric: FunctionalMetric): FhirObservation {
+export function mapMetricToFhir(metric: FunctionalMetric): FhirObservation {
   const definition = DEFINITIONS[metric.code];
   return {
     resourceType: "Observation", id: metric.id, status: "final",
@@ -71,7 +71,7 @@ export function createFhirMetricRepository(client: FhirClient): MetricRepository
         }
         return;
       }
-      await client.put<FhirObservation>(`Observation/${metric.id}`, toFhir(metric));
+      await client.put<FhirObservation>(`Observation/${metric.id}`, mapMetricToFhir(metric));
     },
   };
 }

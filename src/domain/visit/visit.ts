@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { visitClinicalEntriesSchema } from "./clinical-entry";
 
 export const metricCodeSchema = z.enum([
   "tug_seconds", "pain_nrs_0_10", "standing_tolerance_minutes", "gait_duration_minutes",
@@ -17,6 +18,7 @@ export interface FunctionalMetric {
 }
 
 export interface ClinicalNote {
+  statusAndResponse?: string;
   subjective?: string;
   objective?: string;
   intervention?: string;
@@ -30,11 +32,14 @@ export interface Visit {
   id: string;
   patientId: string;
   treatmentId: string;
-  status: "in-progress" | "finished";
+  status: "in-progress" | "finished" | "entered-in-error";
   startedAt: string;
   endedAt?: string;
   captureMode?: "live" | "retrospective";
   recordedAt?: string;
+  appointmentId?: string;
+  version?: string;
+  legacyStartPunctuality?: "on-time" | "delayed" | "severely-delayed";
   clinicalNote?: ClinicalNote;
 }
 
@@ -42,16 +47,17 @@ export const createVisitSchema = z.object({
   clientVisitId: z.uuid(),
   patientId: z.string().regex(/^[A-Za-z0-9.-]{1,64}$/),
   treatmentId: z.string().regex(/^[A-Za-z0-9.-]{1,64}$/),
+  appointmentId: z.string().regex(/^[A-Za-z0-9.-]{1,64}$/).optional(),
   startedAt: z.iso.datetime({ offset: true }),
   endedAt: z.iso.datetime({ offset: true }),
   captureMode: z.enum(["live", "retrospective"]),
   clinicalNote: z.object({
-    subjective: z.string().trim().min(1).max(2000),
+    statusAndResponse: z.string().trim().min(1).max(2000),
     intervention: z.string().trim().min(1).max(2000),
-    assessment: z.string().trim().min(1).max(2000),
     nextPlan: z.string().trim().max(2000).optional(),
   }),
   metrics: z.array(z.object({ code: metricCodeSchema, value: z.number().finite().nonnegative() })).max(4).default([]),
+  clinicalEntries: visitClinicalEntriesSchema.default({ evaluations: [], procedures: [] }),
 }).superRefine((input, context) => {
   if (new Date(input.endedAt) < new Date(input.startedAt)) {
     context.addIssue({ code: "custom", path: ["endedAt"], message: "La salida debe ser posterior a la entrada." });

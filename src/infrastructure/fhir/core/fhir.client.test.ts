@@ -59,6 +59,28 @@ describe("createFhirClient", () => {
     });
   });
 
+  it("turns a version conflict into a clear reload message", async () => {
+    const client = createFhirClient({
+      baseUrl: "http://localhost:8081/fhir",
+      fetcher: asFetch(async () => Response.json({ resourceType: "OperationOutcome" }, { status: 412 })),
+    });
+    await expect(client.transaction({ resourceType: "Bundle", type: "transaction" })).rejects.toMatchObject({
+      status: 412,
+      safeMessage: "El registro cambió en otro dispositivo. Recargá la pantalla antes de continuar.",
+    });
+  });
+
+  it("sanitizes a network failure", async () => {
+    const client = createFhirClient({
+      baseUrl: "http://localhost:8081/fhir",
+      fetcher: asFetch(async () => { throw new TypeError("connection refused"); }),
+    });
+    await expect(client.get("Appointment")).rejects.toMatchObject({
+      kind: "network",
+      safeMessage: "No se pudo acceder al servidor clínico en este momento.",
+    });
+  });
+
   it("refuses to follow a URL outside the configured FHIR endpoint", async () => {
     const client = createFhirClient({
       baseUrl: "http://localhost:8081/fhir",
