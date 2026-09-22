@@ -37,8 +37,8 @@ export async function createPatient(raw: unknown, dependencies: Dependencies) {
 }
 
 export async function updatePatient(raw: unknown, expectedVersion: string | undefined, dependencies: Dependencies) {
-  const input = patientInputSchema.parse(raw);
-  const current = await dependencies.patients.getById(clientId("patient", input.clientId));
+  const input = z.object({ clientId: z.string().min(1).max(64), givenName: text, familyName: text, phone: text, address: text, accessInstructions: optionalText }).parse(raw);
+  const current = await dependencies.patients.getById(input.clientId);
   if (!current) throw new AdministrationStateError("La ficha ya no está disponible.");
   if (current.version !== expectedVersion) throw new AdministrationStateError("La ficha cambió en otro dispositivo. Recargá la pantalla.");
   const patient: Patient = { ...current, givenName: input.givenName, familyName: input.familyName, phone: input.phone, address: input.address, accessInstructions: input.accessInstructions };
@@ -61,6 +61,21 @@ export async function beginTreatment(raw: unknown, dependencies: Dependencies) {
   if (active) throw new AdministrationStateError("Este paciente ya tiene un tratamiento activo.");
   const treatment: Treatment = { id: clientId("treatment", input.clientId), patientId: patient.id, status: "active", startDate: input.startDate, plannedSessionCount: input.plannedSessionCount, plannedFrequency: input.plannedFrequency, clinicalContext: { initialFunctionalStatus: input.initialFunctionalStatus, therapeuticGoals: input.therapeuticGoals, frameworkPlan: input.frameworkPlan }, precautions: input.precautions, diagnosisReferences: input.diagnoses.map((item) => ({ kind: item.kind, conditionId: clientId("condition", item.clientId) })), statusHistory: [{ status: "active", startedAt: now.toISOString() }] };
   await dependencies.administration.startTreatment(treatment, input.diagnoses.map((item) => ({ id: clientId("condition", item.clientId), patientId: patient.id, text: item.text, recordedAt: now.toISOString() })));
+  return treatment;
+}
+
+export async function updateTreatment(raw: unknown, expectedVersion: string | undefined, dependencies: Dependencies) {
+  const values = raw as Record<string, unknown>;
+  const input = z.object({ patientId: z.string().min(1), clientId: z.string().min(1), startDate: z.iso.date(), plannedSessionCount: z.coerce.number().int().min(1).max(500), plannedFrequency: text, initialFunctionalStatus: optionalText, therapeuticGoals: optionalText, frameworkPlan: optionalText, precautions: z.array(z.string().trim().min(1).max(300)).max(20).default([]), diagnoses: z.array(z.object({ clientId: z.string().trim().min(1).max(128), text, kind: z.enum(["medical_reference", "kinesiologic_diagnosis"]) })).max(20).default([]) }).parse(values);
+  const treatmentId = typeof values.treatmentId === "string" ? values.treatmentId : "";
+  const current = await dependencies.treatments.getById(treatmentId);
+  if (!current) throw new AdministrationStateError("El tratamiento ya no está disponible.");
+  if (current.version !== expectedVersion) throw new AdministrationStateError("El tratamiento cambió en otro dispositivo. Recargá la pantalla.");
+  if (current.patientId !== input.patientId) throw new AdministrationStateError("El tratamiento no pertenece a este paciente.");
+  const conditionId = (value: string) => value.startsWith("condition-") || value.startsWith("demo-") ? value : clientId("condition", value);
+  const treatment: Treatment = { ...current, plannedSessionCount: input.plannedSessionCount, plannedFrequency: input.plannedFrequency, clinicalContext: { initialFunctionalStatus: input.initialFunctionalStatus, therapeuticGoals: input.therapeuticGoals, frameworkPlan: input.frameworkPlan }, precautions: input.precautions, diagnosisReferences: input.diagnoses.map((item) => ({ kind: item.kind, conditionId: conditionId(item.clientId) })) };
+  const now = dependencies.clock?.now() ?? new Date();
+  await dependencies.administration.putTreatment(treatment, input.diagnoses.map((item) => ({ id: conditionId(item.clientId), patientId: current.patientId, text: item.text, recordedAt: now.toISOString() })), current.version);
   return treatment;
 }
 
