@@ -19,10 +19,10 @@ function appointmentEntry(appointment: ScheduledVisit): TransactionEntry {
   return { resource: mapScheduledVisitToFhir(appointment), request: { method: "PUT", url: `Appointment/${appointment.id}`, ...(version(appointment.version) ? { ifMatch: version(appointment.version) } : {}) } };
 }
 function metricEntry(metric: FunctionalMetric): TransactionEntry {
-  return { resource: mapMetricToFhir(metric), request: { method: "PUT", url: `Observation/${metric.id}` } };
+  return { resource: mapMetricToFhir(metric), request: { method: "PUT", url: `Observation/${metric.id}`, ...(version(metric.version) ? { ifMatch: version(metric.version) } : {}) } };
 }
-function evaluationEntry(value: ClinicalEvaluation): TransactionEntry { return { resource: mapClinicalEvaluationToFhir(value), request: { method: "PUT", url: `Observation/${value.id}` } }; }
-function procedureEntry(value: PerformedProcedure): TransactionEntry { return { resource: mapPerformedProcedureToFhir(value), request: { method: "PUT", url: `Procedure/${value.id}` } }; }
+function evaluationEntry(value: ClinicalEvaluation): TransactionEntry { return { resource: mapClinicalEvaluationToFhir(value), request: { method: "PUT", url: `Observation/${value.id}`, ...(version(value.version) ? { ifMatch: version(value.version) } : {}) } }; }
+function procedureEntry(value: PerformedProcedure): TransactionEntry { return { resource: mapPerformedProcedureToFhir(value), request: { method: "PUT", url: `Procedure/${value.id}`, ...(version(value.version) ? { ifMatch: version(value.version) } : {}) } }; }
 
 export function createFhirClinicalWorkflowRepository(client: FhirClient): ClinicalWorkflowRepository {
   async function transact(entries: TransactionEntry[]) {
@@ -33,5 +33,7 @@ export function createFhirClinicalWorkflowRepository(client: FhirClient): Clinic
     annul: (visit, appointment) => transact([visitEntry(visit), ...(appointment ? [appointmentEntry(appointment)] : [])]),
     finish: (visit, metrics, evaluations, procedures) => transact([visitEntry(visit), ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry)]),
     completeRetrospective: (visit, metrics, evaluations, procedures, appointment) => transact([visitEntry(visit), ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...(appointment ? [appointmentEntry(appointment)] : [])]),
+    correct: (visit, metrics, evaluations, procedures) => transact([visitEntry(visit), ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry)]),
+    annulFinished: (visit, metrics, evaluations, procedures, appointment) => transact([visitEntry(visit), ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...(appointment ? [appointmentEntry(appointment)] : [])]),
   };
 }

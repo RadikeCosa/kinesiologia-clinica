@@ -8,7 +8,7 @@ export function createFhirPerformedProcedureRepository(client: FhirClient): Perf
     async listByVisitId(id) {
       const query = new URLSearchParams({ encounter: `Encounter/${id}`, _count: "100" });
       const resources = await readAllResourcesByType<FhirProcedure>({ client, path: `Procedure?${query}`, resourceType: "Procedure" });
-      return resources.flatMap((item) => mapFhirPerformedProcedure(item) ?? []);
+      return resources.filter((item) => item.status !== "entered-in-error").flatMap((item) => mapFhirPerformedProcedure(item) ?? []);
     }, async putIfAbsent(procedure) {
       await client.put<FhirProcedure>(`Procedure/${procedure.id}`, mapPerformedProcedureToFhir(procedure));
     }

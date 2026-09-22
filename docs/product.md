@@ -39,9 +39,11 @@ Las prioridades son:
 
 ## Flujo online implementado
 
-`/inicio` es la entrada posterior al ingreso. `Hoy` separa pendientes anteriores, horarios, visitas sin hora y actualizaciones del día. `Agenda` permite recorrer meses y abrir el detalle de cada fecha, manteniendo los pendientes anteriores separados. `Pacientes` permite buscar y filtrar por estado, abrir teléfono, WhatsApp o mapa por acción explícita y acceder a la ficha.
+`/inicio` es la entrada posterior al ingreso. `+ Crear` permite iniciar una ficha de paciente o agendar una visita. `Hoy` separa pendientes anteriores, horarios, visitas sin hora y actualizaciones del día. `Agenda` permite recorrer meses y abrir el detalle de cada fecha, manteniendo los pendientes anteriores separados. `Pacientes` permite buscar y filtrar por estado, incluido **Sin iniciar**, abrir teléfono, WhatsApp o mapa por acción explícita y acceder a la ficha. La ficha muestra cada visita anterior aún pendiente con un enlace que abre directamente sus opciones de resolución en `Hoy`.
 
-La cita representa lo acordado. Puede crearse, reprogramarse conservando la anterior, cancelarse o quedar como no realizada. Un cruce horario advierte y exige confirmación. La atención crea un único `Encounter` en curso, enlazado a la cita cuando existe; puede continuarse, anularse si fue un inicio accidental y finalizarse con evolución y métricas opcionales.
+Una ficha nueva requiere nombre, apellido, teléfono y dirección; las indicaciones para llegar son opcionales. La aplicación advierte una coincidencia exacta de teléfono y permite revisar la ficha previa o crear igualmente. El tratamiento se inicia desde la ficha, sin requerir una solicitud previa: fecha de inicio, sesiones previstas y frecuencia son obligatorias; contexto, precauciones y diagnósticos son opcionales. Un tratamiento puede pausarse, reanudarse o finalizarse, pero no mientras mantenga citas abiertas. Los cambios y sus notas opcionales permanecen en el historial del tratamiento.
+
+La cita representa lo acordado. Puede crearse, reprogramarse conservando la anterior, cancelarse o quedar como no realizada. Entre los motivos figura la ausencia del paciente en el domicilio, con nota opcional. Un cruce horario advierte y exige confirmación. La atención crea un único `Encounter` en curso, enlazado a la cita cuando existe; puede continuarse, anularse si fue un inicio accidental y finalizarse con evolución y métricas opcionales.
 
 La interfaz muestra puntualidad de inicio y demora de documentación a partir de los horarios crudos. Las tendencias y resúmenes agregados pertenecen a los informes posteriores.
 
@@ -51,9 +53,9 @@ Una visita prevista sin horario puede comenzar en el momento mediante una confir
 
 La visita habitual exige solo **Estado y respuesta** e **Intervención realizada**. **Próximo paso**, **Evaluaciones** y **Procedimientos** permanecen plegados mientras estén vacíos. El mismo editor se usa al finalizar una visita en vivo y al cargar una atención de forma diferida.
 
-Las evaluaciones admiten cantidad, resultado categórico, sí/no, narrativa o ausencia justificada. Una identidad de serie estable permite repetirlas y revisar sus valores cronológicos desde la ficha del paciente. La aplicación muestra los datos registrados sin calcular progreso ni emitir interpretaciones clínicas. Los procedimientos identifican familias realizadas; el detalle clínico conjunto continúa en la narrativa de intervención.
+Las evaluaciones admiten medida numérica, categoría, sí/no, descripción o ausencia justificada. **Nueva evaluación** abre un registro vacío; cambiar de dominio dentro del editor también limpia el nombre, el resultado y el contexto anteriores para no arrastrar una evaluación distinta. Dolor NRS permite elegir un número entero de 0 a 10 con teclado o barra visual, sincronizados y sin valor inicial. Las tarjetas de la visita destacan el resultado, muestran el contexto principal y permiten desplegar el resto; el color refuerza visualmente la intensidad NRS sin asignar categorías clínicas automáticas. Una identidad de serie estable permite repetirlas y revisar sus resultados cronológicos desde la ficha del paciente. La aplicación muestra los datos registrados sin calcular progreso ni emitir interpretaciones clínicas. Los procedimientos identifican familias realizadas; el detalle clínico conjunto continúa en la narrativa de intervención.
 
-El detalle confirmado sigue una narrativa estable: contexto temporal, estado y respuesta, evaluaciones, intervención y procedimientos, próximo paso e información operativa. Cada evaluación de una visita enlaza directamente con todos los registros de su misma serie en la ficha del paciente.
+El detalle confirmado prioriza horarios efectivos y puntualidad, cómo estaba y cómo respondió el paciente, evaluaciones, qué se hizo y próximo paso. La información operativa queda desplegable. Cada evaluación enlaza con su serie longitudinal. Una visita confirmada puede corregirse con motivo obligatorio o anularse si fue registrada por error; la anulación la retira de los conteos y del seguimiento vigente sin borrarla definitivamente.
 
 ## Fuera de V1
 

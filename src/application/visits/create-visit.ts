@@ -30,7 +30,7 @@ export async function createVisit(rawInput: unknown, dependencies: {
   visits: Pick<VisitRepository, "getById" | "put">;
   metrics: Pick<MetricRepository, "listByVisitId" | "putIfAbsent">;
   scheduledVisits?: ScheduledVisitRepository;
-  workflow?: ClinicalWorkflowRepository;
+  workflow?: Pick<ClinicalWorkflowRepository, "completeRetrospective">;
   evaluations?: ClinicalEvaluationRepository;
   procedures?: PerformedProcedureRepository;
 }) {

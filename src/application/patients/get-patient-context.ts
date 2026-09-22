@@ -11,17 +11,16 @@ export async function getPatientContext(id: string, dependencies: {
   if (!/^[A-Za-z0-9.-]{1,64}$/.test(id)) return null;
   const patient = await dependencies.patients.getById(id);
   if (!patient) return null;
-  const treatment = selectMostRecentTreatment(
-    (await dependencies.treatments.listActive()).filter((item) => item.patientId === id),
-  );
-  if (!treatment) return null;
+  const treatments = dependencies.treatments.listByPatientId ? await dependencies.treatments.listByPatientId(id) : (await dependencies.treatments.listDirectory()).filter((item) => item.patientId === id);
+  const treatment = selectMostRecentTreatment(treatments.filter((item) => item.status === "active")) ?? selectMostRecentTreatment(treatments);
   const diagnoses = await dependencies.conditions.listByIds(
-    treatment.diagnosisReferences?.map((item) => item.conditionId) ?? [],
+    treatment?.diagnosisReferences?.map((item) => item.conditionId) ?? [],
   );
   return {
     patient,
     treatment,
-    diagnoses: (treatment.diagnosisReferences ?? []).flatMap((reference) => {
+    treatments,
+    diagnoses: (treatment?.diagnosisReferences ?? []).flatMap((reference) => {
       const diagnosis = diagnoses.find((item) => item.id === reference.conditionId && item.patientId === id);
       return diagnosis ? [{ ...diagnosis, kind: reference.kind }] : [];
     }),

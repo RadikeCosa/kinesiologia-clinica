@@ -9,7 +9,7 @@ const instant = (offset, time) => `${day(offset)}T${time}:00-03:00`;
 const addMinutes = (value, minutes) => new Date(new Date(value).getTime() + minutes * 60_000).toISOString();
 const url = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/";
 const diagnosisRoleSystem = "https://kinesiologiaadomicilio.local/fhir/CodeSystem/episodeofcare-diagnosis-role-v1";
-const seededPatientIds = ["demo-rosa", "demo-alicia", "demo-carlos", "demo-mario", "demo-elena"];
+const seededPatientIds = ["demo-rosa", "demo-alicia", "demo-carlos", "demo-mario", "demo-elena", "demo-lucia"];
 const seededVisitIds = new Set(["demo-visit-rosa-1", "demo-visit-rosa-2", "demo-visit-alicia-1", "demo-visit-carlos-1"]);
 
 async function put(type, id, resource) {
@@ -40,6 +40,7 @@ const patients = [
   ["demo-carlos", "Carlos", "Méndez", "+5492995550105", "Pasaje Ficticio 84, Neuquén", "Entrada por el portón lateral; hay un escalón alto."],
   ["demo-mario", "Mario", "Acosta", "+5492995550102", "Lago Huechulafquen 830, Neuquén", "Ingresar por cochera; hay un perro en el patio."],
   ["demo-elena", "Elena", "Suárez", "+5492995550103", "Belgrano 1520, Neuquén", "Departamento 2 B; ascensor al fondo."],
+  ["demo-lucia", "Lucía", "Varela", "+5492995550106", "Calle Ficticia 103, Neuquén", "Llamar al llegar; vivienda al fondo."],
 ];
 for (const [id, given, family, phone, address, access] of patients) {
   await put("Patient", id, { name: [{ given: [given], family }], telecom: [{ system: "phone", value: phone }], address: [{ text: address }], extension: [{ url: `${url}patient-home-access-instructions-v1`, valueString: access }] });

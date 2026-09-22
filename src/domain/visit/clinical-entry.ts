@@ -33,8 +33,11 @@ export const clinicalEvaluationInputSchema = z.object({
   result: resultSchema,
   context: contextSchema.optional(),
 }).superRefine((evaluation, issue) => {
-  if (evaluation.name === "Dolor NRS" && (evaluation.result.kind !== "quantity" || evaluation.result.value < 0 || evaluation.result.value > 10)) {
-    issue.addIssue({ code: "custom", path: ["result"], message: "Dolor NRS debe estar entre 0 y 10." });
+  if (evaluation.name === "Dolor NRS" && evaluation.domain !== "pain-symptoms") {
+    issue.addIssue({ code: "custom", path: ["domain"], message: "Dolor NRS corresponde al dominio Dolor y síntomas." });
+  }
+  if (evaluation.name === "Dolor NRS" && (evaluation.result.kind !== "quantity" || !Number.isInteger(evaluation.result.value) || evaluation.result.value < 0 || evaluation.result.value > 10)) {
+    issue.addIssue({ code: "custom", path: ["result"], message: "Dolor NRS debe ser un número entero entre 0 y 10." });
   }
 });
 
@@ -46,6 +49,8 @@ export interface ClinicalEvaluation extends Omit<ClinicalEvaluationInput, "clien
   patientId: string;
   visitId: string;
   effectiveDateTime: string;
+  status?: "final" | "corrected" | "entered-in-error";
+  version?: string;
 }
 
 export const procedureFamilies = ["therapeutic-exercise", "manual-therapy", "gait-transfers", "respiratory", "education-instructions", "environment-assistive-devices", "other"] as const;
@@ -64,6 +69,8 @@ export interface PerformedProcedure extends PerformedProcedureInput {
   visitId: string;
   performedStart: string;
   performedEnd: string;
+  status?: "completed" | "entered-in-error";
+  version?: string;
 }
 
 export const visitClinicalEntriesSchema = z.object({

@@ -7,4 +7,6 @@ export interface ClinicalWorkflowRepository {
   annul(visit: Visit, appointment?: ScheduledVisit): Promise<void>;
   finish(visit: Visit, metrics: FunctionalMetric[], evaluations: ClinicalEvaluation[], procedures: PerformedProcedure[]): Promise<void>;
   completeRetrospective(visit: Visit, metrics: FunctionalMetric[], evaluations: ClinicalEvaluation[], procedures: PerformedProcedure[], appointment?: ScheduledVisit): Promise<void>;
+  correct(visit: Visit, metrics: FunctionalMetric[], evaluations: ClinicalEvaluation[], procedures: PerformedProcedure[]): Promise<void>;
+  annulFinished(visit: Visit, metrics: FunctionalMetric[], evaluations: ClinicalEvaluation[], procedures: PerformedProcedure[], appointment?: ScheduledVisit): Promise<void>;
 }

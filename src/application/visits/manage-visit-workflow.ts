@@ -34,7 +34,7 @@ type Dependencies = {
   visits: VisitRepository;
   metrics: MetricRepository;
   scheduledVisits: ScheduledVisitRepository;
-  workflow: ClinicalWorkflowRepository;
+  workflow: Pick<ClinicalWorkflowRepository, "start" | "annul" | "finish">;
   evaluations?: ClinicalEvaluationRepository;
   procedures?: PerformedProcedureRepository;
   clock?: Clock;

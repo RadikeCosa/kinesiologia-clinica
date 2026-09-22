@@ -44,7 +44,7 @@ function localDateFromInstant(value: string): string {
 }
 
 function isReason(value?: string): value is ScheduleChangeReason {
-  return ["patient-or-family", "professional", "health-event", "logistics-or-weather", "other"].includes(value ?? "");
+  return ["patient-or-family", "patient-not-at-home", "professional", "health-event", "logistics-or-weather", "other"].includes(value ?? "");
 }
 
 export function mapFhirAppointment(resource: FhirAppointment): ScheduledVisit | null {

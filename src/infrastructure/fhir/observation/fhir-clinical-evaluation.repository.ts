@@ -7,7 +7,7 @@ export function createFhirClinicalEvaluationRepository(client: FhirClient): Clin
   async function list(parameter: "encounter" | "subject", reference: string) {
     const query = new URLSearchParams({ [parameter]: reference, _count: "200" });
     const resources = await readAllResourcesByType<FhirClinicalObservation>({ client, path: `Observation?${query}`, resourceType: "Observation" });
-    return resources.flatMap((item) => mapFhirClinicalEvaluation(item) ?? []);
+    return resources.filter((item) => item.status !== "entered-in-error").flatMap((item) => mapFhirClinicalEvaluation(item) ?? []);
   }
   return {
     listByVisitId: async (id) => list("encounter", `Encounter/${id}`),

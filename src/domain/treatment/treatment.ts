@@ -16,6 +16,13 @@ export interface Treatment {
   plannedFrequency?: string;
   plannedSessionCount?: number;
   precautions?: string[];
+  version?: string;
+  statusHistory?: Array<{
+    status: "active" | "paused" | "finished";
+    startedAt?: string;
+    endedAt?: string;
+    note?: string;
+  }>;
 }
 
 function toSafeTimestamp(value: string): number | null {

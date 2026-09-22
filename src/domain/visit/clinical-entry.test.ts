@@ -12,6 +12,9 @@ describe("clinical evaluation", () => {
 
   it("validates Pain NRS and the visit limit", () => {
     expect(() => clinicalEvaluationInputSchema.parse({ ...base, name: "Dolor NRS", result: { kind: "quantity", value: 11 } })).toThrow();
+    expect(() => clinicalEvaluationInputSchema.parse({ ...base, name: "Dolor NRS", result: { kind: "quantity", value: 4.5 } })).toThrow();
+    expect(() => clinicalEvaluationInputSchema.parse({ ...base, domain: "joint-mobility", name: "Dolor NRS", result: { kind: "quantity", value: 4 } })).toThrow();
+    expect(clinicalEvaluationInputSchema.parse({ ...base, name: "Dolor NRS", result: { kind: "quantity", value: 0 } }).result).toMatchObject({ value: 0 });
     expect(() => visitClinicalEntriesSchema.parse({ evaluations: Array.from({ length: 21 }, (_, index) => ({ ...base, clientId: `11111111-1111-4111-8111-${String(index).padStart(12, "0")}`, result: { kind: "narrative", value: "Ficticio" } })), procedures: [] })).toThrow();
   });
 

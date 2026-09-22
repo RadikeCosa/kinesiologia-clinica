@@ -5,6 +5,10 @@ import type { FhirResource } from "@/infrastructure/fhir/core/fhir.types";
 const BASE = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-clinical-";
 const CAPTURE_MODE_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-capture-mode-v1";
 const RECORDED_AT_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-recorded-at-v1";
+const CORRECTED_AT_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-corrected-at-v1";
+const CORRECTION_REASON_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-correction-reason-v1";
+const ANNULLED_AT_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-annulled-at-v1";
+const ANNUL_REASON_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-annul-reason-v1";
 const LEGACY_PUNCTUALITY_URL = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-operational-punctuality-v1";
 const NOTE_FIELDS = ["statusAndResponse", "subjective", "objective", "intervention", "assessment", "tolerance", "homeInstructions", "nextPlan"] as const;
 const SUFFIX = { statusAndResponse: "status-and-response-v1", subjective: "subjective", objective: "objective", intervention: "intervention", assessment: "assessment", tolerance: "tolerance", homeInstructions: "home-instructions", nextPlan: "next-plan" };
@@ -42,6 +46,10 @@ export function mapFhirEncounter(resource: FhirEncounter): Visit {
     endedAt: resource.period?.end,
     captureMode: resource.extension?.find((item) => item.url === CAPTURE_MODE_URL)?.valueString === "live" ? "live" : resource.extension?.find((item) => item.url === CAPTURE_MODE_URL)?.valueString === "retrospective" ? "retrospective" : undefined,
     recordedAt: resource.extension?.find((item) => item.url === RECORDED_AT_URL)?.valueString,
+    correctedAt: resource.extension?.find((item) => item.url === CORRECTED_AT_URL)?.valueString,
+    correctionReason: resource.extension?.find((item) => item.url === CORRECTION_REASON_URL)?.valueString,
+    annulledAt: resource.extension?.find((item) => item.url === ANNULLED_AT_URL)?.valueString,
+    annulReason: resource.extension?.find((item) => item.url === ANNUL_REASON_URL)?.valueString,
     appointmentId: extractIdFromReference(resource.appointment?.[0]?.reference),
     version: resource.meta?.versionId,
     legacyStartPunctuality: (() => {
@@ -59,6 +67,10 @@ export function mapVisitToFhir(visit: Visit): FhirEncounter {
   });
   if (visit.captureMode) extension.push({ url: CAPTURE_MODE_URL, valueString: visit.captureMode });
   if (visit.recordedAt) extension.push({ url: RECORDED_AT_URL, valueString: visit.recordedAt });
+  if (visit.correctedAt) extension.push({ url: CORRECTED_AT_URL, valueString: visit.correctedAt });
+  if (visit.correctionReason) extension.push({ url: CORRECTION_REASON_URL, valueString: visit.correctionReason });
+  if (visit.annulledAt) extension.push({ url: ANNULLED_AT_URL, valueString: visit.annulledAt });
+  if (visit.annulReason) extension.push({ url: ANNUL_REASON_URL, valueString: visit.annulReason });
   return {
     resourceType: "Encounter",
     id: visit.id,

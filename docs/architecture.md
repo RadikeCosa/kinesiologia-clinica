@@ -35,7 +35,9 @@ La ruta exige autenticación, `NODE_ENV=development` y el endpoint descartable `
 
 ## Pantalla inicial y agenda real
 
-`/inicio` compone un modelo de vista desde repositorios de pacientes, tratamientos, citas y visitas. La UI no recibe recursos FHIR. `/patients` redirige a su vista Pacientes y las fichas permanecen bajo `/patients/[id]`.
+`/inicio` compone un modelo de vista desde repositorios de pacientes, tratamientos, citas y visitas. La UI no recibe recursos FHIR. `/patients` redirige a su vista Pacientes y las fichas permanecen bajo `/patients/[id]`. El directorio lee también fichas sin `EpisodeOfCare`, proyectadas como `Sin iniciar`.
+
+Las altas y los cambios de tratamiento forman un caso de uso administrativo separado. `Patient` se crea mediante `PUT` idempotente y las altas de `EpisodeOfCare` con sus `Condition` opcionales se escriben en una transacción. Las actualizaciones de `Patient` y `EpisodeOfCare` usan la versión FHIR con `If-Match`. `EpisodeOfCare.statusHistory` guarda los períodos de actividad y pausa; una extensión local repetible conserva la nota opcional de cada transición porque el adaptador no depende de `note[]` para ese dato.
 
 Las escrituras que cambian cita y visita se envían como transacciones FHIR. Las actualizaciones usan la versión leída mediante `If-Match`; una respuesta `412` se traduce en una indicación de recarga. Los identificadores generados por el cliente permiten repetir una operación sin duplicarla. El reloj es inyectable en aplicación y las reglas de día usan `America/Argentina/Buenos_Aires`.
 
@@ -64,6 +66,8 @@ Ingresar
 ```
 
 El cierre de visita construye una única transacción FHIR con todos los recursos asociados. Los identificadores derivados de la visita y de la entrada del cliente hacen seguro el reintento. La UI reutiliza un componente clínico en el flujo en vivo y en la carga diferida; los recursos FHIR continúan aislados en infraestructura.
+
+La corrección de una visita confirmada reutiliza su `Encounter` y exige versión y motivo. Actualiza el registro y las evaluaciones y procedimientos afectados en una transacción; los retirados pasan a `entered-in-error`. Anular un registro confirmado marca `Encounter`, observaciones y procedimientos vigentes como `entered-in-error` y restaura la cita vinculada a pendiente. Las lecturas clínicas excluyen esos recursos del seguimiento activo; el motivo y la fecha de la operación quedan en extensiones del `Encounter`.
 
 Se portarán reglas y pruebas de forma selectiva desde el proyecto anterior. No se copiarán layouts, formularios ni componentes de `/admin` como base visual.
 

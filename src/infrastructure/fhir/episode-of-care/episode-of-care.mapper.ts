@@ -4,6 +4,7 @@ import type { FhirEpisodeOfCare } from "./episode-of-care.fhir";
 
 const CONTEXT_BASE = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/";
 const DIAGNOSIS_ROLE_SYSTEM = "https://kinesiologiaadomicilio.local/fhir/CodeSystem/episodeofcare-diagnosis-role-v1";
+const STATUS_CHANGE_URL = `${CONTEXT_BASE}episodeofcare-status-change-v1`;
 
 function readContext(episode: FhirEpisodeOfCare) {
   const read = (suffix: string) => episode.extension?.find((entry) => entry.url === `${CONTEXT_BASE}${suffix}`)?.valueString?.trim() || undefined;
@@ -40,6 +41,21 @@ export function mapFhirEpisodeOfCare(
     plannedSessionCount: episode.extension?.find((entry) => entry.url === `${CONTEXT_BASE}episodeofcare-planned-session-count-v1`)?.valuePositiveInt,
     precautions: (() => {
       const values = episode.extension?.filter((entry) => entry.url === `${CONTEXT_BASE}episodeofcare-precaution-v1`).map((entry) => entry.valueString?.trim()).filter((value): value is string => Boolean(value)) ?? [];
+      return values.length ? values : undefined;
+    })(),
+    version: episode.meta?.versionId?.trim() || undefined,
+    statusHistory: (() => {
+      const notes = episode.extension?.filter((entry) => entry.url === STATUS_CHANGE_URL).map((entry) => ({
+        status: entry.extension?.find((part) => part.url === "status")?.valueCode,
+        at: entry.extension?.find((part) => part.url === "at")?.valueDateTime,
+        note: entry.extension?.find((part) => part.url === "note")?.valueString,
+      })) ?? [];
+      const values = (episode.statusHistory ?? []).flatMap((entry) => {
+        const status = entry.status === "onhold" ? "paused" : entry.status;
+        if (status !== "active" && status !== "paused" && status !== "finished") return [];
+        const note = notes.find((item) => item.status === status && item.at === entry.period?.start)?.note;
+        return [{ status: status as "active" | "paused" | "finished", startedAt: entry.period?.start, endedAt: entry.period?.end, note }];
+      });
       return values.length ? values : undefined;
     })(),
   };

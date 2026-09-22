@@ -2,7 +2,7 @@ import type { FhirResource } from "@/infrastructure/fhir/core/fhir.types";
 
 export interface FhirPatient extends FhirResource {
   resourceType: "Patient";
-  meta?: { lastUpdated?: string };
+  meta?: { versionId?: string; lastUpdated?: string };
   name?: Array<{
     family?: string;
     given?: string[];

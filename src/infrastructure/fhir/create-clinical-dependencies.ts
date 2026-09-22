@@ -11,6 +11,7 @@ import { createFhirScheduledVisitRepository } from "./appointment/fhir-scheduled
 import { createFhirClinicalWorkflowRepository } from "./encounter/fhir-clinical-workflow.repository";
 import { createFhirClinicalEvaluationRepository } from "./observation/fhir-clinical-evaluation.repository";
 import { createFhirPerformedProcedureRepository } from "./procedure/fhir-performed-procedure.repository";
+import { createFhirClinicalAdministrationRepository } from "./administration/fhir-clinical-administration.repository";
 
 export function createClinicalDependencies() {
   const config = readFhirConfig();
@@ -26,5 +27,6 @@ export function createClinicalDependencies() {
     procedures: createFhirPerformedProcedureRepository(client),
     scheduledVisits: createFhirScheduledVisitRepository(client),
     workflow: createFhirClinicalWorkflowRepository(client),
+    administration: createFhirClinicalAdministrationRepository(client),
   };
 }

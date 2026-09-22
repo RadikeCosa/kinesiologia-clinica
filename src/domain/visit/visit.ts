@@ -15,6 +15,8 @@ export interface FunctionalMetric {
   value: number;
   effectiveDateTime: string;
   unit: string;
+  status?: "final" | "corrected" | "entered-in-error";
+  version?: string;
 }
 
 export interface ClinicalNote {
@@ -41,6 +43,10 @@ export interface Visit {
   version?: string;
   legacyStartPunctuality?: "on-time" | "delayed" | "severely-delayed";
   clinicalNote?: ClinicalNote;
+  correctedAt?: string;
+  correctionReason?: string;
+  annulledAt?: string;
+  annulReason?: string;
 }
 
 export const createVisitSchema = z.object({

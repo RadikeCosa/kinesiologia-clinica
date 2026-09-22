@@ -23,7 +23,7 @@ export function deriveStartPunctuality(visit: Visit, appointment?: ScheduledVisi
 export function deriveDocumentationTimeliness(visit: Visit): DocumentationTimeliness | undefined {
   if (!visit.endedAt || !visit.recordedAt) return undefined;
   const delay = (new Date(visit.recordedAt).getTime() - new Date(visit.endedAt).getTime()) / 60_000;
-  if (!Number.isFinite(delay)) return undefined;
+  if (!Number.isFinite(delay) || delay < 0) return undefined;
   if (delay <= 60) return "at-the-time";
   return localDate(visit.endedAt) === localDate(visit.recordedAt) ? "same-day" : "later";
 }

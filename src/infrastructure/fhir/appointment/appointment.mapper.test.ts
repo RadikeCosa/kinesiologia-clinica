@@ -24,4 +24,9 @@ describe("appointment mapper", () => {
     expect(resource).toMatchObject({ status: "proposed", requestedPeriod: [{ start: "2026-09-20T00:00:00-03:00", end: "2026-09-21T00:00:00-03:00" }] });
     expect(resource.start).toBeUndefined();
   });
+
+  it("preserves a patient absent from home as a specific reason", () => {
+    const visit = { ...createScheduledVisitFromInput(createScheduledVisitSchema.parse({ ...base, time: "10:30" }), "2026-09-15T12:00:00Z"), status: "no-show" as const, changeReason: "patient-not-at-home" as const, changeNote: "Control médico ficticio" };
+    expect(mapFhirAppointment(mapScheduledVisitToFhir(visit))).toMatchObject({ changeReason: "patient-not-at-home", changeNote: "Control médico ficticio" });
+  });
 });

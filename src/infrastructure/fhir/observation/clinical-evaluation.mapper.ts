@@ -40,7 +40,7 @@ export function mapClinicalEvaluationToFhir(value: ClinicalEvaluation): FhirClin
   if (value.context?.conditions) extension.push({ url: CONDITIONS_URL, valueString: value.context.conditions });
   const result = value.result;
   return {
-    resourceType: "Observation", id: value.id, status: "final", extension,
+    resourceType: "Observation", id: value.id, status: value.status ?? "final", extension,
     category: [{ coding: [{ system: DOMAIN_SYSTEM, code: value.domain }] }],
     code: { coding: [{ system: EVALUATION_SYSTEM, code: value.name === "Dolor NRS" ? "pain-nrs" : "custom-evaluation", display: value.name }], text: value.name },
     subject: { reference: `Patient/${value.patientId}` }, encounter: { reference: `Encounter/${value.visitId}` }, effectiveDateTime: value.effectiveDateTime,
@@ -82,5 +82,5 @@ export function mapFhirClinicalEvaluation(resource: FhirClinicalObservation): Cl
     interpretation: resource.note?.[0]?.text,
   };
   const hasContext = Object.values(context).some(Boolean);
-  return { id: resource.id, clientId: resource.id.replace(/^evaluation-/, ""), seriesId, patientId, visitId, effectiveDateTime: resource.effectiveDateTime, domain, name, result, ...(hasContext ? { context } : {}) };
+  return { id: resource.id, clientId: resource.id.replace(/^evaluation-/, ""), seriesId, patientId, visitId, effectiveDateTime: resource.effectiveDateTime, domain, name, result, ...(resource.status !== "final" ? { status: resource.status as ClinicalEvaluation["status"] } : {}), ...(resource.meta?.versionId ? { version: resource.meta.versionId } : {}), ...(hasContext ? { context } : {}) };
 }

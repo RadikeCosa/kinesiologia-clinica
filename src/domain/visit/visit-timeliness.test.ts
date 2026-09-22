@@ -17,6 +17,7 @@ describe("visit timeliness", () => {
     expect(deriveDocumentationTimeliness(visit)).toBe("at-the-time");
     expect(deriveDocumentationTimeliness({ ...visit, recordedAt: "2026-09-15T18:00:00Z" })).toBe("same-day");
     expect(deriveDocumentationTimeliness({ ...visit, recordedAt: "2026-09-16T04:00:00Z" })).toBe("later");
+    expect(deriveDocumentationTimeliness({ ...visit, endedAt: "2026-09-15T15:00:00Z" })).toBeUndefined();
   });
 
   it("falls back to the historical indicator without an appointment", () => {

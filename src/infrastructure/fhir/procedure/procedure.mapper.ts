@@ -17,7 +17,7 @@ export interface FhirProcedure extends FhirResource {
 }
 
 export function mapPerformedProcedureToFhir(value: PerformedProcedure): FhirProcedure {
-  return { resourceType: "Procedure", id: value.id, status: "completed",
+  return { resourceType: "Procedure", id: value.id, status: value.status ?? "completed",
     code: { coding: [{ system: PROCEDURE_SYSTEM, code: value.family, display: PROCEDURE_LABELS[value.family] }], text: value.family === "other" ? value.otherName : PROCEDURE_LABELS[value.family] },
     subject: { reference: `Patient/${value.patientId}` }, encounter: { reference: `Encounter/${value.visitId}` },
     performedPeriod: { start: value.performedStart, end: value.performedEnd },
@@ -29,5 +29,5 @@ export function mapFhirPerformedProcedure(resource: FhirProcedure): PerformedPro
   const patientId = extractIdFromReference(resource.subject?.reference), visitId = extractIdFromReference(resource.encounter?.reference);
   if (!resource.id || !patientId || !visitId || !resource.performedPeriod?.start || !resource.performedPeriod.end || !coding?.code || !(coding.code in PROCEDURE_LABELS)) return null;
   const family = coding.code as ProcedureFamily;
-  return { id: resource.id, patientId, visitId, family, ...(family === "other" && resource.code?.text ? { otherName: resource.code.text } : {}), performedStart: resource.performedPeriod.start, performedEnd: resource.performedPeriod.end };
+  return { id: resource.id, patientId, visitId, family, ...(family === "other" && resource.code?.text ? { otherName: resource.code.text } : {}), performedStart: resource.performedPeriod.start, performedEnd: resource.performedPeriod.end, ...(resource.status !== "completed" ? { status: resource.status as PerformedProcedure["status"] } : {}), ...(resource.meta?.versionId ? { version: resource.meta.versionId } : {}) };
 }

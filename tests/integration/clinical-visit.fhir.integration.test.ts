@@ -85,7 +85,7 @@ describeIntegration("clinical visit FHIR contract", () => {
 
   it("reads treatment context and diagnosis without exposing FHIR resources", async () => {
     const context = await getPatientContext(patientId, dependencies);
-    expect(context?.treatment.clinicalContext?.therapeuticGoals).toBe("Objetivo ficticio de prueba");
+    expect(context?.treatment?.clinicalContext?.therapeuticGoals).toBe("Objetivo ficticio de prueba");
     expect(context?.diagnoses).toContainEqual(expect.objectContaining({
       kind: "medical_reference", text: "Diagnóstico ficticio para prueba",
     }));

@@ -3,7 +3,8 @@ import { expect, test } from "@playwright/test";
 test("la navegación principal y los diálogos funcionan en viewport móvil", async ({ page }) => {
   await page.goto("/inicio?vista=pacientes");
   await expect(page.getByRole("heading", { level: 1, name: "Pacientes" })).toBeVisible();
-  await page.getByRole("button", { name: /Agendar/ }).first().click();
+  await page.getByRole("button", { name: /Crear: Agendar/ }).click();
+  await page.getByRole("button", { name: "Agendar visita" }).last().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
@@ -27,7 +28,8 @@ test("muestra una semana compacta y conserva el día al agendar", async ({ page 
   await expect(page).toHaveURL(/fecha=\d{4}-\d{2}-\d{2}/);
   await expect(tomorrow).toHaveAttribute("aria-pressed", "true");
 
-  await page.getByRole("button", { name: /Agendar/ }).first().click();
+  await page.getByRole("button", { name: /Crear: Agendar/ }).click();
+  await page.getByRole("button", { name: "Agendar visita" }).last().click();
   await expect(page.getByLabel("Fecha")).not.toHaveValue("");
   await page.keyboard.press("Escape");
   expect(selectedDate).toBeTruthy();
@@ -105,6 +107,16 @@ test("una cita demorada puede comenzar ahora o registrarse después", async ({ p
   await expect(page.getByLabel("Carga diferida")).toBeChecked();
 });
 
+test("la ficha móvil permite abrir una visita anterior pendiente", async ({ page }) => {
+  await page.setViewportSize({ width: 356, height: 640 });
+  await page.goto("/patients/demo-rosa");
+  const pending = page.locator(".patient-pending-note");
+  await expect(pending.getByRole("link", { name: "Resolver visita" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await pending.getByRole("link", { name: "Resolver visita" }).click();
+  await expect(page.getByRole("dialog", { name: "Opciones de la visita" })).toBeVisible();
+});
+
 test("el registro breve conserva contexto y módulos ampliables en móvil", async ({ page }) => {
   await page.goto("/patients/demo-rosa/visits/new?modo=diferida");
   await expect(page.getByRole("heading", { name: "Registrar visita realizada" })).toBeVisible();
@@ -113,13 +125,47 @@ test("el registro breve conserva contexto y módulos ampliables en móvil", asyn
   await expect(page.getByRole("button", { name: "Finalizar visita" })).toBeInViewport();
   await expect(page.locator("details.clinical-module").filter({ hasText: "Procedimientos" })).not.toHaveAttribute("open", "");
   await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
-  await page.getByLabel("Valor").fill("4");
+  await expect(page.getByText("Sin elegir")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guardar evaluación" })).toBeDisabled();
+  const painSlider = page.getByRole("slider", { name: "Elegir con la barra" });
+  await painSlider.focus();
+  await painSlider.press("Home");
+  await expect(page.getByLabel("Dolor de 0 a 10")).toHaveValue("0");
+  await page.getByLabel("Dolor de 0 a 10").fill("4");
+  await expect(painSlider).toHaveValue("4");
+  await painSlider.focus();
+  await painSlider.press("ArrowRight");
+  await expect(page.getByLabel("Dolor de 0 a 10")).toHaveValue("5");
+  await page.getByLabel("Dolor de 0 a 10").fill("4.5");
+  await expect(page.getByRole("button", { name: "Guardar evaluación" })).toBeDisabled();
+  await page.getByLabel("Dolor de 0 a 10").fill("4");
   await page.getByText("Agregar contexto").click();
   await page.getByLabel("Región corporal").fill("Rodilla");
   await page.getByRole("button", { name: "Guardar evaluación" }).click();
   await expect(page.getByText("Evaluaciones · 1")).toBeVisible();
   await page.getByRole("button", { name: "Editar" }).click();
   await expect(page.getByLabel("Región corporal")).toHaveValue("Rodilla");
+});
+
+test("cambiar el dominio inicia otra evaluación sin arrastrar Dolor NRS", async ({ page }) => {
+  await page.goto("/patients/demo-rosa/visits/new?modo=diferida");
+  await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
+  await page.getByLabel("Dolor de 0 a 10").fill("4");
+  await page.getByLabel("Área de evaluación").selectOption("joint-mobility");
+
+  await expect(page.getByLabel("¿Qué evaluaste?")).toBeEmpty();
+  await expect(page.getByLabel("Dolor de 0 a 10")).toHaveCount(0);
+  await expect(page.getByLabel("¿Qué observaste?")).toBeVisible();
+  await page.getByLabel("¿Qué evaluaste?").fill("Flexión de rodilla");
+  await page.getByLabel("¿Qué observaste?").fill("Movilidad ficticia limitada");
+  await page.getByRole("button", { name: "Guardar evaluación" }).click();
+
+  await page.getByRole("button", { name: "Nueva evaluación" }).click();
+  await expect(page.getByLabel("¿Qué evaluaste?")).toBeEmpty();
+  await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
+  await page.getByLabel("Dolor de 0 a 10").fill("3");
+  await page.getByRole("button", { name: "Guardar evaluación" }).click();
+  await expect(page.locator(".evaluation-card")).toHaveCount(2);
 });
 
 test("el registro confirmado usa una cabecera clínica compacta en móvil", async ({ page }) => {
@@ -130,5 +176,5 @@ test("el registro confirmado usa una cabecera clínica compacta en móvil", asyn
   await expect(summary).toContainText("En vivo");
   await expect(summary).not.toContainText("2026");
   const headings = page.locator(".visit-narrative-section > h3, .visit-narrative-section .visit-section-heading h3");
-  await expect(headings).toHaveText(["Estado y respuesta", "Evaluaciones", "Intervención realizada", "Próximo paso", "Información del registro"]);
+  await expect(headings).toHaveText(["Cómo estaba y cómo respondió", "Evaluaciones", "Qué se hizo", "Próximo paso"]);
 });

@@ -30,6 +30,7 @@ const STATUS_LABEL: Record<TreatmentStatus, string> = {
   active: "Activo",
   paused: "Pausado",
   finished: "Finalizado",
+  "not-started": "Sin iniciar",
 };
 
 function sessionProgress(patient: HomePatientViewModel, prospective = false) {

@@ -26,6 +26,7 @@ Fundación técnica inicial:
 - agenda FHIR con `Appointment`: creación idempotente, cruce advertido, reprogramación con historial, cancelación y visita no realizada;
 - visitas en vivo enlazadas mediante `Encounter.appointment`, una sola visita en curso, anulación de inicios y registro clínico breve compartido con la carga diferida;
 - evaluaciones longitudinales en `Observation` y familias de procedimientos en `Procedure`, guardadas atómicamente con la visita y visibles desde la ficha del paciente;
+- corrección versionada y anulación justificada de visitas confirmadas, con retiro de las evaluaciones y procedimientos que dejan de ser válidos;
 - indicadores derivados de puntualidad y demora de documentación;
 - reintentos con identidad estable, control de versión y relectura de confirmación desde HAPI;
 - diagnóstico no clínico de compatibilidad WebAuthn por dispositivo;

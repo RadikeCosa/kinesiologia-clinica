@@ -10,6 +10,10 @@ export function createFhirPatientRepository(
   client: FhirClient,
 ): PatientRepository {
   return {
+    async listAll() {
+      const patients = await readAllResourcesByType<FhirPatient>({ client, path: "Patient?_count=200", resourceType: "Patient" });
+      return patients.map(mapFhirPatient).filter((patient) => patient.id);
+    },
     async getById(id) {
       if (!/^[A-Za-z0-9.-]{1,64}$/.test(id)) return null;
       try {

@@ -1,4 +1,4 @@
-export type TreatmentStatus = "active" | "paused" | "finished";
+export type TreatmentStatus = "active" | "paused" | "finished" | "not-started";
 export type TodaySourceState =
   | "scheduled"
   | "in-progress"

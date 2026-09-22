@@ -42,5 +42,10 @@ export function createFhirTreatmentRepository(
       });
       return episodes.map(mapFhirEpisodeOfCare).filter((treatment) => treatment.id && treatment.patientId);
     },
+    async listByPatientId(patientId) {
+      if (!/^[A-Za-z0-9.-]{1,64}$/.test(patientId)) return [];
+      const episodes = await readAllResourcesByType<FhirEpisodeOfCare>({ client, path: `EpisodeOfCare?patient=${encodeURIComponent(patientId)}&_count=200`, resourceType: "EpisodeOfCare" });
+      return episodes.map(mapFhirEpisodeOfCare).filter((item) => item.id && item.patientId === patientId);
+    },
   };
 }

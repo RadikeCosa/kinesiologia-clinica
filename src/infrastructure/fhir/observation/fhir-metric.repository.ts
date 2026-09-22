@@ -34,13 +34,14 @@ function mapObservation(resource: FhirObservation): FunctionalMetric | null {
     id: resource.id, patientId, visitId, code, value: resource.valueQuantity.value,
     effectiveDateTime: resource.effectiveDateTime,
     unit: resource.valueQuantity.unit ?? DEFINITIONS[code].unit,
+    status: resource.status as FunctionalMetric["status"], version: resource.meta?.versionId,
   };
 }
 
 export function mapMetricToFhir(metric: FunctionalMetric): FhirObservation {
   const definition = DEFINITIONS[metric.code];
   return {
-    resourceType: "Observation", id: metric.id, status: "final",
+    resourceType: "Observation", id: metric.id, status: metric.status ?? "final",
     subject: { reference: `Patient/${metric.patientId}` },
     encounter: { reference: `Encounter/${metric.visitId}` },
     effectiveDateTime: metric.effectiveDateTime,
@@ -55,7 +56,7 @@ export function createFhirMetricRepository(client: FhirClient): MetricRepository
       if (!/^[A-Za-z0-9.-]{1,64}$/.test(visitId)) return [];
       const query = new URLSearchParams({ encounter: `Encounter/${visitId}`, _count: "100" });
       const resources = await readAllResourcesByType<FhirObservation>({ client, path: `Observation?${query}`, resourceType: "Observation" });
-      return resources.flatMap((resource) => mapObservation(resource) ?? []).filter((metric) => metric.visitId === visitId);
+      return resources.filter((resource) => resource.status !== "entered-in-error").flatMap((resource) => mapObservation(resource) ?? []).filter((metric) => metric.visitId === visitId);
     },
     async putIfAbsent(metric) {
       let existing: FhirObservation | null = null;

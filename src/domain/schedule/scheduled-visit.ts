@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const scheduleChangeReasonSchema = z.enum([
   "patient-or-family",
+  "patient-not-at-home",
   "professional",
   "health-event",
   "logistics-or-weather",

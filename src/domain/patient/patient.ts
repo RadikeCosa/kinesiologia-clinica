@@ -5,6 +5,7 @@ export interface Patient {
   phone?: string;
   address?: string;
   accessInstructions?: string;
+  version?: string;
   updatedAt?: string;
 }
 

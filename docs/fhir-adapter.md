@@ -161,6 +161,14 @@ La creación usa `PUT Appointment/appointment-{UUID}`. Reprogramar conserva la c
 
 `scheduled-visit-workflow.fhir.integration.test.ts` prueba creación y reintento, reprogramación con ambas citas, inicio y finalización enlazados, indicadores derivados, cancelación y ausencia. El script `npm run seed:clinical-home` prepara ejemplos dinámicos y repetibles solo en `8081`.
 
+## Pacientes y tratamientos
+
+La aplicación privada permite crear `Patient` sin un `ServiceRequest` ni un tratamiento. Nombre, apellido, teléfono y dirección se almacenan en los elementos estándar de `Patient`; las indicaciones de acceso usan `patient-home-access-instructions-v1`. El alta usa `PUT Patient/patient-{UUID}` para que un reintento con la misma identidad sea idempotente.
+
+El inicio directo de tratamiento crea `EpisodeOfCare` `active`, con `period.start`, frecuencia, cantidad prevista de sesiones, contexto, precauciones y diagnósticos opcionales. Los diagnósticos se persisten como `Condition` y se enlazan desde `EpisodeOfCare.diagnosis`. No se exige `ServiceRequest`: esa administración queda fuera del flujo clínico privado actual.
+
+Pausa, reanudación y finalización actualizan `EpisodeOfCare` con `If-Match`; el cierre agrega `period.end`. El historial estándar `statusHistory` conserva los períodos y la extensión repetible `episodeofcare-status-change-v1` asocia una nota opcional a cada cambio. La operación rechaza un tratamiento que aún tenga `Appointment` abiertos (`booked` o `proposed`).
+
 ## Evaluaciones y procedimientos
 
 Cada evaluación clínica nueva se persiste como `Observation` final con `subject`, `encounter` y `effectiveDateTime`. El dominio se guarda en `category`, el nombre en `code` y el resultado en `valueQuantity`, `valueCodeableConcept`, `valueString` o `dataAbsentReason`. `bodySite`, `method` y `note` conservan el contexto estándar. Extensiones locales guardan únicamente identidad de serie, lateralidad, asistencia o dispositivo y condiciones.
@@ -168,6 +176,10 @@ Cada evaluación clínica nueva se persiste como `Observation` final con `subjec
 Las observaciones históricas de dolor NRS, TUG, tolerancia de pie y duración de marcha se proyectan como evaluaciones al leerlas; no se migran físicamente. Una serie se identifica con `observation-series-identity-v1` y puede reunir resultados de distintas visitas.
 
 Cada familia seleccionada se persiste como un `Procedure` `completed`, con código local, paciente, encuentro y `performedPeriod`. El cierre genera IDs deterministas para `Observation` y `Procedure` y los incluye, junto con `Encounter` y la cita cuando corresponde, en una transacción atómica. Reutilizar una identidad con contenido diferente se trata como conflicto.
+
+Una visita finalizada puede corregirse sin cambiar la identidad del `Encounter`. La operación exige su versión y un motivo, actualiza sus horarios o nota y las entradas clínicas en una transacción, y conserva el momento original de registro. Las evaluaciones modificadas usan `Observation.status=corrected`; las entradas retiradas usan `entered-in-error`. La anulación de una visita registrada por error marca el `Encounter` y sus observaciones y procedimientos vigentes como `entered-in-error`, restaura la cita si estaba `fulfilled` y los excluye de las lecturas activas. El motivo y la fecha se guardan en extensiones locales del `Encounter`. HAPI conserva las versiones previas de los recursos.
+
+`visit-correction.fhir.integration.test.ts` corrige y anula una visita ficticia en `8081` y comprueba que el resultado corregido puede releerse y que las entradas anuladas dejan de aparecer en las consultas vigentes.
 
 `clinical-visit.fhir.integration.test.ts` guarda dos visitas ficticias con una evaluación repetida y confirma que HAPI las relee como una sola serie longitudinal, sin duplicar recursos al reintentar.
 
@@ -177,7 +189,7 @@ Para completar el adaptador mínimo previo a podar `/admin` todavía faltan:
 
 1. validación completa de recuperación y revocación en teléfono y computadora;
 2. borradores, PWA, sincronización offline y resolución interactiva de conflictos;
-3. edición controlada de visitas confirmadas y compatibilidad con datos anteriores;
+3. validación de las correcciones con una copia segura de datos anteriores;
 4. resúmenes, informes y funciones administrativas necesarias para el corte;
 5. validación de dispositivo, infraestructura privada, backup y reversión.
 

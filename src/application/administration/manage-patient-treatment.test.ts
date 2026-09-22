@@ -1,0 +1,12 @@
+import { describe, expect, it, vi } from "vitest";
+import { beginTreatment, changeTreatmentStatus, possiblePhoneMatch } from "./manage-patient-treatment";
+
+const patient = { id: "patient-a", givenName: "Ana", familyName: "Ficticia", phone: "+54 299 555 0101", address: "Dirección ficticia" };
+function dependencies(overrides: Record<string, unknown> = {}) {
+  return { patients: { getById: vi.fn().mockResolvedValue(patient), listByIds: vi.fn().mockResolvedValue([patient]), listAll: vi.fn().mockResolvedValue([patient]) }, treatments: { getById: vi.fn().mockResolvedValue(null), listActive: vi.fn().mockResolvedValue([]), listDirectory: vi.fn().mockResolvedValue([]), listByPatientId: vi.fn().mockResolvedValue([]) }, scheduledVisits: { listByPatientId: vi.fn().mockResolvedValue([]) }, administration: { putPatient: vi.fn(), startTreatment: vi.fn(), putTreatment: vi.fn() }, clock: { now: () => new Date("2026-09-22T12:00:00-03:00") }, ...overrides };
+}
+describe("gestión de pacientes y tratamientos", () => {
+  it("advierte una coincidencia exacta de teléfono aunque cambie el formato", async () => { const services = dependencies(); expect(await possiblePhoneMatch("54 299 555 0101", services as never)).toEqual(patient); });
+  it("inicia directamente un tratamiento con sus diagnósticos", async () => { const services = dependencies(); const treatment = await beginTreatment({ clientId: "c5b25c85-8bf1-4d8c-a262-4c4f76f80f49", patientId: patient.id, startDate: "2026-09-20", plannedSessionCount: 10, plannedFrequency: "2 veces por semana", diagnoses: [{ clientId: "bd3b2960-5a0c-4f5c-b2ad-96c4ee2c950c", text: "Diagnóstico ficticio", kind: "medical_reference" }] }, services as never); expect(treatment.status).toBe("active"); expect(services.administration.startTreatment).toHaveBeenCalledTimes(1); });
+  it("bloquea pausar cuando quedan citas abiertas", async () => { const treatment = { id: "treatment-a", patientId: patient.id, status: "active" as const, startDate: "2026-09-01", version: "2" }; const services = dependencies({ treatments: { getById: vi.fn().mockResolvedValue(treatment), listDirectory: vi.fn(), listByPatientId: vi.fn() }, scheduledVisits: { listByPatientId: vi.fn().mockResolvedValue([{ treatmentId: treatment.id, status: "booked" }]) } }); await expect(changeTreatmentStatus(treatment.id, "2", "paused", undefined, undefined, services as never)).rejects.toThrow("visita abierta"); });
+});

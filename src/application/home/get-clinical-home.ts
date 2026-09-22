@@ -36,7 +36,7 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
   const changeWindowFrom = `${today}T00:00:00-03:00`;
   const changeWindowTo = `${addDays(today, 1)}T00:00:00-03:00`;
   const treatments = await dependencies.treatments.listDirectory();
-  const patients = await dependencies.patients.listByIds([...new Set(treatments.map((item) => item.patientId))]);
+  const patients = dependencies.patients.listAll ? await dependencies.patients.listAll() : await dependencies.patients.listByIds([...new Set(treatments.map((item) => item.patientId))]);
   const visitsByPatient = await Promise.all(patients.map(async (patient) => [patient.id, await dependencies.visits.listByPatientId(patient.id)] as const));
   const visits = visitsByPatient.flatMap(([, items]) => items).filter((visit) => visit.status !== "entered-in-error");
   const [openAppointments, weekAppointments, rangeAppointments, changedAppointments] = await Promise.all([
@@ -51,8 +51,9 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
     const existing = latestTreatmentByPatient.get(treatment.patientId);
     if (!existing || treatment.startDate > existing.startDate) latestTreatmentByPatient.set(treatment.patientId, treatment);
   }
-  const homePatients: HomePatientViewModel[] = patients.flatMap((patient) => {
-    const treatment = latestTreatmentByPatient.get(patient.id); if (!treatment) return [];
+  const homePatients: HomePatientViewModel[] = patients.flatMap<HomePatientViewModel>((patient) => {
+    const treatment = latestTreatmentByPatient.get(patient.id);
+    if (!treatment) return [{ id: patient.id, displayName: getPatientDisplayName(patient), phone: patient.phone, address: patient.address, accessInstructions: patient.accessInstructions, treatment: { status: "not-started" as const, completedSessions: 0 } }];
     const treatmentVisits = visits.filter((visit) => visit.treatmentId === treatment.id && visit.status === "finished").sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     const next = appointments.filter((item) => item.patientId === patient.id && ["proposed", "booked"].includes(item.status)).sort((a, b) => (a.startsAt ?? a.scheduledDate).localeCompare(b.startsAt ?? b.scheduledDate))[0];
     return [{
