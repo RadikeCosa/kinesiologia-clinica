@@ -157,7 +157,29 @@ test.describe.serial("pantalla inicial clínica", () => {
     await expect(changes.locator(".history-row").filter({ hasText: "Rosa Benítez" }).filter({ hasText: "No se realizó" }).first()).toBeVisible();
   });
 
-  test("comienza, continúa y finaliza una visita enlazada", async ({ page }) => {
+  test("comienza, continúa y finaliza una visita enlazada", async ({ page, request }) => {
+    // Este caso necesita una cita futura para que el resultado no dependa de la
+    // hora en que se ejecute la suite. Se restablece el recurso ficticio antes
+    // de comenzar y conserva el mismo ID para probar la idempotencia.
+    const start = new Date(Date.now() + 30 * 60_000);
+    const end = new Date(start.getTime() + 60 * 60_000);
+    const appointment = {
+      resourceType: "Appointment",
+      id: "demo-appt-today",
+      status: "booked",
+      start: start.toISOString(),
+      end: end.toISOString(),
+      minutesDuration: 60,
+      participant: [{ actor: { reference: "Patient/demo-alicia" }, status: "accepted" }],
+      supportingInformation: [{ reference: "EpisodeOfCare/demo-treatment-alicia" }],
+      serviceType: [{ text: "Kinesiología domiciliaria" }],
+    };
+    const reset = await request.put("http://localhost:8081/fhir/Appointment/demo-appt-today", {
+      headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
+      data: appointment,
+    });
+    expect(reset.ok()).toBeTruthy();
+
     await page.goto("/inicio");
     const scheduled = page.locator("article").filter({ hasText: "Alicia Figueroa" }).first();
     const begin = scheduled.getByRole("button", { name: /Comenzar (visita|ahora)/ });
