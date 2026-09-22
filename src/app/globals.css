@@ -436,6 +436,8 @@ h1 {
 .patient-detail-heading .lede { margin-top: 0.85rem; }
 .patient-detail-actions { display: flex; flex: none; align-items: center; gap: 0.9rem; }
 .patient-detail-actions .primary-link, .patient-detail-actions .diagnostic-link { margin-top: 0; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.section-heading h2 { margin: 0; }
 .patient-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 2rem; overflow: hidden; border: 1px solid var(--border); border-radius: 1.1rem; background: var(--border); }
 .patient-summary > div { min-height: 6rem; padding: 1rem 1.15rem; background: var(--surface); }
 .patient-summary span, .patient-summary strong { display: block; }
@@ -484,6 +486,8 @@ h1 {
   font: inherit;
   font-weight: 400;
 }
+.visit-form input:not([type="hidden"]), .visit-form select, .patient-admin-form input:not([type="hidden"]), .patient-admin-form select { min-height: 2.75rem; }
+.visit-form textarea, .patient-admin-form textarea { min-height: 5.5rem; resize: vertical; }
 .visit-form input:not([type="hidden"]):focus,
 .visit-form select:focus,
 .visit-form textarea:focus,
@@ -516,6 +520,9 @@ h1 {
 }
 .submit-button:disabled { opacity: 0.55; cursor: not-allowed; }
 .form-error { color: #9d3428; font-weight: 700; }
+.form-error, [role="alert"] { line-height: 1.45; }
+.submit-button, .secondary-button, .button-link, .text-button, .dialog-close { min-height: 2.75rem; }
+.submit-button:focus-visible, .secondary-button:focus-visible, .button-link:focus-visible, .text-button:focus-visible, .dialog-close:focus-visible, .access-panel input:focus-visible { outline: 3px solid #d49b2d; outline-offset: 2px; }
 @media (max-width: 42rem) {
   .form-row { display: grid; }
 }
@@ -690,6 +697,7 @@ h1 {
 
 .button-link { display: inline-flex; align-items: center; justify-content: center; min-height: 2.7rem; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: #f8fbfa; font-weight: 700; text-decoration: none; }
 .home-dialog { position: fixed; inset: 0; width: min(calc(100% - 2rem), 34rem); max-height: calc(100dvh - 2rem); margin: auto; overflow: auto; padding: 2rem; border: 0; border-radius: 1rem; color: var(--ink); background: var(--surface); box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 24%); }
+.home-dialog { overscroll-behavior: contain; }
 .home-dialog::backdrop { background: rgb(14 35 29 / 52%); }
 .home-dialog h2 { margin: 0 2.5rem 1rem 0; }
 .home-form { display: grid; gap: 1rem; }
@@ -699,6 +707,7 @@ h1 {
 .home-form .home-confirm { display: flex; grid-template-columns: auto 1fr; align-items: center; color: #624711; }
 .home-form .home-confirm input { width: 1.1rem; height: 1.1rem; }
 .clinical-home-real button:focus-visible, .clinical-home-real a:focus-visible, .home-dialog button:focus-visible, .home-dialog input:focus-visible, .home-dialog select:focus-visible, .home-dialog textarea:focus-visible { outline: 3px solid #d49b2d; outline-offset: 2px; }
+.clinical-home-real button, .clinical-home-real a, .home-dialog button, .home-dialog a, .submit-button, .secondary-button, .button-link { touch-action: manipulation; -webkit-tap-highlight-color: rgb(22 122 91 / 18%); }
 .danger-zone { margin-top: 1rem; }
 
 @media (max-width: 42rem) {
@@ -718,6 +727,10 @@ h1 {
   .home-dialog { width: 100%; max-height: 92dvh; margin: auto 0 0; border-radius: 1.25rem 1.25rem 0 0; }
   .diagnosis-row { grid-template-columns: 1fr; align-items: stretch; }
   .diagnosis-row .button-link { width: fit-content; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 
 /* Operational home: compact seven-day view */
