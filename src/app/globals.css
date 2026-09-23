@@ -12,7 +12,8 @@
 
 @media (max-width: 42rem) {
   .access-landing-shell { width: calc(100% - 2rem); padding-block: 2.25rem 3rem; }
-  .access-intro h1 { font-size: clamp(2.55rem, 12vw, 4rem); line-height: 0.99; }
+  .access-intro h1 { font-size: clamp(2rem, 10vw, 3rem); }
+  .access-title { margin-top: 0.7rem; font-size: clamp(1.65rem, 8vw, 2.4rem); line-height: 1.06; }
   .access-intro .lede { margin-top: 1.15rem; font-size: 1.05rem; line-height: 1.55; }
   .access-actions { display: grid; gap: 0.45rem; margin-top: 1.5rem; }
   .access-actions .access-primary-link { width: 100%; min-height: 3rem; }
@@ -107,6 +108,8 @@ body {
 
 .access-landing-shell { padding-block: clamp(2.5rem, 8vw, 6rem); }
 .access-intro { max-width: 48rem; }
+.access-intro h1 { font-size: clamp(2.2rem, 4.6vw, 3.8rem); line-height: 1; letter-spacing: -0.05em; }
+.access-title { max-width: 40rem; margin: 0.85rem 0 0; font-size: clamp(1.9rem, 4.2vw, 3.8rem); line-height: 1.05; letter-spacing: -0.045em; }
 .access-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.9rem; margin-top: 1.8rem; }
 .access-actions .primary-link, .access-actions .diagnostic-link { margin-top: 0; }
 .access-primary-link { min-height: 2.75rem; align-items: center; justify-content: center; padding-inline: 1.35rem; }

@@ -22,8 +22,8 @@ export default function Home() {
   return (
     <main className="shell access-landing-shell">
       <section className="intro access-intro" aria-labelledby="page-title">
-        <p className="eyebrow">Kinesiología domiciliaria</p>
-        <h1 id="page-title">Pacientes, visitas y tratamientos en un solo lugar.</h1>
+        <h1 id="page-title">Kinesiología domiciliaria</h1>
+        <p className="access-title">Pacientes, visitas y tratamientos en un solo lugar.</p>
         <p className="lede">
           Organizá la atención domiciliaria, registrá cada visita y consultá la evolución
           sin volver a escribir lo mismo.

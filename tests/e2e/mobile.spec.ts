@@ -4,7 +4,8 @@ test("la pantalla de acceso prioriza el ingreso en mobile", async ({ page }) => 
   await page.setViewportSize({ width: 356, height: 640 });
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1, name: "Pacientes, visitas y tratamientos en un solo lugar." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Kinesiología domiciliaria" })).toBeVisible();
+  await expect(page.getByText("Pacientes, visitas y tratamientos en un solo lugar.", { exact: true })).toBeVisible();
   const primary = page.getByRole("link", { name: "Ingresar", exact: true });
   await expect(primary).toBeInViewport();
   await expect(primary).toHaveCSS("min-height", "48px");

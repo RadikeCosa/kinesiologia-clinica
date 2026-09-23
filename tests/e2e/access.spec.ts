@@ -4,8 +4,8 @@ test.describe("pantalla de acceso", () => {
   test("prioriza el ingreso y mantiene las herramientas de desarrollo separadas", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText("Kinesiología domiciliaria", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1, name: "Pacientes, visitas y tratamientos en un solo lugar." })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Kinesiología domiciliaria" })).toBeVisible();
+    await expect(page.getByText("Pacientes, visitas y tratamientos en un solo lugar.", { exact: true })).toBeVisible();
     const primary = page.getByRole("link", { name: "Ingresar", exact: true });
     await expect(primary).toBeVisible();
     await expect(primary).toHaveAttribute("href", "/ingresar");
