@@ -23,11 +23,7 @@ export default function Home() {
     <main className="shell access-landing-shell">
       <section className="intro access-intro" aria-labelledby="page-title">
         <h1 id="page-title">Kinesiología domiciliaria</h1>
-        <p className="access-title">Pacientes, visitas y tratamientos en un solo lugar.</p>
-        <p className="lede">
-          Organizá la atención domiciliaria, registrá cada visita y consultá la evolución
-          sin volver a escribir lo mismo.
-        </p>
+        <p className="access-title">Toda la gestión de tus visitas en una sola app.</p>
       </section>
 
       {localClinicalSurfaceEnabled ? <section className="access-actions" aria-label="Acceso a la aplicación">
