@@ -74,7 +74,7 @@ function PatientContactSummary({ patient, variant, onDialog }: { patient: HomePa
 }
 
 function PatientTreatmentSummary({ patient }: { patient: HomePatientViewModel }) {
-  return <div className="patient-treatment-summary"><strong>{patient.treatment.status === "not-started" ? "Sin tratamiento" : progress(patient)}</strong><span>{patient.treatment.frequency ?? "Frecuencia sin registrar"}</span>{patient.treatment.nextVisit ? <span className="patient-next-visit-summary"><span>Próxima visita</span><span className="patient-next-visit-full">{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</span><span className="patient-next-visit-compact">{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</span></span> : null}</div>;
+  return <div className="patient-treatment-summary"><div className="patient-session-frequency"><strong>{patient.treatment.status === "not-started" ? "Sin tratamiento" : progress(patient)}</strong><span>{patient.treatment.frequency ?? "Frecuencia sin registrar"}</span></div>{patient.treatment.nextVisit ? <div className="patient-next-visit-summary"><span>Próxima visita</span><span className="patient-next-visit-full">{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</span><span className="patient-next-visit-compact">{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</span></div> : null}</div>;
 }
 
 function AccessibleDialog({ title, onClose, className = "", children }: { title: string; onClose: () => void; className?: string; children: React.ReactNode }) {

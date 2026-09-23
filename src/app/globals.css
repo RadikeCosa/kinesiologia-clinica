@@ -973,8 +973,9 @@ h1 {
 .access-instructions p { margin: 0.5rem 0 0; color: var(--ink); font-size: 0.9rem; }
 .directory-primary-actions { margin-top: 0.9rem; }
 .patient-treatment-summary { display: grid; gap: 0.2rem; flex: 0 1 auto; min-width: max-content; text-align: right; }
-.patient-treatment-summary strong { font-size: 0.9rem; }
-.patient-treatment-summary span { color: var(--muted); font-size: 0.78rem; }
+.patient-session-frequency { display: grid; gap: 0.2rem; }
+.patient-session-frequency strong { font-size: 0.9rem; }
+.patient-session-frequency > span { color: var(--muted); font-size: 0.78rem; }
 .patient-next-visit-summary { display: grid; gap: 0.1rem; margin-top: 0.2rem; }
 .patient-next-visit-summary > span:first-child { color: var(--muted); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
 .patient-next-visit-compact { display: none; }
@@ -1048,10 +1049,11 @@ h1 {
   .directory-tools-heading > p { margin: 0; }
   .directory-filters { margin: 0.75rem -0.1rem; padding-inline: 0.1rem; }
   .directory-card { padding: 0.9rem; }
-  .patient-treatment-summary { max-width: 8rem; }
-  .home-card-heading { flex-wrap: wrap; }
-  .patient-heading-main { flex: 1 1 min(100%, 12rem); }
-  .patient-treatment-summary { margin-left: auto; }
+  .patient-treatment-summary { display: contents; }
+  .home-card-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(7.5rem, 9rem); align-items: start; column-gap: 0.75rem; }
+  .patient-heading-main { grid-column: 1; grid-row: 1; min-width: 0; }
+  .patient-session-frequency { grid-column: 2; grid-row: 1; min-width: 7.5rem; text-align: right; }
+  .patient-next-visit-summary { grid-column: 1 / -1; grid-row: 2; margin-top: 0.45rem; text-align: left; }
   .patient-next-visit-full { display: none; }
   .patient-next-visit-compact { display: inline; }
   .patient-next-visit { align-items: start; flex-direction: column; gap: 0.15rem; }
@@ -1081,6 +1083,12 @@ h1 {
   .visit-narrative-section { padding: 1.05rem 0; }
   .visit-evaluation-list { grid-template-columns: 1fr; }
   .visit-evaluation-card dl div { grid-template-columns: 1fr; gap: 0.1rem; }
+}
+
+@media (max-width: 22rem) {
+  .home-card-heading { grid-template-columns: 1fr; row-gap: 0.35rem; }
+  .patient-session-frequency { grid-column: 1; grid-row: 2; min-width: 0; text-align: left; }
+  .patient-next-visit-summary { grid-column: 1; grid-row: 3; margin-top: 0.25rem; }
 }
 
 @media (min-width: 42.01rem) {
