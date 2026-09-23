@@ -728,7 +728,7 @@ h1 {
 /* Operational home: compact seven-day view */
 .operational-header {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
