@@ -817,6 +817,11 @@ h1 {
 .visit-contact-details { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.45rem; }
 .visit-contact-details button { min-height: 2.75rem; padding: 0; border: 0; color: var(--muted); background: transparent; font: inherit; font-size: 0.86rem; text-align: left; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 0.2em; cursor: pointer; }
 .visit-contact-details button span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; text-decoration: none; }
+.visit-contact-missing { display: block; min-height: 2.75rem; color: var(--muted); font-size: 0.86rem; }
+.visit-contact-missing > span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+.patient-precaution-compact { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0.55rem 0 0; color: #72551d; font-size: 0.78rem; font-weight: 800; }
+.patient-precaution-compact > span { display: inline-grid; width: 1.15rem; height: 1.15rem; place-items: center; border-radius: 999px; color: #624711; background: #fbefce; font-size: 0.72rem; }
+.action-sheet-patient-link { display: inline-flex; margin: 0.75rem 0 1rem; color: var(--accent); font-size: 0.84rem; font-weight: 800; text-underline-offset: 0.2em; }
 .action-sheet-context { color: var(--muted); line-height: 1.5; }
 .action-sheet-list { display: grid; gap: 0.5rem; }
 .action-sheet-list button, .action-sheet-list a { display: flex; width: 100%; min-height: 3rem; align-items: center; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 0.7rem; color: var(--ink); background: #f8fbfa; font: inherit; font-weight: 750; text-align: left; text-decoration: none; cursor: pointer; }
@@ -970,6 +975,9 @@ h1 {
 .patient-treatment-summary { display: grid; gap: 0.2rem; flex: 0 1 auto; min-width: max-content; text-align: right; }
 .patient-treatment-summary strong { font-size: 0.9rem; }
 .patient-treatment-summary span { color: var(--muted); font-size: 0.78rem; }
+.patient-next-visit-summary { display: grid; gap: 0.1rem; margin-top: 0.2rem; }
+.patient-next-visit-summary > span:first-child { color: var(--muted); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+.patient-next-visit-compact { display: none; }
 .patient-heading-main { min-width: 0; }
 .patient-name-link { overflow-wrap: anywhere; }
 .patient-next-visit { display: flex; align-items: baseline; gap: 0.45rem; margin: 0.8rem 0 0; font-size: 0.88rem; font-weight: 750; }
@@ -1044,6 +1052,8 @@ h1 {
   .home-card-heading { flex-wrap: wrap; }
   .patient-heading-main { flex: 1 1 min(100%, 12rem); }
   .patient-treatment-summary { margin-left: auto; }
+  .patient-next-visit-full { display: none; }
+  .patient-next-visit-compact { display: inline; }
   .patient-next-visit { align-items: start; flex-direction: column; gap: 0.15rem; }
   .patient-precautions { display: grid; gap: 0.2rem; }
   .patient-facts { gap: 0.7rem; margin-top: 0.8rem; }

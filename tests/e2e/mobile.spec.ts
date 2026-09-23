@@ -57,6 +57,17 @@ test("agrupa las acciones secundarias y devuelve el foco al cerrar", async ({ pa
   await expect(more).toBeFocused();
 });
 
+test("muestra precauciones y ficha desde Más sin duplicar contacto", async ({ page }) => {
+  await page.goto("/inicio");
+  const rosa = page.locator("article.visit-card").filter({ hasText: "Rosa Benítez" }).first();
+  await rosa.getByRole("button", { name: /Más opciones/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Opciones de la visita" });
+  await expect(dialog.getByText("Precauciones")).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Ver ficha del paciente" })).toBeVisible();
+  await expect(dialog.getByText("Teléfono")).toHaveCount(0);
+  await expect(dialog.getByText("Dirección")).toHaveCount(0);
+});
+
 test("agrupa contacto y ubicación dentro de cada visita de Hoy", async ({ page }) => {
   await page.goto("/inicio");
   const visit = page.locator("article.visit-card").filter({ hasText: "Carlos Méndez" }).first();
