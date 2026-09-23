@@ -47,6 +47,30 @@ export function addLocalDays(date: string, days: number) {
   return value.toISOString().slice(0, 10);
 }
 
+export function startOfWeek(date: string) {
+  const value = new Date(`${date}T12:00:00Z`);
+  const mondayOffset = (value.getUTCDay() + 6) % 7;
+  value.setUTCDate(value.getUTCDate() - mondayOffset);
+  return value.toISOString().slice(0, 10);
+}
+
+export function resolveAgendaDate(today: string, selectedDate?: string, weekStart?: string) {
+  if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) return selectedDate;
+  if (weekStart && /^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return startOfWeek(weekStart);
+  return today;
+}
+
+export function formatWeekRange(start: string) {
+  const end = addLocalDays(start, 6);
+  const startValue = new Date(`${start}T12:00:00Z`);
+  const endValue = new Date(`${end}T12:00:00Z`);
+  const startMonth = new Intl.DateTimeFormat("es-AR", { month: "long", timeZone: "UTC" }).format(startValue);
+  const endMonth = new Intl.DateTimeFormat("es-AR", { month: "long", timeZone: "UTC" }).format(endValue);
+  const startDay = startValue.getUTCDate();
+  const endDay = endValue.getUTCDate();
+  return startMonth === endMonth ? `${startDay}–${endDay} de ${endMonth}` : `${startDay} de ${startMonth}–${endDay} de ${endMonth}`;
+}
+
 export function formatFriendlyDate(date: string) {
   const value = new Date(`${date}T12:00:00Z`);
   const formatted = new Intl.DateTimeFormat("es-AR", {

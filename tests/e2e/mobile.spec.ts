@@ -70,9 +70,12 @@ test("agrupa contacto y ubicación dentro de cada visita de Hoy", async ({ page 
   await expect(location.getByRole("link", { name: "Ver mapa" })).toBeVisible();
 });
 
-test("la agenda mensual y el directorio aprovechan el ancho móvil", async ({ page }) => {
+test("la agenda semanal y el directorio aprovechan el ancho móvil", async ({ page }) => {
   await page.setViewportSize({ width: 356, height: 640 });
   await page.goto("/inicio?vista=agenda");
+  await expect(page.locator(".agenda-week-strip button")).toHaveCount(7);
+  await expect(page.getByRole("button", { name: "Ver mes" })).toBeVisible();
+  await page.getByRole("button", { name: "Ver mes" }).click();
   await expect(page.locator(".month-calendar button")).toHaveCount(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate());
   await expect(page.getByRole("link", { name: "Mes anterior" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Mes siguiente" })).toBeVisible();
@@ -89,6 +92,16 @@ test("la agenda mensual y el directorio aprovechan el ancho móvil", async ({ pa
   await expect(rosa.locator(".patient-precautions")).toBeVisible();
   await expect(rosa.getByRole("button", { name: "Comenzar visita" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("la agenda mobile navega semanas y restaura el día con atrás", async ({ page }) => {
+  await page.setViewportSize({ width: 356, height: 640 });
+  await page.goto("/inicio?vista=agenda");
+  const initialDate = await page.locator(".agenda-week-strip button[aria-pressed='true']").getAttribute("aria-label");
+  await page.getByRole("button", { name: "Semana siguiente" }).click();
+  await expect(page).toHaveURL(/semana=\d{4}-\d{2}-\d{2}/);
+  await page.goBack();
+  await expect(page.locator(".agenda-week-strip button[aria-pressed='true']")).toHaveAttribute("aria-label", initialDate!);
 });
 
 test("la agenda no ofrece agendar en el pasado y permite registrar en el día actual", async ({ page }) => {

@@ -3,10 +3,13 @@ import {
   filterDirectory,
   formatArgentinePhone,
   formatFriendlyDateTime,
+  formatWeekRange,
   getTodayDisplayState,
   presentDay,
   presentToday,
   presentWeek,
+  resolveAgendaDate,
+  startOfWeek,
 } from "@/features/clinical-home/clinical-home.presenter";
 import {
   getClinicalHomeScenario,
@@ -148,6 +151,16 @@ describe("friendly appointment dates", () => {
   it("shows a local readable date and marks the time as hours", () => {
     expect(formatFriendlyDateTime("2026-09-17", "18:00")).toMatch(/Jue.*17.*sept.*18:00 hs/i);
     expect(formatFriendlyDateTime("2026-09-17")).toMatch(/sin horario$/);
+  });
+});
+
+describe("agenda week navigation", () => {
+  it("starts on Monday and formats ranges across month boundaries", () => {
+    expect(startOfWeek("2026-09-24")).toBe("2026-09-21");
+    expect(formatWeekRange("2026-09-21")).toBe("21–27 de septiembre");
+    expect(formatWeekRange("2026-09-28")).toBe("28 de septiembre–4 de octubre");
+    expect(resolveAgendaDate("2026-09-24", "2026-09-30", "2026-09-01")).toBe("2026-09-30");
+    expect(resolveAgendaDate("2026-09-24", undefined, "2026-09-01")).toBe("2026-08-31");
   });
 });
 

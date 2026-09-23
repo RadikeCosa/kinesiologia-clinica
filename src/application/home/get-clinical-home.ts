@@ -18,6 +18,9 @@ function localTime(value?: string) {
 function addDays(date: string, days: number) {
   const value = new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate() + days); return value.toISOString().slice(0, 10);
 }
+function startOfWeek(date: string) {
+  const value = new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate() - ((value.getUTCDay() + 6) % 7)); return value.toISOString().slice(0, 10);
+}
 function monthEnd(month: string) {
   const [year, value] = month.split("-").map(Number);
   return `${month}-${String(new Date(Date.UTC(year, value, 0)).getUTCDate()).padStart(2, "0")}`;
@@ -27,11 +30,15 @@ const STATUS_LABEL: Record<AgendaItemViewModel["status"], string> = {
   proposed: "Sin horario", booked: "Confirmada", fulfilled: "Atendida", cancelled: "Cancelada", "no-show": "No se realizó", rescheduled: "Reprogramada",
 };
 
-export async function getClinicalHome(referenceNow: Date, dependencies: Dependencies, requestedMonth?: string): Promise<ClinicalHomeData> {
+export async function getClinicalHome(referenceNow: Date, dependencies: Dependencies, requestedMonth?: string, requestedWeekStart?: string): Promise<ClinicalHomeData> {
   const today = localDate(referenceNow);
   const agendaMonth = requestedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : today.slice(0, 7);
   const agendaFrom = `${agendaMonth}-01`;
   const agendaTo = monthEnd(agendaMonth);
+  const weekStart = requestedWeekStart && /^\d{4}-\d{2}-\d{2}$/.test(requestedWeekStart) ? startOfWeek(requestedWeekStart) : startOfWeek(today);
+  const weekEnd = addDays(weekStart, 6);
+  const dataFrom = agendaFrom < weekStart ? agendaFrom : weekStart;
+  const dataTo = agendaTo > weekEnd ? agendaTo : weekEnd;
   const weekTo = addDays(today, 6);
   const changeWindowFrom = `${today}T00:00:00-03:00`;
   const changeWindowTo = `${addDays(today, 1)}T00:00:00-03:00`;
@@ -40,7 +47,7 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
   const visitsByPatient = await Promise.all(patients.map(async (patient) => [patient.id, await dependencies.visits.listByPatientId(patient.id)] as const));
   const visits = visitsByPatient.flatMap(([, items]) => items).filter((visit) => visit.status !== "entered-in-error");
   const [openAppointments, weekAppointments, rangeAppointments, changedAppointments] = await Promise.all([
-    dependencies.scheduledVisits.listOpen(), dependencies.scheduledVisits.listBetween(today, weekTo), dependencies.scheduledVisits.listBetween(agendaFrom, agendaTo),
+    dependencies.scheduledVisits.listOpen(), dependencies.scheduledVisits.listBetween(today, weekTo), dependencies.scheduledVisits.listBetween(dataFrom, dataTo),
     dependencies.scheduledVisits.listChangedBetween(changeWindowFrom, changeWindowTo),
   ]);
   const appointments = [...new Map([...openAppointments, ...weekAppointments, ...rangeAppointments, ...changedAppointments].map((item) => [item.id, item])).values()];
@@ -85,7 +92,7 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
   const todayItems = dayItems.filter((item) => item.date <= today);
   const agendaItems = appointments.filter((item) =>
     (item.scheduledDate < today && ["proposed", "booked"].includes(item.status)) ||
-    (item.scheduledDate >= agendaFrom && item.scheduledDate <= agendaTo),
+    (item.scheduledDate >= agendaFrom && item.scheduledDate <= agendaTo) || (item.scheduledDate >= weekStart && item.scheduledDate <= weekEnd),
   ).map<AgendaItemViewModel>((item) => {
     const status = appointmentStatus(item); return { id: item.id, patientId: item.patientId, patientName: getPatientDisplayName(patientMap.get(item.patientId) ?? { id: item.patientId, givenName: "Paciente", familyName: "" }), treatmentId: item.treatmentId, scheduledDate: item.scheduledDate, scheduledTime: localTime(item.startsAt), durationMinutes: item.durationMinutes, status, statusLabel: STATUS_LABEL[status], version: item.version };
   }).sort((a, b) => `${a.scheduledDate}${a.scheduledTime ?? "99:99"}`.localeCompare(`${b.scheduledDate}${b.scheduledTime ?? "99:99"}`));

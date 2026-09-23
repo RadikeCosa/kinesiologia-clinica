@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { filterDirectory, formatArgentinePhone, formatFriendlyDate, formatFriendlyDateTime, getLocalDate, presentDay, presentWeek } from "@/features/clinical-home/clinical-home.presenter";
+import { addLocalDays, filterDirectory, formatArgentinePhone, formatFriendlyDate, formatFriendlyDateTime, formatWeekRange, getLocalDate, presentDay, presentWeek, resolveAgendaDate, startOfWeek } from "@/features/clinical-home/clinical-home.presenter";
 import type { AgendaItemViewModel, ClinicalHomeData, HomePatientViewModel, PresentedTodayItem, TreatmentStatus } from "@/features/clinical-home/clinical-home.types";
 import { beginVisit, changeAppointment, saveAppointment, type HomeActionState } from "./actions";
 
@@ -192,15 +192,15 @@ function HistoryRows({ items, showOriginalDate = false }: { items: PresentedToda
   return <div className={`history-list${showOriginalDate ? " history-list-with-date" : ""}`}>{items.map((item) => <div className="history-row" key={item.id}><span>{showOriginalDate ? `${compactDate(item.date)} · ` : ""}{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</span><strong><Link href={`/patients/${item.patientId}`}>{item.patient.displayName}</Link></strong><span>{item.statusLabel}</span>{item.displayState === "rescheduled" && item.rescheduledToDate ? <span className="history-reschedule">Nueva: {compactDate(item.rescheduledToDate)}{item.rescheduledToTime ? ` · ${item.rescheduledToTime} hs` : " · sin horario"}</span> : null}{item.visitId && item.displayState === "completed" ? <Link className="history-detail-link" href={`/patients/${item.patientId}/visits/${item.visitId}`}>Ver registro completo</Link> : null}</div>)}</div>;
 }
 
-export function ClinicalHome({ data, initialTab = "today", initialPatientId, initialResolveAppointmentId, initialSelectedDate, initialShowPending = false }: { data: ClinicalHomeData; initialTab?: Tab; initialPatientId?: string; initialResolveAppointmentId?: string; initialSelectedDate?: string; initialShowPending?: boolean }) {
+export function ClinicalHome({ data, initialTab = "today", initialPatientId, initialResolveAppointmentId, initialSelectedDate, initialWeekStart, initialShowPending = false }: { data: ClinicalHomeData; initialTab?: Tab; initialPatientId?: string; initialResolveAppointmentId?: string; initialSelectedDate?: string; initialWeekStart?: string; initialShowPending?: boolean }) {
   const week = useMemo(() => presentWeek(data.referenceNow, data.dayItems), [data]);
   const validInitialDate = week.some((day) => day.date === initialSelectedDate) ? initialSelectedDate! : week[0].date;
   const today = getLocalDate(data.referenceNow);
-  const initialAgendaDate = initialSelectedDate && initialSelectedDate >= data.agendaFrom && initialSelectedDate <= data.agendaTo
-    ? initialSelectedDate
-    : today >= data.agendaFrom && today <= data.agendaTo ? today : data.agendaFrom;
+  const initialAgendaDate = resolveAgendaDate(today, initialSelectedDate, initialWeekStart);
   const [selectedDate, setSelectedDate] = useState(validInitialDate);
   const [selectedAgendaDate, setSelectedAgendaDate] = useState(initialAgendaDate);
+  const [agendaWeekStart, setAgendaWeekStart] = useState(initialSelectedDate ? startOfWeek(initialAgendaDate) : initialWeekStart && /^\d{4}-\d{2}-\d{2}$/.test(initialWeekStart) ? startOfWeek(initialWeekStart) : startOfWeek(initialAgendaDate));
+  const [mobileAgendaMode, setMobileAgendaMode] = useState<"week" | "month">("week");
   const [tab, setTab] = useState<Tab>(initialTab);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<TreatmentStatus | "all">("active");
@@ -224,13 +224,17 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
     return values;
   }, [data.agendaFrom, data.agendaTo]);
   const selectedAgendaItems = useMemo(() => data.agendaItems.filter((item) => item.scheduledDate === selectedAgendaDate), [data.agendaItems, selectedAgendaDate]);
+  const selectedAgendaItemsForDisplay = useMemo(() => selectedAgendaItems.filter((item) => !(item.scheduledDate < today && ["booked", "proposed"].includes(item.status))), [selectedAgendaItems, today]);
+  const agendaWeekDays = useMemo(() => Array.from({ length: 7 }, (_, index) => addLocalDays(agendaWeekStart, index)), [agendaWeekStart]);
   const overdueAgendaItems = useMemo(() => data.agendaItems.filter((item) => item.scheduledDate < today && ["booked", "proposed"].includes(item.status)), [data.agendaItems, today]);
 
   function openDialog(next: Exclude<DialogState, null>, trigger?: HTMLElement) { if (trigger) returnFocusRef.current = trigger; setDialog(next); }
   function closeDialog() { setDialog(null); const url = new URL(window.location.href); if (url.searchParams.has("resolver")) { url.searchParams.delete("resolver"); window.history.replaceState(null, "", `${url.pathname}${url.search}`); } window.requestAnimationFrame(() => returnFocusRef.current?.focus()); }
-  function selectTab(next: Tab) { setTab(next); const suffix = next === "today" ? `hoy&fecha=${selectedDate}` : next === "agenda" ? `agenda&mes=${data.agendaMonth}&fecha=${selectedAgendaDate}` : "pacientes"; window.history.replaceState(null, "", `/inicio?vista=${suffix}`); }
+  function selectTab(next: Tab) { setTab(next); const suffix = next === "today" ? `hoy&fecha=${selectedDate}` : next === "agenda" ? `agenda&mes=${selectedAgendaDate.slice(0, 7)}&fecha=${selectedAgendaDate}&semana=${agendaWeekStart}` : "pacientes"; window.history.pushState(null, "", `/inicio?vista=${suffix}`); }
   function selectDate(date: string) { setSelectedDate(date); setTab("today"); window.history.replaceState(null, "", `/inicio?vista=hoy&fecha=${date}`); }
-  function selectAgendaDate(date: string) { setSelectedAgendaDate(date); window.history.replaceState(null, "", `/inicio?vista=agenda&mes=${data.agendaMonth}&fecha=${date}`); }
+  function selectAgendaDate(date: string) { const weekStart = startOfWeek(date); setSelectedAgendaDate(date); setAgendaWeekStart(weekStart); window.history.pushState(null, "", `/inicio?vista=agenda&mes=${date.slice(0, 7)}&fecha=${date}&semana=${weekStart}`); }
+  function selectAgendaWeek(nextStart: string) { setAgendaWeekStart(nextStart); selectAgendaDate(nextStart); }
+  function goToToday() { selectAgendaDate(today); }
   const heading = tab === "today" ? (day.isToday ? "Hoy" : new Intl.DateTimeFormat("es-AR", { weekday: "long", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`))) : tab === "agenda" ? "Agenda" : "Pacientes";
   const selectedLabel = formatSelectedDate(selectedDate, day.isToday);
   const appointmentFor = (item: PresentedTodayItem) => appointmentFromItem(item, data.agendaItems.find((value) => value.id === item.id));
@@ -243,6 +247,28 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
   useEffect(() => {
     if (initialResolveAppointmentId) returnFocusRef.current = document.getElementById(`appointment-${initialResolveAppointmentId}`);
   }, [initialResolveAppointmentId]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 42rem)");
+    const resetMobileMode = (event: MediaQueryListEvent) => { if (event.matches) setMobileAgendaMode("week"); };
+    media.addEventListener("change", resetMobileMode);
+    return () => media.removeEventListener("change", resetMobileMode);
+  }, []);
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URL(window.location.href).searchParams;
+      const nextTab = params.get("vista") === "agenda" ? "agenda" : params.get("vista") === "pacientes" ? "patients" : "today";
+      const nextDate = params.get("fecha");
+      const nextWeek = params.get("semana");
+      if (nextTab === "agenda") {
+        const agendaDate = resolveAgendaDate(today, nextDate ?? undefined, nextWeek ?? undefined);
+        setSelectedAgendaDate(agendaDate);
+        setAgendaWeekStart(startOfWeek(agendaDate));
+      }
+      setTab(nextTab);
+    };
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, [today]);
   return <main className="clinical-home-shell clinical-home-real">
     <header className="operational-header"><div><h1>{heading.charAt(0).toUpperCase() + heading.slice(1)}</h1><p>{tab === "today" ? selectedLabel.replace(/^Hoy,\s*/, "") : "Kinesiología Clínica"}</p></div><button aria-label="Crear: Agendar visita o alta" className="home-primary-action schedule-shortcut" onClick={(event) => openDialog({ kind: "create" }, event.currentTarget)}>＋ Crear</button></header>
     <nav className="home-tabs home-tabs-three" aria-label="Vista principal">{([["today","Hoy"],["agenda","Agenda"],["patients","Pacientes"]] as const).map(([value,label]) => <button key={value} type="button" aria-current={tab === value ? "page" : undefined} onClick={() => selectTab(value)}>{label}</button>)}</nav>
@@ -259,16 +285,24 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
       {day.changes.length ? <details className="history-group"><summary>Cambios registrados hoy <span>{day.changes.length}</span></summary><p className="history-helper">Incluye cambios sobre visitas de hoy y de otros días.</p><HistoryRows items={day.changes} showOriginalDate/></details> : null}
     </section> : null}
 
-    {tab === "agenda" ? <section className="home-view agenda-view">
-      <div className="month-heading"><Link className="month-navigation" href={`/inicio?vista=agenda&mes=${shiftMonth(data.agendaMonth, -1)}&fecha=${shiftMonth(data.agendaMonth, -1)}-01`} aria-label="Mes anterior">‹</Link><div><h2>{formatMonth(data.agendaMonth)}</h2><Link href={`/inicio?vista=agenda&mes=${today.slice(0, 7)}&fecha=${today}`}>Ir a hoy</Link></div><Link className="month-navigation" href={`/inicio?vista=agenda&mes=${shiftMonth(data.agendaMonth, 1)}&fecha=${shiftMonth(data.agendaMonth, 1)}-01`} aria-label="Mes siguiente">›</Link></div>
-      <div className="month-calendar" aria-label={`Calendario de ${formatMonth(data.agendaMonth)}`}>
-        {(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"] as const).map((label) => <span className="calendar-weekday" key={label}>{label}</span>)}
-        {agendaDays.map((date, index) => date ? <button key={date} type="button" aria-label={`${formatFriendlyDate(date)}, ${agendaCounts.get(date) ?? 0} visitas`} aria-pressed={selectedAgendaDate === date} className={date === today ? "is-today" : undefined} onClick={() => selectAgendaDate(date)}><span>{Number(date.slice(-2))}</span>{agendaCounts.get(date) ? <small>{agendaCounts.get(date)}</small> : null}</button> : <span className="calendar-empty" key={`empty-${index}`}/>) }
+    {tab === "agenda" ? <section className={`home-view agenda-view${mobileAgendaMode === "month" ? " mobile-show-month" : ""}`}>
+      <div className="agenda-week-view" aria-label={`Semana del ${formatWeekRange(agendaWeekStart)}`}>
+        <div className="week-heading"><button type="button" className="month-navigation" onClick={() => selectAgendaWeek(addLocalDays(agendaWeekStart, -7))} aria-label="Semana anterior">‹</button><div><h2>{formatWeekRange(agendaWeekStart)}</h2><button type="button" className="text-navigation" onClick={goToToday}>Ir a hoy</button></div><button type="button" className="month-navigation" onClick={() => selectAgendaWeek(addLocalDays(agendaWeekStart, 7))} aria-label="Semana siguiente">›</button></div>
+        <div className="agenda-week-strip">{agendaWeekDays.map((date) => <button type="button" key={date} aria-label={`${formatFriendlyDate(date)}, ${agendaCounts.get(date) ?? 0} visitas`} aria-pressed={selectedAgendaDate === date} className={date === today ? "is-today" : undefined} onClick={() => selectAgendaDate(date)}><span>{new Intl.DateTimeFormat("es-AR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`)).replace(".", "")}</span><strong>{Number(date.slice(-2))}</strong><small>{agendaCounts.get(date) || "–"}</small></button>)}</div>
+        <button type="button" className="month-toggle" onClick={() => setMobileAgendaMode("month")}>Ver mes</button>
+      </div>
+      <div className="agenda-month-view">
+        <div className="month-heading"><Link className="month-navigation" href={`/inicio?vista=agenda&mes=${shiftMonth(data.agendaMonth, -1)}&fecha=${shiftMonth(data.agendaMonth, -1)}-01`} aria-label="Mes anterior">‹</Link><div><h2>{formatMonth(data.agendaMonth)}</h2><Link href={`/inicio?vista=agenda&mes=${today.slice(0, 7)}&fecha=${today}`}>Ir a hoy</Link></div><Link className="month-navigation" href={`/inicio?vista=agenda&mes=${shiftMonth(data.agendaMonth, 1)}&fecha=${shiftMonth(data.agendaMonth, 1)}-01`} aria-label="Mes siguiente">›</Link></div>
+        <div className="month-calendar" aria-label={`Calendario de ${formatMonth(data.agendaMonth)}`}>
+          {(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"] as const).map((label) => <span className="calendar-weekday" key={label}>{label}</span>)}
+          {agendaDays.map((date, index) => date ? <button key={date} type="button" aria-label={`${formatFriendlyDate(date)}, ${agendaCounts.get(date) ?? 0} visitas`} aria-pressed={selectedAgendaDate === date} className={date === today ? "is-today" : undefined} onClick={() => selectAgendaDate(date)}><span>{Number(date.slice(-2))}</span>{agendaCounts.get(date) ? <small>{agendaCounts.get(date)}</small> : null}</button> : <span className="calendar-empty" key={`empty-${index}`}/>) }
+        </div>
+        <button type="button" className="month-toggle" onClick={() => setMobileAgendaMode("week")}>Ver semana</button>
       </div>
       {overdueAgendaItems.length ? <details className="history-group agenda-pending" open={initialShowPending}><summary>Visitas pendientes de días anteriores <span>{overdueAgendaItems.length}</span></summary><div className="agenda-pending-list">{overdueAgendaItems.map((item) => <div key={item.id}><span>{formatFriendlyDateTime(item.scheduledDate, item.scheduledTime)}</span><Link href={`/patients/${item.patientId}`}>{item.patientName}</Link><button type="button" className="more-action" onClick={(event) => openDialog({kind:"actions", appointment:item, patientName:item.patientName}, event.currentTarget)}>Registrar visita</button></div>)}</div></details> : null}
-      <section className="agenda-selected-day" aria-labelledby="agenda-selected-heading"><div className="agenda-day-heading"><div><p>Día seleccionado</p><h2 id="agenda-selected-heading">{formatFriendlyDate(selectedAgendaDate)}</h2></div><span aria-live="polite">{selectedAgendaItems.length} {selectedAgendaItems.length === 1 ? "visita" : "visitas"}</span></div>
-        <div className="agenda-day-list">{selectedAgendaItems.map((item) => <article className="home-card agenda-card" key={item.id}><div className="agenda-card-time"><strong>{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong>{item.durationMinutes ? <span>{item.durationMinutes} min</span> : null}</div><div className="agenda-card-patient"><h3><Link className="patient-name-link" href={`/patients/${item.patientId}`}>{item.patientName}</Link></h3><span className="home-status">{item.statusLabel}</span></div>{["booked", "proposed"].includes(item.status) ? <button type="button" className="more-action agenda-more" onClick={(event) => openDialog({kind:"actions", appointment:item, patientName:item.patientName}, event.currentTarget)} aria-label={`Más opciones para ${item.patientName}`}>Más</button> : null}</article>)}</div>
-        {!selectedAgendaItems.length ? <div className="day-empty"><h3>{selectedAgendaDate < today ? "No hubo visitas agendadas" : "No hay visitas previstas"}</h3>{selectedAgendaDate >= today ? <><p>Podés agendar una visita para este día.</p><button className="home-primary-action" onClick={(event) => openDialog({kind:"schedule", date:selectedAgendaDate}, event.currentTarget)}>Agendar en este día</button></> : <p>Podés consultar otro día desde el calendario.</p>}</div> : null}
+      <section className="agenda-selected-day" aria-labelledby="agenda-selected-heading"><div className="agenda-day-heading"><div><p>Día seleccionado</p><h2 id="agenda-selected-heading">{formatFriendlyDate(selectedAgendaDate)}</h2></div><span aria-live="polite">{selectedAgendaItemsForDisplay.length} {selectedAgendaItemsForDisplay.length === 1 ? "visita" : "visitas"}</span></div>
+        <div className="agenda-day-list">{selectedAgendaItemsForDisplay.map((item) => <article className="home-card agenda-card" key={item.id}><div className="agenda-card-time"><strong>{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong>{item.durationMinutes ? <span>{item.durationMinutes} min</span> : null}</div><div className="agenda-card-patient"><h3><Link className="patient-name-link" href={`/patients/${item.patientId}`}>{item.patientName}</Link></h3><span className="home-status">{item.statusLabel}</span></div>{["booked", "proposed"].includes(item.status) ? <button type="button" className="more-action agenda-more" onClick={(event) => openDialog({kind:"actions", appointment:item, patientName:item.patientName}, event.currentTarget)} aria-label={`Más opciones para ${item.patientName}`}>Más</button> : null}</article>)}</div>
+        {!selectedAgendaItemsForDisplay.length ? <div className="day-empty"><h3>{selectedAgendaDate < today ? "No hubo visitas agendadas" : "No hay visitas previstas"}</h3>{selectedAgendaDate >= today ? <><p>Podés agendar una visita para este día.</p><button className="home-primary-action" onClick={(event) => openDialog({kind:"schedule", date:selectedAgendaDate}, event.currentTarget)}>Agendar en este día</button></> : <p>Las visitas pendientes anteriores aparecen arriba.</p>}</div> : null}
       </section>
     </section> : null}
 
