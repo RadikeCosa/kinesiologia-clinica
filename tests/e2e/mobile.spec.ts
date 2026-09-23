@@ -107,7 +107,12 @@ test("la agenda semanal y el directorio aprovechan el ancho móvil", async ({ pa
   await expect(rosa.getByRole("link", { name: "WhatsApp" })).toBeVisible();
   await expect(rosa).toContainText("299 555 0101");
   await expect(rosa.locator(".patient-location-fact").getByText("Indicaciones para llegar")).toBeVisible();
-  await expect(rosa.locator(".patient-precautions")).toBeVisible();
+  const precautions = rosa.locator(".patient-precautions-disclosure");
+  await expect(precautions).toBeVisible();
+  await expect(precautions).not.toHaveAttribute("open", "");
+  await precautions.getByText("Tiene precauciones").click();
+  await expect(precautions).toHaveAttribute("open", "");
+  await expect(precautions.locator("li").first()).toBeVisible();
   await expect(rosa.getByRole("button", { name: "Comenzar visita" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
