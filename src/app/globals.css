@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 :root {
   color-scheme: light;
   --background: #f3f7f5;
@@ -945,7 +957,9 @@ h1 {
 .directory-tools-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
 .directory-tools-heading .directory-search { flex: 1; margin-top: 0; }
 .directory-tools-heading > p { flex: none; margin: 0 0 0.75rem; color: var(--muted); font-size: 0.84rem; }
-.directory-filters { flex-wrap: wrap; overflow: visible; }
+.directory-filters { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.directory-filters::-webkit-scrollbar { display: none; }
+.directory-filters button { min-height: 2.75rem; white-space: nowrap; }
 .patient-fact-wide { grid-column: 1 / -1; }
 .patient-facts dd .inline-text-action, .inline-contact-actions { margin-left: 0.6rem; }
 .inline-text-action, .inline-contact-actions a { display: inline-flex; align-items: center; min-height: 2.75rem; margin-block: -0.65rem; color: var(--accent); font-size: 0.82rem; font-weight: 800; text-underline-offset: 0.2em; }
@@ -953,9 +967,11 @@ h1 {
 .access-instructions summary { color: var(--accent); font-size: 0.84rem; font-weight: 800; cursor: pointer; }
 .access-instructions p { margin: 0.5rem 0 0; color: var(--ink); font-size: 0.9rem; }
 .directory-primary-actions { margin-top: 0.9rem; }
-.patient-treatment-summary { display: grid; gap: 0.2rem; text-align: right; }
+.patient-treatment-summary { display: grid; gap: 0.2rem; flex: 0 1 auto; min-width: max-content; text-align: right; }
 .patient-treatment-summary strong { font-size: 0.9rem; }
 .patient-treatment-summary span { color: var(--muted); font-size: 0.78rem; }
+.patient-heading-main { min-width: 0; }
+.patient-name-link { overflow-wrap: anywhere; }
 .patient-next-visit { display: flex; align-items: baseline; gap: 0.45rem; margin: 0.8rem 0 0; font-size: 0.88rem; font-weight: 750; }
 .patient-next-visit span { color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
 .patient-precautions { display: flex; gap: 0.6rem; margin-top: 0.8rem; padding: 0.65rem 0.75rem; border-left: 3px solid #d9b768; border-radius: 0.5rem; color: #624711; background: #fff8e7; font-size: 0.84rem; line-height: 1.4; }
@@ -1022,9 +1038,12 @@ h1 {
   .agenda-more { grid-column: 2; grid-row: 1; }
   .directory-tools-heading { align-items: stretch; flex-direction: column; gap: 0.45rem; }
   .directory-tools-heading > p { margin: 0; }
-  .directory-filters { margin: 0.75rem 0; }
+  .directory-filters { margin: 0.75rem -0.1rem; padding-inline: 0.1rem; }
   .directory-card { padding: 0.9rem; }
   .patient-treatment-summary { max-width: 8rem; }
+  .home-card-heading { flex-wrap: wrap; }
+  .patient-heading-main { flex: 1 1 min(100%, 12rem); }
+  .patient-treatment-summary { margin-left: auto; }
   .patient-next-visit { align-items: start; flex-direction: column; gap: 0.15rem; }
   .patient-precautions { display: grid; gap: 0.2rem; }
   .patient-facts { gap: 0.7rem; margin-top: 0.8rem; }

@@ -83,11 +83,18 @@ test("la agenda semanal y el directorio aprovechan el ancho móvil", async ({ pa
 
   await page.getByRole("button", { name: "Pacientes", exact: true }).click();
   await expect(page.getByText("Directorio completo")).toHaveCount(0);
+  const filters = page.locator(".directory-filters");
+  await expect(filters.locator("button")).toHaveCount(5);
+  await expect(filters).toHaveCSS("flex-wrap", "nowrap");
   const rosa = page.locator("article.directory-card").filter({ hasText: "Rosa Benítez" });
   await expect(rosa.getByRole("link", { name: "Rosa Benítez" })).toBeVisible();
-  await expect(rosa.getByRole("link", { name: "Ver mapa" })).toBeVisible();
+  const mapLink = rosa.getByRole("link", { name: /Ver mapa/ });
+  await expect(mapLink).toBeVisible();
+  await expect(mapLink).toHaveAttribute("target", "_blank");
+  await expect(mapLink).toHaveAttribute("rel", "noopener noreferrer");
   await expect(rosa.getByRole("link", { name: "Llamar" })).toBeVisible();
   await expect(rosa.getByRole("link", { name: "WhatsApp" })).toBeVisible();
+  await expect(rosa).toContainText("299 555 0101");
   await expect(rosa.locator(".patient-location-fact").getByText("Indicaciones para llegar")).toBeVisible();
   await expect(rosa.locator(".patient-precautions")).toBeVisible();
   await expect(rosa.getByRole("button", { name: "Comenzar visita" })).toBeVisible();
