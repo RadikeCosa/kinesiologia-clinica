@@ -947,6 +947,7 @@ h1 {
 .patient-location-fact .access-instructions { margin-top: 0.2rem; }
 
 @media (min-width: 42.01rem) {
+  .schedule-shortcut { min-height: 3.25rem; padding-inline: 1rem; }
   .visit-actions { display: flex; align-items: end; justify-content: space-between; }
   .visit-clinical-actions { display: flex; flex-wrap: wrap; }
   .visit-clinical-actions form { display: block; }
