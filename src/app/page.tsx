@@ -42,15 +42,6 @@ export default function Home() {
 
       <p className="status access-environment-note">Entorno local · datos ficticios</p>
 
-      {localClinicalSurfaceEnabled && process.env.NODE_ENV === "development" ? (
-        <details className="developer-tools">
-          <summary>Herramientas de desarrollo</summary>
-          <div className="developer-tools-links">
-            <Link className="diagnostic-link" href="/diagnostico/passkeys">Comprobar compatibilidad con passkeys</Link>
-            <Link className="diagnostic-link" href="/laboratorio/inicio">Abrir laboratorio de la pantalla inicial</Link>
-          </div>
-        </details>
-      ) : null}
     </main>
   );
 }

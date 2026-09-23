@@ -241,7 +241,7 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
   useEffect(() => {
     if (initialResolveAppointmentId) returnFocusRef.current = document.getElementById(`appointment-${initialResolveAppointmentId}`);
   }, [initialResolveAppointmentId]);
-  return <main className="home-lab-shell clinical-home-real">
+  return <main className="clinical-home-shell clinical-home-real">
     <header className="operational-header"><div><p>{tab === "today" ? selectedLabel : "Kinesiología Clínica"}</p><h1>{heading.charAt(0).toUpperCase() + heading.slice(1)}</h1></div><button aria-label="Crear: Agendar visita o alta" className="home-primary-action schedule-shortcut" onClick={(event) => openDialog({ kind: "create" }, event.currentTarget)}>＋ Crear</button></header>
     <nav className="home-tabs home-tabs-three" aria-label="Vista principal">{([["today","Hoy"],["agenda","Agenda"],["patients","Pacientes"]] as const).map(([value,label]) => <button key={value} type="button" aria-current={tab === value ? "page" : undefined} onClick={() => selectTab(value)}>{label}</button>)}</nav>
 

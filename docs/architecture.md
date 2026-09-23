@@ -4,7 +4,7 @@
 
 Este repositorio es el reemplazo privado de `/admin`. El frontend se construye desde cero y el admin anterior sigue siendo el respaldo operativo hasta alcanzar las condiciones de corte.
 
-La fundación contiene bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y un piloto clínico online completo para agenda y visita: pacientes, tratamientos, `Appointment`, `Encounter`, evaluaciones `Observation` y procedimientos `Procedure` opcionales. `/inicio` es la entrada autenticada y el laboratorio de desarrollo reutiliza sus modelos visuales con datos en memoria. Las rutas y la escritura se habilitan exclusivamente contra el HAPI descartable de `8081` y se bloquean en Vercel. El acceso con passkeys, sesiones persistentes, revocación y recuperación está implementado. Todavía no implementa PWA, offline ni informes.
+La fundación contiene bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y un piloto clínico online completo para agenda y visita: pacientes, tratamientos, `Appointment`, `Encounter`, evaluaciones `Observation` y procedimientos `Procedure` opcionales. `/inicio` es la entrada autenticada y compone sus vistas desde los repositorios clínicos reales. Las rutas y la escritura se habilitan exclusivamente contra el HAPI descartable de `8081` y se bloquean en Vercel. El acceso con passkeys, sesiones persistentes, revocación y recuperación está implementado. Todavía no implementa PWA, offline ni informes.
 
 ## Capas
 
@@ -26,12 +26,6 @@ Reglas de dependencia:
 - `infrastructure` implementa esos puertos;
 - HAPI FHIR solo se consulta desde código server-side;
 - `FHIR_BASE_URL` nunca utiliza el prefijo `NEXT_PUBLIC_`.
-
-## Laboratorio de la pantalla inicial
-
-`/laboratorio/inicio` permite revisar las decisiones de interfaz antes de conectarlas a contratos clínicos. Presenta `Hoy` como vista predeterminada y un directorio completo en `Pacientes`. Los escenarios, pacientes y visitas son modelos de vista ficticios; el presentador puro deriva el orden y los estados visibles a partir de una hora fija. Las interacciones solo modifican el escenario en memoria.
-
-La ruta exige autenticación, `NODE_ENV=development` y el endpoint descartable `http://localhost:8081/fhir`. Aunque comprueba ese entorno seguro, no consulta ni modifica HAPI. En producción, Vercel o el entorno local-real responde como una ruta inexistente. Esta frontera permite evaluar la navegación y los estados sin convertir el laboratorio en un segundo flujo clínico.
 
 ## Pantalla inicial y agenda real
 

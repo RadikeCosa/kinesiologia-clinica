@@ -31,7 +31,6 @@ Fundación técnica inicial:
 - reintentos con identidad estable, control de versión y relectura de confirmación desde HAPI;
 - diagnóstico no clínico de compatibilidad WebAuthn por dispositivo;
 - acceso con passkeys para una cuenta profesional provisionada, sesiones por dispositivo, revocación y recuperación con códigos de un solo uso;
-- laboratorio local autenticado que reutiliza los modelos visuales con escenarios en memoria;
 - datos ficticios reproducibles y pruebas Playwright en Chrome de escritorio y viewport móvil;
 - bloqueo de indexación para toda la aplicación;
 - pruebas unitarias iniciales;
@@ -54,8 +53,6 @@ Para cargar un conjunto repetible de pacientes, tratamientos, citas, visitas, ev
 ```bash
 npm run seed:clinical-home
 ```
-
-Después de ingresar, `http://localhost:3000/laboratorio/inicio` permite revisar el concepto de la futura pantalla inicial. Usa una hora fija y datos ficticios en memoria para comparar un día habitual, trabajo pendiente, cambios de agenda, datos incompletos, un día vacío y un directorio extenso. No lee ni escribe FHIR, no abre mapas ni inicia comunicaciones. La ruta solo existe en desarrollo local contra `8081` y exige una sesión clínica válida.
 
 Requiere Node.js 20.19 o superior.
 
