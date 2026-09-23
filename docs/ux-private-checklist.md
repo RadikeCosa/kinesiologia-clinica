@@ -25,6 +25,8 @@ Esta lista acompaña el hito de gestión clínica y se aplica sólo a datos fict
 - [x] Pacientes usa precauciones compactas, desplegables y cerradas inicialmente.
 - [x] Hoy mantiene el aviso compacto y el detalle completo de precauciones dentro de “Más”.
 - [x] “Más” conserva acciones de visita; Pacientes conserva acciones de paciente y tratamiento.
+- [x] Pacientes conserva el orden clínico identidad → tratamiento → precauciones → contacto → acciones.
+- [x] Hoy usa una variante operativa con identidad/contacto y resumen de visita sin cambiar sus acciones.
 - [x] Sesión, frecuencia y próxima visita mantienen una composición responsive estable en 320, 352, 356, 390 px y desktop.
 - [x] Los teléfonos faltantes muestran placeholder y ocultan acciones; Maps conserva `noopener noreferrer` y aviso accesible de nueva pestaña.
 - [ ] Completar revisión visual manual de ingreso, recuperación y configuración de dispositivos en Chrome de escritorio y Android.

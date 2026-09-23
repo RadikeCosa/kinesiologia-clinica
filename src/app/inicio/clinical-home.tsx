@@ -187,16 +187,30 @@ function canMarkNoShow(appointment: AgendaItemViewModel, referenceNow: string) {
   return new Date(`${appointment.scheduledDate}T${appointment.scheduledTime}:00-03:00`) <= new Date(referenceNow);
 }
 
+function visitTimingLabel(item: PresentedTodayItem) {
+  if (item.startPunctuality === "on-time") return "Puntual";
+  if (item.startPunctuality === "delayed") return "Leve demora";
+  if (item.startPunctuality === "severely-delayed") return "Demora";
+  return null;
+}
+
+function documentationTimingLabel(item: PresentedTodayItem) {
+  if (item.documentationTimeliness === "later") return "Carga diferida";
+  if (item.documentationTimeliness === "same-day") return "Registrada el mismo día";
+  return null;
+}
+
 function VisitCard({ item, appointment, referenceNow, onDialog }: { item: PresentedTodayItem; appointment?: AgendaItemViewModel; referenceNow: string; onDialog: (dialog: Exclude<DialogState, null>, trigger: HTMLElement) => void }) {
   const future = item.date > getLocalDate(referenceNow);
   const previous = item.date < getLocalDate(referenceNow);
   const currentSession = !["completed", "rescheduled", "cancelled", "no-show"].includes(item.displayState);
+  const punctuality = visitTimingLabel(item);
+  const documentationTiming = documentationTimingLabel(item);
   return <article id={`appointment-${item.id}`} tabIndex={-1} className={`home-card visit-card state-${item.displayState}`}>
-    <div className="visit-card-top"><strong className="visit-time">{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong><span className="home-status">{item.statusLabel}</span></div>
-    <div className="visit-card-main"><h3><Link className="patient-name-link" href={`/patients/${item.patientId}`}>{item.patient.displayName}</Link></h3><p className="treatment-progress">{visitProgress(item.patient, currentSession)}</p></div>
-    <PatientContactSummary patient={item.patient} variant="today" onDialog={onDialog}/>
-    <PatientPrecautionIndicator patient={item.patient} compact/>
-    {item.actualStart ? <p className="home-detail">Inicio real {item.actualStart}{item.actualEnd ? ` · Finalizó ${item.actualEnd}` : ""}</p> : null}
+    <div className="visit-card-layout">
+      <div className="visit-patient-block"><div className="visit-card-main"><h3><Link className="patient-name-link" href={`/patients/${item.patientId}`}>{item.patient.displayName}</Link></h3></div><PatientContactSummary patient={item.patient} variant="today" onDialog={onDialog}/></div>
+      <div className="visit-summary-block"><div className="visit-card-top"><strong className="visit-time">{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong><span className="home-status">{item.statusLabel}</span></div><p className="treatment-progress">{visitProgress(item.patient, currentSession)}</p>{punctuality ? <span className="visit-timing-badge">{punctuality}</span> : null}{documentationTiming ? <span className="visit-documentation-badge">{documentationTiming}</span> : null}{item.actualStart ? <p className="home-detail">Inicio real {item.actualStart}{item.actualEnd ? ` · Finalizó ${item.actualEnd}` : ""}</p> : null}</div>
+    </div>
     <div className="visit-actions">
       <div className="visit-clinical-actions">
         {item.displayState === "in-progress" && item.visitId ? <Link className="home-primary-action button-link" href={`/patients/${item.patientId}/visits/${item.visitId}/edit`}>Continuar</Link> : null}
@@ -210,6 +224,7 @@ function VisitCard({ item, appointment, referenceNow, onDialog }: { item: Presen
         {appointment && ["booked", "proposed"].includes(appointment.status) ? <button type="button" className="more-action" onClick={(event) => onDialog({ kind: "actions", appointment, patientName: item.patient.displayName }, event.currentTarget)} aria-label={`Más opciones para ${item.patient.displayName}`}>Más</button> : null}
       </div>
     </div>
+    <PatientPrecautionIndicator patient={item.patient} compact/>
   </article>;
 }
 
