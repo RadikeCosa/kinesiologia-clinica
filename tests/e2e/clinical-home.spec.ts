@@ -43,9 +43,9 @@ test.describe.serial("pantalla inicial clínica", () => {
 
   test("separa los pendientes de Hoy y muestra una ficha de paciente completa", async ({ page }) => {
     await page.goto("/inicio");
-    await expect(page.getByRole("heading", { name: /Pendientes anteriores/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Visitas pendientes de días anteriores/ })).toBeVisible();
     await page.locator(".week-strip button").nth(1).click();
-    await expect(page.getByRole("heading", { name: /Pendientes anteriores/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /Visitas pendientes de días anteriores/ })).toHaveCount(0);
 
     await page.goto("/inicio?vista=pacientes");
     await page.getByRole("link", { name: "Rosa Benítez", exact: true }).click();
@@ -61,11 +61,11 @@ test.describe.serial("pantalla inicial clínica", () => {
     const pending = page.locator(".patient-pending-note");
     await expect(pending).toContainText("1 visita pendiente anterior");
     await expect(pending).toContainText(/\d{2}\/\d{2}\/\d{4}/);
-    await pending.getByRole("link", { name: "Resolver visita" }).click();
+    await pending.getByRole("link", { name: "Registrar visita" }).click();
     await expect(page).toHaveURL(/\/inicio\?vista=hoy&resolver=demo-appt-overdue/);
     const options = page.getByRole("dialog", { name: "Opciones de la visita" });
     await expect(options).toContainText("Rosa Benítez");
-    await expect(options.getByRole("link", { name: "Registrar visita ya realizada" })).toBeVisible();
+    await expect(options.getByRole("link", { name: "Registrar visita" })).toBeVisible();
     await expect(options.getByRole("button", { name: "No se realizó" })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(options).toHaveCount(0);
@@ -77,7 +77,7 @@ test.describe.serial("pantalla inicial clínica", () => {
     await page.goto("/inicio");
     const untimed = page.locator("article.visit-card").filter({ hasText: "Carlos Méndez" }).first();
     await expect(untimed.getByRole("button", { name: "Comenzar visita" })).toBeVisible();
-    await expect(untimed.getByRole("link", { name: "Registrar visita ya realizada" })).toHaveCount(0);
+    await expect(untimed.getByRole("link", { name: "Registrar visita" })).toHaveCount(0);
     await untimed.getByRole("button", { name: "Comenzar visita" }).click();
     await expect(page.getByRole("dialog", { name: "Comenzar visita ahora" })).toContainText("no se calculará puntualidad");
     await page.getByRole("button", { name: "Confirmar y comenzar" }).click();
@@ -86,7 +86,7 @@ test.describe.serial("pantalla inicial clínica", () => {
     await page.goto("/inicio");
     const restored = page.locator("article.visit-card").filter({ hasText: "Carlos Méndez" }).first();
     await restored.getByRole("button", { name: /Más opciones/ }).click();
-    await page.getByRole("link", { name: "Registrar visita ya realizada" }).click();
+    await page.getByRole("link", { name: "Registrar visita" }).click();
     await expect(page.getByRole("heading", { name: "Registrar visita realizada" })).toBeVisible();
   });
 
@@ -147,12 +147,12 @@ test.describe.serial("pantalla inicial clínica", () => {
 
     await page.goto("/inicio");
     const overdue = page.locator("article").filter({ hasText: "11:00" }).first();
-    await overdue.getByRole("button", { name: "Resolver visita" }).click();
+    await overdue.getByRole("button", { name: "Registrar visita" }).click();
     await page.getByRole("button", { name: "No se realizó" }).click();
     await page.getByLabel("Motivo").selectOption("patient-not-at-home");
     await page.getByRole("button", { name: "Confirmar" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    const changes = page.locator("details.history-group").filter({ hasText: "Actualizaciones de hoy" });
+    const changes = page.locator("details.history-group").filter({ hasText: "Cambios registrados hoy" });
     await changes.locator("summary").click();
     await expect(changes.locator(".history-row").filter({ hasText: "Rosa Benítez" }).filter({ hasText: "No se realizó" }).first()).toBeVisible();
   });
@@ -186,7 +186,7 @@ test.describe.serial("pantalla inicial clínica", () => {
     if (await begin.count()) {
       await begin.click();
     } else {
-      await scheduled.getByRole("button", { name: "Resolver visita" }).click();
+      await scheduled.getByRole("button", { name: "Registrar visita" }).click();
       await page.getByRole("dialog", { name: "Opciones de la visita" }).getByRole("button", { name: "Comenzar visita" }).click();
     }
     await expect(page).toHaveURL(/\/patients\/demo-alicia\/visits\/[^/]+\/edit$/);

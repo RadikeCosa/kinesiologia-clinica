@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterDirectory,
+  formatArgentinePhone,
   formatFriendlyDateTime,
   getTodayDisplayState,
   presentDay,
@@ -51,6 +52,23 @@ describe("presentToday", () => {
         LAB_REFERENCE_NOW,
       ),
     ).toBe("upcoming");
+  });
+
+  it("keeps an earlier untimed visit in pending work and orders timed work first", () => {
+    const scenario = getClinicalHomeScenario("habitual");
+    const day = presentDay({
+      referenceNow: scenario.referenceNow,
+      selectedDate: "2026-09-15",
+      patients: scenario.patients,
+      dayItems: [
+        ...scenario.todayItems,
+        { id: "old-untimed", patientId: "ana", date: "2026-09-14", sourceState: "scheduled" },
+        { id: "old-timed", patientId: "carlos", date: "2026-09-14", scheduledTime: "18:00", sourceState: "scheduled" },
+      ],
+    });
+
+    expect(day.previousPending.map((item) => item.id)).toEqual(["old-timed", "old-untimed"]);
+    expect(day.previousPending.map((item) => item.primaryActionLabel)).toEqual(["Registrar visita", "Registrar visita"]);
   });
 });
 
@@ -130,5 +148,13 @@ describe("friendly appointment dates", () => {
   it("shows a local readable date and marks the time as hours", () => {
     expect(formatFriendlyDateTime("2026-09-17", "18:00")).toMatch(/Jue.*17.*sept.*18:00 hs/i);
     expect(formatFriendlyDateTime("2026-09-17")).toMatch(/sin horario$/);
+  });
+});
+
+describe("display-only phone formatting", () => {
+  it("formats Argentine mobile numbers without changing unknown values", () => {
+    expect(formatArgentinePhone("+5492995550104")).toBe("299 555 0104");
+    expect(formatArgentinePhone("+5492995550101")).toBe("299 555 0101");
+    expect(formatArgentinePhone("+34915550104")).toBe("+34915550104");
   });
 });

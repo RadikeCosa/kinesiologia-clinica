@@ -66,9 +66,10 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
 
   const toToday = (appointment: ScheduledVisit): TodayItemViewModel => {
     const visit = visitByAppointment.get(appointment.id);
+    const replacement = appointment.replacedById ? appointments.find((item) => item.id === appointment.replacedById) : undefined;
     const sourceState = appointment.replacedById ? "rescheduled" : appointment.status === "no-show" ? "no-show" : appointment.status === "cancelled" ? "cancelled" : visit?.status === "in-progress" ? "in-progress" : visit?.status === "finished" ? "completed" : appointment.status === "fulfilled" ? "care-ended" : "scheduled";
     const changed = ["rescheduled", "cancelled", "no-show"].includes(sourceState);
-    return { id: appointment.id, patientId: appointment.patientId, treatmentId: appointment.treatmentId, appointmentVersion: appointment.version, visitId: visit?.id, visitVersion: visit?.version, date: appointment.scheduledDate, changeDate: changed && appointment.updatedAt ? localDate(new Date(appointment.updatedAt)) : undefined, scheduledTime: localTime(appointment.startsAt), sourceState, actualStart: localTime(visit?.startedAt), actualEnd: localTime(visit?.endedAt), startPunctuality: visit ? deriveStartPunctuality(visit, appointment) : undefined, documentationTimeliness: visit ? deriveDocumentationTimeliness(visit) : undefined };
+    return { id: appointment.id, patientId: appointment.patientId, treatmentId: appointment.treatmentId, appointmentVersion: appointment.version, visitId: visit?.id, visitVersion: visit?.version, date: appointment.scheduledDate, changeDate: changed && appointment.updatedAt ? localDate(new Date(appointment.updatedAt)) : undefined, scheduledTime: localTime(appointment.startsAt), rescheduledToDate: replacement?.scheduledDate, rescheduledToTime: localTime(replacement?.startsAt), sourceState, actualStart: localTime(visit?.startedAt), actualEnd: localTime(visit?.endedAt), startPunctuality: visit ? deriveStartPunctuality(visit, appointment) : undefined, documentationTimeliness: visit ? deriveDocumentationTimeliness(visit) : undefined };
   };
   const unplanned = visits.filter((visit) => {
     if (visit.appointmentId) return false;

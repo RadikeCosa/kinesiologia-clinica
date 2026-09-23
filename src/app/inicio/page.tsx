@@ -8,11 +8,11 @@ import { ClinicalHome } from "./clinical-home";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClinicalHomePage({ searchParams }: { searchParams: Promise<{ vista?: string; agendar?: string; resolver?: string; mes?: string; fecha?: string }> }) {
+export default async function ClinicalHomePage({ searchParams }: { searchParams: Promise<{ vista?: string; agendar?: string; resolver?: string; mes?: string; fecha?: string; pendientes?: string }> }) {
   if (!canRenderLocalClinicalSurface()) notFound();
   await requireClinicalSession();
-  const { vista, agendar, resolver, mes, fecha } = await searchParams;
+  const { vista, agendar, resolver, mes, fecha, pendientes } = await searchParams;
   const initialTab = vista === "agenda" ? "agenda" : vista === "pacientes" ? "patients" : "today";
   const data = await getClinicalHome(new Date(), createClinicalDependencies(), mes);
-  return <><SessionRefresh /><ClinicalHome key={data.agendaMonth} data={data} initialTab={initialTab} initialPatientId={agendar} initialResolveAppointmentId={resolver} initialSelectedDate={fecha} /></>;
+  return <><SessionRefresh /><ClinicalHome key={data.agendaMonth} data={data} initialTab={initialTab} initialPatientId={agendar} initialResolveAppointmentId={resolver} initialSelectedDate={fecha} initialShowPending={pendientes === "1"} /></>;
 }

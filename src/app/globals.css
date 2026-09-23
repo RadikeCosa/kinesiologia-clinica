@@ -732,7 +732,7 @@ h1 {
   justify-content: space-between;
   gap: 1rem;
 }
-.operational-header p { margin: 0 0 0.2rem; color: var(--muted); font-size: 0.82rem; }
+.operational-header p { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.82rem; }
 .operational-header h1 { margin: 0; font-size: clamp(2rem, 6vw, 3.2rem); line-height: 0.95; }
 .schedule-shortcut { min-height: 2.75rem; padding: 0.65rem 0.9rem; border: 1px solid var(--accent); border-radius: 0.7rem; font: inherit; font-weight: 800; cursor: pointer; }
 .clinical-home-real .home-tabs { margin-top: 1rem; }
@@ -761,6 +761,9 @@ h1 {
 .operational-section { margin-top: 1.25rem; }
 .operational-section > h3 { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.55rem; font-size: 0.92rem; }
 .operational-section > h3 span { display: inline-grid; min-width: 1.45rem; height: 1.45rem; place-items: center; border-radius: 999px; color: #72551d; background: #fbefce; font-size: 0.72rem; }
+.section-heading-with-action { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.55rem; }
+.section-heading-with-action h3 { display: flex; align-items: center; gap: 0.45rem; margin: 0; font-size: 0.92rem; }
+.section-heading-with-action a { color: var(--accent); font-size: 0.8rem; font-weight: 800; text-underline-offset: 0.2em; }
 .priority-section > h3 { color: var(--accent); }
 .attention-section > h3 { color: #72551d; }
 .visit-card { padding: 0.9rem 1rem; }
@@ -779,6 +782,10 @@ h1 {
 .visit-actions .more-action { min-width: 3.5rem; color: var(--ink); background: #f8fbfa; }
 .visit-card.state-in-progress { border-color: var(--accent); box-shadow: 0 0 0 2px rgb(22 122 91 / 10%); }
 .visit-card.state-past-unresolved, .visit-card.state-documentation-pending { border-color: #dfc37e; }
+.visit-card.state-scheduled-no-time { border-color: #cbd8d3; }
+.visit-card.state-past-unresolved .home-status, .visit-card.state-documentation-pending .home-status { color: #72551d; background: #fbefce; }
+.visit-card.state-scheduled-no-time .home-status { color: var(--muted); background: #e9edeb; }
+.visit-card.state-in-progress .home-status { color: white; background: var(--accent); }
 .day-empty { margin-top: 1.2rem; padding: 1.25rem; border: 1px dashed var(--border); border-radius: 1rem; background: var(--surface); text-align: center; }
 .day-empty h3, .day-empty p { margin: 0; }
 .day-empty p { margin-top: 0.35rem; color: var(--muted); }
@@ -809,6 +816,8 @@ h1 {
 .patient-visit-list .visit-record-link { display: inline-block; margin-top: 0.65rem; }
 .history-row { grid-template-columns: 4.4rem minmax(8rem, 1fr) auto auto; align-items: center; }
 .history-list-with-date .history-row { grid-template-columns: 7.2rem minmax(8rem, 1fr) auto auto; }
+.history-helper { margin: 0; padding: 0.65rem 1rem; color: var(--muted); font-size: 0.82rem; }
+.history-reschedule { color: var(--accent); font-weight: 700; }
 .visit-record-shell { max-width: 58rem; }
 .visit-record-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 0.55rem; margin: 0.9rem 0; }
 .visit-record-summary div { padding: 0.85rem; border: 1px solid var(--border); border-radius: 0.75rem; background: rgb(255 255 255 / 72%); }
@@ -902,6 +911,7 @@ h1 {
 .agenda-pending-list div + div { border-top: 1px solid var(--border); }
 .agenda-pending-list span { color: var(--muted); font-size: 0.84rem; }
 .agenda-pending-list a { color: var(--ink); font-weight: 800; text-underline-offset: 0.2em; }
+.agenda-pending-list button { justify-self: start; min-height: 2.5rem; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: #f8fbfa; font: inherit; font-weight: 750; cursor: pointer; }
 .agenda-selected-day { margin-top: 1.5rem; }
 .agenda-day-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
 .agenda-day-heading p, .agenda-day-heading h2 { margin: 0; }
@@ -975,6 +985,7 @@ h1 {
   .month-calendar button, .calendar-empty { min-height: 2.9rem; }
   .month-calendar button { border-radius: 0.6rem; }
   .agenda-pending-list div { grid-template-columns: 1fr; gap: 0.2rem; }
+  .section-heading-with-action { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
   .agenda-day-heading { align-items: start; }
   .agenda-day-heading h2 { font-size: 1.15rem; }
   .agenda-card { grid-template-columns: minmax(0, 1fr) auto; gap: 0.55rem; padding: 0.8rem; }

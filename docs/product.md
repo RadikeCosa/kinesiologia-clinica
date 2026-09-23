@@ -41,7 +41,7 @@ La pantalla de acceso presenta la aplicación como una herramienta de kinesiolog
 
 ## Flujo online implementado
 
-`/inicio` es la entrada posterior al ingreso. `+ Crear` permite iniciar una ficha de paciente o agendar una visita. `Hoy` separa pendientes anteriores, horarios, visitas sin hora y actualizaciones del día. `Agenda` permite recorrer meses y abrir el detalle de cada fecha, manteniendo los pendientes anteriores separados. `Pacientes` permite buscar y filtrar por estado, incluido **Sin iniciar**, abrir teléfono, WhatsApp o mapa por acción explícita y acceder a la ficha. La ficha muestra cada visita anterior aún pendiente con un enlace que abre directamente sus opciones de resolución en `Hoy`.
+`/inicio` es la entrada posterior al ingreso. `+ Crear` permite iniciar una ficha de paciente o agendar una visita. `Hoy` separa la visita en curso, visitas pendientes de días anteriores, horarios del día, visitas sin hora, realizadas y cambios registrados hoy. Las visitas anteriores conservan su fecha original y se resuelven con **Registrar visita**, incluso cuando no tenían horario y requieren cargar la hora efectiva. `Agenda` permite recorrer meses, abrir el detalle de cada fecha y resolver desde una sección explícita las visitas pendientes de días anteriores. `Pacientes` permite buscar y filtrar por estado, incluido **Sin iniciar**, abrir teléfono, WhatsApp o mapa por acción explícita y acceder a la ficha. La ficha muestra cada visita anterior aún pendiente con un enlace que abre directamente su registro en `Hoy`.
 
 Una ficha nueva requiere nombre, apellido, teléfono y dirección; las indicaciones para llegar son opcionales. La aplicación advierte una coincidencia exacta de teléfono y permite revisar la ficha previa o crear igualmente. La ficha permite editar esos mismos datos con control de versión. El tratamiento se inicia desde la ficha, sin requerir una solicitud previa: fecha de inicio, sesiones previstas y frecuencia son obligatorias; contexto, precauciones y diagnósticos son opcionales. El contexto y los diagnósticos también pueden editarse con control de versión. Un tratamiento puede pausarse, reanudarse o finalizarse, pero no mientras mantenga citas abiertas. Los cambios y sus notas opcionales permanecen en el historial del tratamiento.
 
@@ -49,7 +49,7 @@ La cita representa lo acordado. Puede crearse, reprogramarse conservando la ante
 
 La interfaz muestra puntualidad de inicio y demora de documentación a partir de los horarios crudos. Las tendencias y resúmenes agregados pertenecen a los informes posteriores.
 
-Una visita prevista sin horario puede comenzar en el momento mediante una confirmación breve o cargarse como ya realizada. Conserva su día acordado sin inventar una hora prevista, por lo que no genera indicador de puntualidad. Hoy cuenta tanto las visitas de la fecha como los pendientes operativos arrastrados de días anteriores.
+Una visita prevista sin horario puede comenzar en el momento si corresponde al día actual, definirse antes de la fecha acordada o registrarse como ya realizada si quedó pendiente. Conserva su día acordado sin inventar una hora prevista, por lo que no genera indicador de puntualidad. Los estados de Hoy se calculan al cargar con la hora de referencia del servidor y la zona `America/Argentina/Buenos_Aires`; la pantalla no cambia de estado automáticamente mientras permanece abierta.
 
 ## Registro clínico breve
 

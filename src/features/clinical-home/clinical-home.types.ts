@@ -54,6 +54,8 @@ export interface TodayItemViewModel {
   actualStart?: string;
   actualEnd?: string;
   rescheduledLabel?: string;
+  rescheduledToDate?: string;
+  rescheduledToTime?: string;
   cancellationReason?: string;
   syncError?: boolean;
   treatmentId?: string;

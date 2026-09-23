@@ -10,8 +10,8 @@ import type {
 } from "./clinical-home.types";
 
 const STATE_COPY: Record<TodayDisplayState, { status: string; action: string }> = {
-  upcoming: { status: "Próxima", action: "Registrar visita" },
-  "past-unresolved": { status: "Pendiente", action: "Resolver visita" },
+  upcoming: { status: "Próxima", action: "Comenzar visita" },
+  "past-unresolved": { status: "Pendiente", action: "Registrar visita" },
   "in-progress": { status: "En curso", action: "Continuar visita" },
   "documentation-pending": { status: "Registro pendiente", action: "Completar registro" },
   "sync-pending": { status: "Pendiente de sincronización", action: "Ver estado" },
@@ -60,6 +60,15 @@ export function formatFriendlyDate(date: string) {
 
 export function formatFriendlyDateTime(date: string, time?: string) {
   return `${formatFriendlyDate(date)}${time ? `, ${time} hs` : ", sin horario"}`;
+}
+
+/** Display-only Argentine local format; links continue to use the original value. */
+export function formatArgentinePhone(phone?: string) {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  const local = digits.startsWith("549") && digits.length === 13 ? digits.slice(3) : digits;
+  if (local.length === 10) return `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+  return phone;
 }
 
 export function getTodayDisplayState(item: TodayItemViewModel, referenceNow: string): TodayDisplayState {
@@ -116,7 +125,7 @@ export function presentDay(input: {
   const previousPending = input.selectedDate === today
     ? items
       .filter((item) => item.id !== activeVisit?.id && item.date < today && PENDING_STATES.includes(item.displayState))
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => b.date.localeCompare(a.date) || (b.scheduledTime ? 1 : -1) - (a.scheduledTime ? 1 : -1) || (b.scheduledTime ?? "").localeCompare(a.scheduledTime ?? "") || a.patient.displayName.localeCompare(b.patient.displayName, "es"))
     : [];
   const current = items.filter((item) => item.date === input.selectedDate && item.id !== activeVisit?.id);
   const changes = items

@@ -101,10 +101,10 @@ test("la agenda no ofrece agendar en el pasado y permite registrar en el día ac
   await page.goto(`/inicio?vista=agenda&mes=${today.slice(0, 7)}&fecha=${today}`);
   const active = page.locator("article.agenda-card").filter({ hasText: "Carlos Méndez" });
   await active.getByRole("button", { name: /Más opciones/ }).click();
-  await expect(page.getByRole("link", { name: "Registrar visita ya realizada" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Registrar visita" })).toBeVisible();
 });
 
-test("una cita demorada puede comenzar ahora o registrarse después", async ({ page, request }) => {
+test("una cita demorada se registra como visita realizada", async ({ page, request }) => {
   const fixtureResponse = await request.get("http://localhost:8081/fhir/Appointment/demo-appt-overdue", { headers: { Accept: "application/fhir+json" } });
   const fixture = await fixtureResponse.json();
   delete fixture.cancelationReason;
@@ -112,10 +112,10 @@ test("una cita demorada puede comenzar ahora o registrarse después", async ({ p
   await request.put("http://localhost:8081/fhir/Appointment/demo-appt-overdue", { data: fixture, headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" } });
   await page.goto("/inicio");
   const pending = page.locator("article.visit-card").filter({ hasText: "11:00" }).first();
-  await pending.getByRole("button", { name: "Resolver visita" }).click();
+  await pending.getByRole("button", { name: "Registrar visita" }).click();
   const options = page.getByRole("dialog", { name: "Opciones de la visita" });
-  await expect(options.getByRole("button", { name: "Comenzar visita" })).toBeVisible();
-  await options.getByRole("link", { name: "Registrar visita ya realizada" }).click();
+  await expect(options.getByRole("button", { name: "Comenzar visita" })).toHaveCount(0);
+  await options.getByRole("link", { name: "Registrar visita" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Registrar visita realizada" })).toBeVisible();
   await expect(page.getByLabel("Carga diferida")).toBeChecked();
 });
@@ -124,9 +124,9 @@ test("la ficha móvil permite abrir una visita anterior pendiente", async ({ pag
   await page.setViewportSize({ width: 356, height: 640 });
   await page.goto("/patients/demo-rosa");
   const pending = page.locator(".patient-pending-note");
-  await expect(pending.getByRole("link", { name: "Resolver visita" })).toBeVisible();
+  await expect(pending.getByRole("link", { name: "Registrar visita" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await pending.getByRole("link", { name: "Resolver visita" }).click();
+  await pending.getByRole("link", { name: "Registrar visita" }).click();
   await expect(page.getByRole("dialog", { name: "Opciones de la visita" })).toBeVisible();
 });
 
