@@ -10,6 +10,21 @@
   --border: #d8e4df;
 }
 
+@media (max-width: 42rem) {
+  .access-landing-shell { width: calc(100% - 2rem); padding-block: 2.25rem 3rem; }
+  .access-intro h1 { font-size: clamp(2.55rem, 12vw, 4rem); line-height: 0.99; }
+  .access-intro .lede { margin-top: 1.15rem; font-size: 1.05rem; line-height: 1.55; }
+  .access-actions { display: grid; gap: 0.45rem; margin-top: 1.5rem; }
+  .access-actions .access-primary-link { width: 100%; min-height: 3rem; }
+  .access-actions .access-recovery-link { justify-content: center; }
+  .access-foundation-grid { grid-template-columns: 1fr; gap: 0.75rem; margin-top: 2.25rem; }
+  .access-foundation-grid .foundation-card { padding: 1rem 1.1rem; border-radius: 1rem; }
+  .access-foundation-grid .foundation-card h2 { font-size: 1rem; }
+  .access-foundation-grid .foundation-card p { margin-top: 0.45rem; line-height: 1.45; }
+  .access-environment-note { margin-top: 2rem; }
+  .developer-tools-links { display: grid; gap: 0.65rem; }
+}
+
 /* Brief clinical record */
 .visit-entry-shell { max-width: 48rem; }
 .visit-context-strip { display: grid; gap: 0.35rem; padding: 0.8rem 1rem; border-left: 4px solid var(--accent); border-radius: 0.6rem; background: #edf6f2; }
@@ -89,6 +104,20 @@ body {
   margin-inline: auto;
   padding-block: clamp(4rem, 12vw, 8rem);
 }
+
+.access-landing-shell { padding-block: clamp(2.5rem, 8vw, 6rem); }
+.access-intro { max-width: 48rem; }
+.access-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.9rem; margin-top: 1.8rem; }
+.access-actions .primary-link, .access-actions .diagnostic-link { margin-top: 0; }
+.access-primary-link { min-height: 2.75rem; align-items: center; justify-content: center; padding-inline: 1.35rem; }
+.access-recovery-link { padding: 0.65rem 0.25rem; }
+.access-foundation-grid { margin-top: clamp(2.5rem, 6vw, 4.5rem); }
+.access-foundation-grid .foundation-card { min-height: 0; padding: 1.25rem; }
+.access-environment-note { margin-top: 2.5rem; }
+.developer-tools { margin-top: 1.25rem; color: var(--muted); font-size: 0.9rem; }
+.developer-tools summary { width: fit-content; cursor: pointer; font-weight: 700; }
+.developer-tools-links { display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 0.75rem; }
+.developer-tools-links .diagnostic-link { margin-top: 0; font-size: 0.88rem; }
 
 .intro {
   max-width: 48rem;
@@ -173,6 +202,11 @@ h1 {
   background: var(--accent);
   font-weight: 700;
   text-decoration: none;
+}
+
+.primary-link:focus-visible, .diagnostic-link:focus-visible, .developer-tools summary:focus-visible {
+  outline: 3px solid #8ed2b8;
+  outline-offset: 3px;
 }
 
 .back-link {

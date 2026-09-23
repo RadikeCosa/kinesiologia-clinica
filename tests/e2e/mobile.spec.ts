@@ -1,5 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+test("la pantalla de acceso prioriza el ingreso en mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 356, height: 640 });
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Pacientes, visitas y tratamientos en un solo lugar." })).toBeVisible();
+  const primary = page.getByRole("link", { name: "Ingresar", exact: true });
+  await expect(primary).toBeInViewport();
+  await expect(primary).toHaveCSS("min-height", "48px");
+  await expect(page.getByRole("link", { name: "¿Problemas para ingresar?" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("la navegación principal y los diálogos funcionan en viewport móvil", async ({ page }) => {
   await page.goto("/inicio?vista=pacientes");
   await expect(page.getByRole("heading", { level: 1, name: "Pacientes" })).toBeVisible();

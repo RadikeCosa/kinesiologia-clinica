@@ -16,6 +16,8 @@ Las prioridades son:
 2. reconstruir la evolución sin volver a redactar lo ya registrado;
 3. organizar pacientes activos y acciones pendientes.
 
+La pantalla de acceso presenta la aplicación como una herramienta de kinesiología domiciliaria. El ingreso es la acción principal; la recuperación y las herramientas de desarrollo quedan separadas del recorrido clínico.
+
 ## Promesa
 
 > Registrar una vez. Comunicar y reportar sin volver a escribir.
