@@ -22,7 +22,28 @@ En la interfaz, *visita* es el término principal. *Sesión* puede aparecer en r
 
 ## Imágenes
 
-Las capturas deben tomarse de la aplicación ejecutándose con su conjunto ficticio de demostración. No se incluyen imágenes en este README hasta disponer de capturas reales de la interfaz.
+Capturas reales de la aplicación en el entorno local de demostración. **Todos los nombres, datos de contacto y datos clínicos que aparecen son ficticios.**
+
+<details>
+<summary>Ver capturas de la aplicación</summary>
+
+**Hoy — visitas pendientes y agenda del día**
+
+<img src="./docs/images/readme1.png" alt="Vista Hoy con visitas del entorno ficticio" width="375">
+
+**Ficha de paciente — tratamiento e historial ficticios**
+
+<img src="./docs/images/readme2.png" alt="Ficha de paciente de demostración con datos inventados" width="375">
+
+**Agenda — calendario y diálogo para agendar una visita ficticia**
+
+<img src="./docs/images/readme3.png" alt="Vista Agenda con formulario de una visita ficticia" width="375">
+
+**Registro de visita — formulario en vivo con datos de demostración**
+
+<img src="./docs/images/readme4.png" alt="Formulario de registro de visita del entorno ficticio" width="375">
+
+</details>
 
 ## Desarrollo local
 
