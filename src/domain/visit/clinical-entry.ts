@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const evaluationDomains = ["pain-symptoms", "joint-mobility", "strength", "gait-mobility", "transfers", "balance-falls", "respiratory-exertion", "environment-independence"] as const;
+export const evaluationDomains = ["joint-mobility", "strength", "gait-mobility", "transfers", "balance-falls", "respiratory-exertion", "environment-independence"] as const;
 export const evaluationDomainSchema = z.enum(evaluationDomains);
 export type EvaluationDomain = z.infer<typeof evaluationDomainSchema>;
 
@@ -33,11 +33,8 @@ export const clinicalEvaluationInputSchema = z.object({
   result: resultSchema,
   context: contextSchema.optional(),
 }).superRefine((evaluation, issue) => {
-  if (evaluation.name === "Dolor NRS" && evaluation.domain !== "pain-symptoms") {
-    issue.addIssue({ code: "custom", path: ["domain"], message: "Dolor NRS corresponde al dominio Dolor y síntomas." });
-  }
-  if (evaluation.name === "Dolor NRS" && (evaluation.result.kind !== "quantity" || !Number.isInteger(evaluation.result.value) || evaluation.result.value < 0 || evaluation.result.value > 10)) {
-    issue.addIssue({ code: "custom", path: ["result"], message: "Dolor NRS debe ser un número entero entre 0 y 10." });
+  if (evaluation.name.trim().toLocaleLowerCase() === "dolor nrs") {
+    issue.addIssue({ code: "custom", path: ["name"], message: "El dolor se registra como síntoma." });
   }
 });
 
@@ -46,6 +43,42 @@ export interface ClinicalEvaluation extends Omit<ClinicalEvaluationInput, "clien
   id: string;
   clientId: string;
   seriesId: string;
+  patientId: string;
+  visitId: string;
+  effectiveDateTime: string;
+  status?: "final" | "corrected" | "entered-in-error";
+  version?: string;
+}
+
+export const symptomCodes = ["pain", "tiredness", "drowsiness", "nausea", "lack-of-appetite", "shortness-of-breath", "depression", "anxiety", "custom"] as const;
+export const symptomCodeSchema = z.enum(symptomCodes);
+export type SymptomCode = z.infer<typeof symptomCodeSchema>;
+
+const symptomContextSchema = z.object({
+  bodySite: z.string().trim().max(100).optional(),
+  laterality: z.enum(["left", "right", "bilateral"]).optional(),
+  note: z.string().trim().max(300).optional(),
+});
+
+export const clinicalSymptomInputSchema = z.object({
+  clientId: z.uuid(),
+  seriesId: z.uuid(),
+  code: symptomCodeSchema,
+  name: z.string().trim().min(1).max(120).optional(),
+  severity: z.number().int().min(0).max(10),
+  context: symptomContextSchema.optional(),
+}).superRefine((symptom, issue) => {
+  if (symptom.code === "custom" && !symptom.name?.trim()) {
+    issue.addIssue({ code: "custom", path: ["name"], message: "Escribí el nombre del síntoma." });
+  }
+  if (symptom.code !== "custom" && symptom.name !== undefined) {
+    issue.addIssue({ code: "custom", path: ["name"], message: "El catálogo ya define el nombre de este síntoma." });
+  }
+});
+
+export type ClinicalSymptomInput = z.infer<typeof clinicalSymptomInputSchema>;
+export interface ClinicalSymptom extends ClinicalSymptomInput {
+  id: string;
   patientId: string;
   visitId: string;
   effectiveDateTime: string;
@@ -75,6 +108,10 @@ export interface PerformedProcedure extends PerformedProcedureInput {
 
 export const visitClinicalEntriesSchema = z.object({
   evaluations: z.array(clinicalEvaluationInputSchema).max(20).default([]),
+  symptoms: z.array(clinicalSymptomInputSchema).max(20).default([]).superRefine((symptoms, issue) => {
+    const keys = symptoms.map((symptom) => symptom.code === "custom" ? `custom:${symptom.name!.trim().toLocaleLowerCase()}` : symptom.code);
+    if (new Set(keys).size !== keys.length) issue.addIssue({ code: "custom", message: "No se puede repetir un síntoma en la misma visita." });
+  }),
   procedures: z.array(performedProcedureInputSchema).max(procedureFamilies.length).refine((items) => new Set(items.map((item) => item.family)).size === items.length, "No se puede repetir un procedimiento.").default([]),
 });
 

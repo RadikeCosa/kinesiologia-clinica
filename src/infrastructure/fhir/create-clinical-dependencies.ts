@@ -10,6 +10,7 @@ import { createFhirMetricRepository } from "./observation/fhir-metric.repository
 import { createFhirScheduledVisitRepository } from "./appointment/fhir-scheduled-visit.repository";
 import { createFhirClinicalWorkflowRepository } from "./encounter/fhir-clinical-workflow.repository";
 import { createFhirClinicalEvaluationRepository } from "./observation/fhir-clinical-evaluation.repository";
+import { createFhirClinicalSymptomRepository } from "./observation/fhir-clinical-symptom.repository";
 import { createFhirPerformedProcedureRepository } from "./procedure/fhir-performed-procedure.repository";
 import { createFhirClinicalAdministrationRepository } from "./administration/fhir-clinical-administration.repository";
 
@@ -24,6 +25,7 @@ export function createClinicalDependencies() {
     visits: createFhirVisitRepository(client),
     metrics: createFhirMetricRepository(client),
     evaluations: createFhirClinicalEvaluationRepository(client),
+    symptoms: createFhirClinicalSymptomRepository(client),
     procedures: createFhirPerformedProcedureRepository(client),
     scheduledVisits: createFhirScheduledVisitRepository(client),
     workflow: createFhirClinicalWorkflowRepository(client),

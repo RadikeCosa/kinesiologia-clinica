@@ -1,44 +1,32 @@
 # Kinesiología Clínica
 
-Aplicación privada para registrar visitas y seguir la evolución de tratamientos de kinesiología domiciliaria.
-
-## Propósito
-
-La aplicación está pensada para un profesional independiente que trabaja principalmente desde el teléfono durante atención domiciliaria.
+Aplicación privada para organizar pacientes, tratamientos y visitas de kinesiología domiciliaria. Esta etapa reemplaza de forma incremental la superficie `/admin` y está pensada para un profesional independiente.
 
 > Registrar una vez. Comunicar y reportar sin volver a escribir.
 
-Sus prioridades son registrar visitas con baja fricción, organizar pacientes activos y reutilizar la información clínica para resúmenes e informes.
+## Estado del proyecto
 
-## Estado actual
+La aplicación cuenta con una pantalla de inicio autenticada con **Hoy**, **Agenda** y **Pacientes**; administración de pacientes y tratamientos; agenda de visitas; registro de visitas en vivo o de forma diferida; evaluaciones funcionales y procedimientos; y corrección o anulación justificada de visitas. Los datos clínicos se guardan en HAPI FHIR desde el servidor, nunca directamente desde el navegador.
 
-Fundación técnica inicial:
+El acceso usa passkeys para una cuenta profesional provisionada, con sesiones por dispositivo, revocación y códigos de recuperación. El ingreso y registro con passkey se validaron en computadora; siguen pendientes la validación completa en móvil, recuperación y revocación.
 
-- Next.js 16, React 19 y TypeScript;
-- separación entre UI, aplicación, dominio e infraestructura;
-- integración FHIR exclusivamente server-side;
-- endpoint de salud sin exposición de datos sensibles;
-- núcleo FHIR inyectable, paginación y errores sanitizados;
-- lectura de `Patient` y tratamientos activos con `EpisodeOfCare`;
-- caso de uso probado para listar pacientes activos;
-- pantalla inicial autenticada en `/inicio`, con `Hoy`, agenda mensual con detalle diario y directorio de pacientes;
-- contexto de tratamiento y diagnósticos, historial y registro online de visitas finalizadas en el entorno ficticio de `8081`;
-- agenda FHIR con `Appointment`: creación idempotente, cruce advertido, reprogramación con historial, cancelación y visita no realizada;
-- visitas en vivo enlazadas mediante `Encounter.appointment`, una sola visita en curso, anulación de inicios y registro clínico breve compartido con la carga diferida;
-- evaluaciones longitudinales en `Observation` y familias de procedimientos en `Procedure`, guardadas atómicamente con la visita y visibles desde la ficha del paciente;
-- corrección versionada y anulación justificada de visitas confirmadas, con retiro de las evaluaciones y procedimientos que dejan de ser válidos;
-- indicadores derivados de puntualidad y demora de documentación;
-- reintentos con identidad estable, control de versión y relectura de confirmación desde HAPI;
-- diagnóstico no clínico de compatibilidad WebAuthn por dispositivo;
-- acceso con passkeys para una cuenta profesional provisionada, sesiones por dispositivo, revocación y recuperación con códigos de un solo uso;
-- datos ficticios reproducibles y pruebas Playwright en Chrome de escritorio y viewport móvil;
-- bloqueo de indexación para toda la aplicación;
-- pruebas unitarias iniciales;
-- documentación de producto, arquitectura y privacidad.
+**Todos los datos usados actualmente en desarrollo, pruebas, demostraciones y documentación son inventados. No cargar datos reales.** El flujo clínico es un piloto online que solo se habilita localmente contra el HAPI descartable en `http://localhost:8081/fhir`; las rutas y escrituras clínicas están bloqueadas en Vercel. El antiguo `/admin` sigue siendo el respaldo operativo durante la migración.
 
-El acceso con passkeys protege las páginas y acciones clínicas. El diagnóstico de compatibilidad fue validado en Chrome sobre Ubuntu y Android; el registro e ingreso completos se probaron en la computadora. La prueba móvil completa, recuperación y revocación siguen pendientes. Todavía no están implementados PWA, sincronización offline ni informes. El flujo clínico actual es un piloto online con datos ficticios: solo se habilita localmente contra el endpoint descartable de `8081`; Vercel no expone esas rutas ni permite la acción de escritura. El `/admin` anterior continúa siendo el respaldo operativo durante la migración.
+Todavía no están implementados PWA, trabajo offline, sincronización posterior ni informes exportables. El proyecto no está listo para datos clínicos reales.
+
+## Recorrido de la aplicación
+
+La pantalla **Hoy** reúne las visitas en curso, pendientes y previstas. **Agenda** permite consultar fechas y resolver visitas. **Pacientes** permite buscar y abrir fichas, donde se consulta el tratamiento y el historial. Desde una ficha se registra una visita con horarios, evolución breve, intervención y próximo paso; evaluaciones y procedimientos son opcionales.
+
+En la interfaz, *visita* es el término principal. *Sesión* puede aparecer en resúmenes, e *intervención* describe el trabajo hecho dentro de una visita.
+
+## Imágenes
+
+Las capturas deben tomarse de la aplicación ejecutándose con su conjunto ficticio de demostración. No se incluyen imágenes en este README hasta disponer de capturas reales de la interfaz.
 
 ## Desarrollo local
+
+Requiere Node.js 20.19 o superior y el HAPI FHIR descartable descrito en [`docs/local-fhir.md`](./docs/local-fhir.md).
 
 ```bash
 npm install
@@ -46,21 +34,19 @@ cp -n .env.example .env.local
 npm run dev
 ```
 
-La pantalla inicial autenticada está disponible en `http://localhost:3000/inicio`. `GET /api/health` comprueba la disponibilidad de HAPI FHIR sin revelar su URL.
+La aplicación queda disponible en `http://localhost:3000/inicio`. `GET /api/health` informa la disponibilidad del registro clínico sin revelar su URL ni datos sensibles.
 
-Para cargar un conjunto repetible de pacientes, tratamientos, citas, visitas, evaluaciones y procedimientos ficticios:
+Para cargar datos ficticios repetibles:
 
 ```bash
 npm run seed:clinical-home
 ```
 
-Requiere Node.js 20.19 o superior.
+`npm run dev` apunta al HAPI descartable de `8081`. No uses `npm run dev:fhir-real` durante desarrollo o pruebas. Para acceder desde Android por HTTPS en la misma red, seguí [`docs/dev-lan.md`](./docs/dev-lan.md).
 
-`npm run dev` usa el HAPI descartable de `8081`. El acceso a datos reales locales requiere la selección explícita `npm run dev:fhir-real` y no debe utilizarse durante desarrollo o pruebas.
+Para preparar una cuenta local, configurá las variables de `.env.example` en `.env.local`, generá un valor aleatorio para `AUTH_BOOTSTRAP_TOKEN` y registrá la primera passkey en `/ingresar`. Guardá los códigos de recuperación que se muestran una sola vez. La guía de dispositivos está en `/configuracion/dispositivos`.
 
-Para preparar una cuenta local, agregá las variables de `.env.example` a tu `.env.local` si ya existía. Generá un código inicial aleatorio con `openssl rand -hex 32` y guardalo en `AUTH_BOOTSTRAP_TOKEN` dentro de `.env.local`. Ese archivo no se versiona. Abrí `/ingresar` y registrá la primera passkey. Guardá los diez códigos de recuperación que se muestran una sola vez. Desde `/configuracion/dispositivos` podés agregar otra passkey, cerrar sesiones o revocar una credencial. La recuperación invalida todas las passkeys y sesiones anteriores y entrega nuevos códigos. `AUTH_ORIGIN` debe coincidir exactamente con la dirección que abre el navegador; para uso fuera de localhost se requiere HTTPS y un `AUTH_DB_PATH` absoluto y persistente.
-
-## Verificación
+## Comprobaciones
 
 ```bash
 npm run lint
@@ -72,4 +58,8 @@ FHIR_BASE_URL=http://localhost:8081/fhir npm run build
 
 ## Documentación
 
-El índice está en [`docs/README.md`](./docs/README.md).
+- [Producto y alcance](./docs/product.md)
+- [Arquitectura](./docs/architecture.md)
+- [Privacidad y entornos](./docs/privacy.md)
+- [Adaptador FHIR](./docs/fhir-adapter.md)
+- [Índice de documentación](./docs/README.md)

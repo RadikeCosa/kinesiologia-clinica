@@ -18,9 +18,9 @@ export default async function CorrectVisitPage({ params }: { params: Promise<{ i
   await requireClinicalSession();
   const { id, visitId } = await params;
   const dependencies = createClinicalDependencies();
-  const [visit, patient, evaluations, procedures] = await Promise.all([
+  const [visit, patient, evaluations, symptoms, procedures] = await Promise.all([
     dependencies.visits.getById(visitId), dependencies.patients.getById(id),
-    dependencies.evaluations.listByVisitId(visitId), dependencies.procedures.listByVisitId(visitId),
+    dependencies.evaluations.listByVisitId(visitId), dependencies.symptoms.listByVisitId(visitId), dependencies.procedures.listByVisitId(visitId),
   ]);
   if (!visit || !patient || visit.patientId !== id || visit.status !== "finished" || !visit.endedAt || !visit.version) notFound();
   return <main className="shell clinical-shell visit-record-shell">
@@ -28,6 +28,6 @@ export default async function CorrectVisitPage({ params }: { params: Promise<{ i
     <p className="eyebrow">Corrección del registro</p>
     <h1>{patient.givenName} {patient.familyName}</h1>
     <p className="lede">Corregí los datos de la visita confirmada. El motivo quedará registrado junto con el cambio.</p>
-    <CorrectionForm patientId={id} visitId={visitId} expectedVersion={visit.version} startedAt={localInput(visit.startedAt)} endedAt={localInput(visit.endedAt)} clinicalNote={visit.clinicalNote} evaluations={evaluations.filter((item) => item.id.startsWith("evaluation-"))} procedures={procedures}/>
+    <CorrectionForm patientId={id} visitId={visitId} expectedVersion={visit.version} startedAt={localInput(visit.startedAt)} endedAt={localInput(visit.endedAt)} clinicalNote={visit.clinicalNote} evaluations={evaluations.filter((item) => item.id.startsWith("evaluation-"))} symptoms={symptoms.filter((item) => item.id.startsWith("symptom-"))} procedures={procedures}/>
   </main>;
 }

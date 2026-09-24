@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev --webpack",
     "dev:fhir-dev": "FHIR_BASE_URL=http://localhost:8081/fhir next dev --webpack",
+    "dev:lan": "FHIR_BASE_URL=http://localhost:8081/fhir AUTH_ORIGIN=https://dev-pc.local:3000 AUTH_DB_PATH=.local/auth-lan.sqlite next dev --webpack --hostname 0.0.0.0 --experimental-https --experimental-https-key .local/dev-pc.local-key.pem --experimental-https-cert .local/dev-pc.local.pem",
     "dev:fhir-real": "FHIR_BASE_URL=http://localhost:8080/fhir next dev --webpack",
     "build": "next build",
     "start": "next start",

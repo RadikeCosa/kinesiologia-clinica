@@ -8,6 +8,7 @@ import { createFhirTreatmentRepository } from "@/infrastructure/fhir/episode-of-
 import { createFhirVisitRepository } from "@/infrastructure/fhir/encounter/fhir-visit.repository";
 import { createFhirMetricRepository } from "@/infrastructure/fhir/observation/fhir-metric.repository";
 import { createFhirClinicalEvaluationRepository } from "@/infrastructure/fhir/observation/fhir-clinical-evaluation.repository";
+import { createFhirClinicalSymptomRepository } from "@/infrastructure/fhir/observation/fhir-clinical-symptom.repository";
 import { createFhirPerformedProcedureRepository } from "@/infrastructure/fhir/procedure/fhir-performed-procedure.repository";
 import { createFhirScheduledVisitRepository } from "@/infrastructure/fhir/appointment/fhir-scheduled-visit.repository";
 import { createFhirClinicalWorkflowRepository } from "@/infrastructure/fhir/encounter/fhir-clinical-workflow.repository";
@@ -24,11 +25,13 @@ describeIntegration("visit correction and annulment on fictional HAPI data", () 
   const clientVisitId = randomUUID();
   const evaluationId = randomUUID();
   const seriesId = randomUUID();
+  const symptomId = randomUUID();
+  const symptomSeriesId = randomUUID();
   const client = createFhirClient({ baseUrl: BASE });
   const dependencies = {
     patients: createFhirPatientRepository(client), treatments: createFhirTreatmentRepository(client),
     visits: createFhirVisitRepository(client), metrics: createFhirMetricRepository(client),
-    evaluations: createFhirClinicalEvaluationRepository(client), procedures: createFhirPerformedProcedureRepository(client),
+    evaluations: createFhirClinicalEvaluationRepository(client), symptoms: createFhirClinicalSymptomRepository(client), procedures: createFhirPerformedProcedureRepository(client),
     scheduledVisits: createFhirScheduledVisitRepository(client), workflow: createFhirClinicalWorkflowRepository(client),
   };
   const visitId = `visit-${clientVisitId}`;
@@ -39,7 +42,7 @@ describeIntegration("visit correction and annulment on fictional HAPI data", () 
   });
 
   afterAll(async () => {
-    for (const path of [`Observation/evaluation-${evaluationId}`, `Procedure/proc-${clientVisitId}-exercise`, `Encounter/${visitId}`, `EpisodeOfCare/${treatmentId}`, `Patient/${patientId}`]) {
+    for (const path of [`Observation/evaluation-${evaluationId}`, `Observation/symptom-${symptomId}`, `Procedure/proc-${clientVisitId}-exercise`, `Encounter/${visitId}`, `EpisodeOfCare/${treatmentId}`, `Patient/${patientId}`]) {
       await fetch(`${BASE}/${path}`, { method: "DELETE" }).catch(() => undefined);
     }
   });
@@ -49,22 +52,24 @@ describeIntegration("visit correction and annulment on fictional HAPI data", () 
       clientVisitId, patientId, treatmentId, captureMode: "retrospective",
       startedAt: "2026-09-14T14:00:00.000Z", endedAt: "2026-09-14T14:45:00.000Z",
       clinicalNote: { statusAndResponse: "Estado ficticio inicial", intervention: "Ejercicio ficticio" }, metrics: [],
-      clinicalEntries: { evaluations: [{ clientId: evaluationId, seriesId, domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Limitada" } }], procedures: [{ family: "therapeutic-exercise" }] },
+      clinicalEntries: { evaluations: [{ clientId: evaluationId, seriesId, domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Limitada" } }], symptoms: [{ clientId: symptomId, seriesId: symptomSeriesId, code: "pain", severity: 4 }], procedures: [{ family: "therapeutic-exercise" }] },
     }, dependencies);
     const correction = {
       patientId, visitId, expectedVersion: created.visit.version, reason: "Se corrigió el resultado ficticio.",
       startedAt: created.visit.startedAt, endedAt: created.visit.endedAt,
       clinicalNote: { statusAndResponse: "Estado ficticio corregido", intervention: "Ejercicio ficticio" },
-      clinicalEntries: { evaluations: [{ clientId: evaluationId, seriesId, domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Conservada" } }], procedures: [] },
+      clinicalEntries: { evaluations: [{ clientId: evaluationId, seriesId, domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Conservada" } }], symptoms: [{ clientId: symptomId, seriesId: symptomSeriesId, code: "pain", severity: 5 }], procedures: [] },
     } as const;
     const corrected = await correctFinishedVisit(correction, dependencies);
     expect(corrected.clinicalNote?.statusAndResponse).toBe("Estado ficticio corregido");
     expect((await correctFinishedVisit(correction, dependencies)).version).toBe(corrected.version);
     expect(await dependencies.evaluations.listByVisitId(visitId)).toContainEqual(expect.objectContaining({ id: `evaluation-${evaluationId}`, result: { kind: "coded", value: "Conservada" } }));
+    expect(await dependencies.symptoms.listByVisitId(visitId)).toContainEqual(expect.objectContaining({ id: `symptom-${symptomId}`, code: "pain", severity: 5 }));
     expect(await dependencies.procedures.listByVisitId(visitId)).toHaveLength(0);
     const annulled = await annulFinishedVisit({ patientId, visitId, expectedVersion: corrected.version, reason: "La visita ficticia se registró por error." }, dependencies);
     expect(annulled.status).toBe("entered-in-error");
     expect(await dependencies.evaluations.listByVisitId(visitId)).toHaveLength(0);
+    expect(await dependencies.symptoms.listByVisitId(visitId)).toHaveLength(0);
     expect(await dependencies.procedures.listByVisitId(visitId)).toHaveLength(0);
   });
 });

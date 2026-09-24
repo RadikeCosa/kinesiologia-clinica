@@ -44,11 +44,31 @@
 .visit-context-strip details { color: var(--muted); font-size: 0.82rem; }
 .auto-textarea { min-height: 5rem; resize: none; overflow: hidden; }
 .clinical-module { border: 1px solid var(--border); border-radius: 0.8rem; background: #fbfdfc; }
-.clinical-module > summary, .module-heading { width: 100%; min-height: 3.25rem; padding: 0.8rem 1rem; border: 0; color: var(--ink); background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
-.module-heading { display: flex; align-items: center; justify-content: space-between; margin: 0; cursor: default; }
+.clinical-module > summary { width: 100%; min-height: 3.25rem; padding: 0.8rem 1rem; border: 0; color: var(--ink); background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
+.clinical-module > summary:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; border-radius: 0.65rem; }
 .clinical-module > label, .clinical-module > .procedure-options, .clinical-module[open] > label { margin: 0 1rem 1rem; }
-.clinical-quick-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1rem 0.8rem; }
-.clinical-quick-actions select { flex: 1 1 15rem; }
+.clinical-quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 0.65rem; padding: 0 1rem 0.8rem; }
+.clinical-evaluation-choice { display: grid; align-content: start; gap: 0.4rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.7rem; background: #fff; }
+.clinical-evaluation-choice button { min-height: 2.75rem; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.6rem; color: var(--ink); background: #f8fbfa; font: inherit; font-weight: 750; text-align: left; cursor: pointer; }
+.clinical-evaluation-choice small { color: var(--muted); line-height: 1.4; }
+.clinical-evaluation-choice .pain-quick-action { color: var(--accent); border-color: var(--accent); background: #edf6f2; }
+.clinical-quick-actions select { grid-column: 1 / -1; width: 100%; min-height: 2.75rem; }
+.evaluation-editor-intro { margin: 0; color: var(--muted); line-height: 1.45; }
+.symptom-module > .symptom-intro, .symptom-scale-note { display: block; margin: 0 1rem 0.75rem; color: var(--muted); line-height: 1.45; }
+.symptom-catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 0.5rem; padding: 0 1rem 0.9rem; }
+.symptom-choice { min-height: 2.75rem; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: #fff; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.symptom-choice[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: #edf6f2; }
+.custom-symptom-editor { display: flex; align-items: end; flex-wrap: wrap; gap: 0.6rem; margin: 0 1rem 0.85rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 0.7rem; background: #fff; }
+.custom-symptom-editor label { flex: 1 1 14rem; }
+.custom-symptom-editor input { width: 100%; }
+.symptom-entry-card { margin: 0 1rem 0.75rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 0.7rem; background: #fff; }
+.symptom-entry-card > header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.symptom-entry-card h4 { margin: 0; font-size: 1rem; }
+.symptom-context-details { margin-top: 0.5rem; }
+.symptom-context-details > summary { min-height: 2.75rem; padding: 0.65rem 0; color: var(--accent); font-weight: 700; cursor: pointer; }
+.symptom-context-details .form-grid { margin-top: 0.5rem; }
+.symptom-scale-note { margin-top: 0.25rem; }
+.symptom-choice:focus-visible, .custom-symptom-editor button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .evaluation-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 1rem 0.65rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; background: white; }
 .evaluation-card strong, .evaluation-card span { display: block; }
 .evaluation-card span { margin-top: 0.2rem; color: var(--muted); font-size: 0.82rem; }
@@ -62,13 +82,14 @@
 .pain-nrs-readout strong { font-size: 2rem; line-height: 1; }
 .pain-nrs-readout span { color: var(--muted); font-size: 0.85rem; }
 .pain-nrs-slider-label { color: var(--ink); font-size: 0.85rem; font-weight: 750; }
-.pain-nrs-slider { width: 100%; height: 2.75rem; margin: 0; accent-color: hsl(var(--pain-hue) 62% 34%); cursor: pointer; }
+.visit-form input[type="range"].pain-nrs-slider { width: calc(100% + 1.25rem); height: 2.75rem; margin: 0 -0.625rem; padding: 0; border: 0; border-radius: 0; background: transparent; accent-color: hsl(var(--pain-hue) 62% 34%); cursor: pointer; }
 .pain-nrs-slider.is-unselected { accent-color: var(--muted); }
 .pain-nrs-endpoints { display: flex; justify-content: space-between; gap: 0.5rem; color: var(--muted); font-size: 0.75rem; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 .form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
 .procedure-options { display: grid; gap: 0.65rem; }
 .procedure-options > label { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 1fr); align-items: center; gap: 0.75rem; }
+.procedure-options > label > span { display: flex; min-height: 2.75rem; align-items: center; gap: 0.55rem; }
 .mobile-final-action .submit-button { width: 100%; }
 .field-error { color: #9f2f25; font-size: 0.82rem; font-weight: 700; }
 .module-error { margin: 0 1rem 1rem; }
@@ -548,7 +569,10 @@ h1 {
 .add-diagnosis { justify-self: start; }
 .mode-options { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; border: 0; padding: 0; }
 .mode-options legend { margin-bottom: 0.75rem; font-weight: 700; }
-.mode-options label { display: flex; align-items: center; font-weight: 400; }
+.mode-options label { display: flex; min-height: 2.75rem; align-items: center; gap: 0.55rem; font-weight: 400; }
+.visit-form .mode-options input[type="radio"], .visit-form .procedure-options input[type="checkbox"] { flex: 0 0 1.25rem; width: 1.25rem; min-width: 1.25rem; min-height: 1.25rem; height: 1.25rem; margin: 0; padding: 0; border: 0; background: none; accent-color: var(--accent); }
+.visit-form .mode-options input[type="radio"] { border-radius: 50%; }
+.visit-form .procedure-options input[type="checkbox"] { border-radius: 0.2rem; }
 .form-row { display: flex; align-items: end; gap: 0.75rem; }
 .form-row label { flex: 1; }
 .form-row button { margin-bottom: 0.1rem; }
@@ -782,6 +806,7 @@ h1 {
 .visit-card-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem); gap: 1.1rem; }
 .visit-patient-block { min-width: 0; }
 .visit-summary-block { min-width: 0; padding: 0.1rem 0 0.2rem; }
+.visit-patient-block h3 { overflow-wrap: anywhere; }
 .visit-card-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .visit-time { color: var(--accent); font-size: 1rem; }
 .visit-card-main { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
@@ -908,7 +933,7 @@ h1 {
 .annulled-visit-history ul { margin: 0.6rem 0 0; padding-left: 1.2rem; }
 .annulled-visit-history li + li { margin-top: 0.4rem; }
 .annulled-visit-history a { color: var(--accent); font-weight: 700; }
-.patient-evaluations-panel { scroll-margin-top: 1rem; }
+.patient-evaluations-panel, .patient-symptoms-panel { scroll-margin-top: 1rem; }
 .patient-evaluations-panel > .eyebrow { margin-bottom: 0.35rem; }
 .patient-evaluations-panel > h2 { margin: 0; }
 .panel-introduction { color: var(--muted); line-height: 1.5; }
@@ -966,6 +991,11 @@ h1 {
 .agenda-card-patient { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .agenda-card-patient h3 { min-width: 0; }
 .agenda-more { min-width: 3.5rem; min-height: 2.75rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: #f8fbfa; font: inherit; font-weight: 800; cursor: pointer; }
+.visit-actions .more-action, .directory-more { min-height: 2.75rem; }
+.more-option-group { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
+.more-option-group h3 { margin: 0 0 0.65rem; font-size: 0.88rem; }
+.more-option-group .action-sheet-context { margin: 0.7rem 0 0.45rem; overflow-wrap: anywhere; }
+.directory-more { margin-left: auto; }
 .directory-tools-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
 .directory-tools-heading .directory-search { flex: 1; margin-top: 0; }
 .directory-tools-heading > p { flex: none; margin: 0 0 0.75rem; color: var(--muted); font-size: 0.84rem; }
@@ -1079,9 +1109,10 @@ h1 {
   .patient-precautions { display: grid; gap: 0.2rem; }
   .patient-facts { gap: 0.7rem; margin-top: 0.8rem; }
   .patient-facts dd .inline-text-action, .inline-contact-actions { margin-left: 0.45rem; }
-  .directory-primary-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .directory-primary-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: stretch; gap: 0.4rem; }
   .directory-primary-actions form { display: contents; }
-  .directory-primary-actions .home-primary-action { min-width: 0; }
+  .directory-primary-actions .home-primary-action { min-width: 0; padding-inline: 0.35rem; font-size: 0.82rem; line-height: 1.15; white-space: normal; }
+  .directory-more { grid-column: 3; min-width: 3.5rem; padding-inline: 0.55rem; }
   .patient-detail-heading { display: block; }
   .patient-detail-actions { margin-top: 1.25rem; }
   .patient-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }

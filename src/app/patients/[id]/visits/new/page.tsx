@@ -20,7 +20,7 @@ export default async function NewVisitPage({ params, searchParams }: { params: P
   const { cita, modo } = await searchParams;
   const appointment = cita ? await dependencies.scheduledVisits.getById(cita) : null;
   if (cita && (!appointment || appointment.patientId !== id || appointment.treatmentId !== treatment.id)) notFound();
-  const [priorEvaluations, visits] = await Promise.all([dependencies.evaluations.listByPatientId(id), dependencies.visits.listByPatientId(id)]);
+  const [priorEvaluations, priorSymptoms, visits] = await Promise.all([dependencies.evaluations.listByPatientId(id), dependencies.symptoms.listByPatientId(id), dependencies.visits.listByPatientId(id)]);
   const treatmentVisits = visits.filter((visit) => visit.treatmentId === treatment.id && visit.status === "finished").sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   const allowedVisitIds = new Set(treatmentVisits.map((visit) => visit.id));
   return <main className="shell clinical-shell visit-entry-shell">
@@ -28,6 +28,6 @@ export default async function NewVisitPage({ params, searchParams }: { params: P
     <p className="eyebrow">Entorno local · Datos ficticios</p>
     <h1>{modo === "diferida" ? "Registrar visita realizada" : "Nueva visita"}</h1>
     <p className="lede">{context.patient.givenName} {context.patient.familyName} · Sesión {treatmentVisits.length + 1}{appointment?.startsAt ? ` · ${new Intl.DateTimeFormat("es-AR", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit" }).format(new Date(appointment.startsAt))}` : ""}</p>
-    <VisitForm patientId={id} treatmentId={treatment.id} clientVisitId={randomUUID()} appointmentId={appointment?.id} initialMode={modo === "diferida" ? "retrospective" : "live"} priorEvaluations={priorEvaluations.filter((item) => allowedVisitIds.has(item.visitId))} precautions={treatment.precautions?.join(" · ")} lastPlan={treatmentVisits[0]?.clinicalNote?.nextPlan} />
+    <VisitForm patientId={id} treatmentId={treatment.id} clientVisitId={randomUUID()} appointmentId={appointment?.id} initialMode={modo === "diferida" ? "retrospective" : "live"} priorEvaluations={priorEvaluations.filter((item) => allowedVisitIds.has(item.visitId))} priorSymptoms={priorSymptoms.filter((item) => allowedVisitIds.has(item.visitId))} precautions={treatment.precautions?.join(" · ")} lastPlan={treatmentVisits[0]?.clinicalNote?.nextPlan} />
   </main>;
 }

@@ -166,6 +166,32 @@ test("la ficha móvil permite abrir una visita anterior pendiente", async ({ pag
   await expect(page.getByRole("dialog", { name: "Opciones de la visita" })).toBeVisible();
 });
 
+test("evaluaciones y síntomas se despliegan por separado en móvil", async ({ page }) => {
+  await page.setViewportSize({ width: 356, height: 640 });
+  await page.goto("/patients/demo-rosa/visits/new?modo=diferida");
+  const modules = page.locator("details.clinical-module");
+  const evaluations = modules.nth(0);
+  const symptoms = modules.nth(1);
+
+  await expect(evaluations.locator("summary")).toContainText("Evaluaciones");
+  await expect(symptoms.locator("summary")).toContainText("Síntomas referidos");
+  await expect(evaluations).not.toHaveAttribute("open", "");
+  await expect(symptoms).not.toHaveAttribute("open", "");
+
+  await symptoms.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(symptoms).toHaveAttribute("open", "");
+  await expect(page.getByRole("button", { name: "Dolor", exact: true })).toBeVisible();
+  await evaluations.locator("summary").click();
+  await expect(evaluations).toHaveAttribute("open", "");
+  await expect(symptoms).toHaveAttribute("open", "");
+
+  await symptoms.locator("summary").click();
+  await expect(symptoms).not.toHaveAttribute("open", "");
+  await expect(evaluations).toHaveAttribute("open", "");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("el registro breve conserva contexto y módulos ampliables en móvil", async ({ page }) => {
   await page.goto("/patients/demo-rosa/visits/new?modo=diferida");
   await expect(page.getByRole("heading", { name: "Registrar visita realizada" })).toBeVisible();

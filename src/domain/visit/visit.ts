@@ -63,7 +63,7 @@ export const createVisitSchema = z.object({
     nextPlan: z.string().trim().max(2000).optional(),
   }),
   metrics: z.array(z.object({ code: metricCodeSchema, value: z.number().finite().nonnegative() })).max(4).default([]),
-  clinicalEntries: visitClinicalEntriesSchema.default({ evaluations: [], procedures: [] }),
+  clinicalEntries: visitClinicalEntriesSchema.default({ evaluations: [], symptoms: [], procedures: [] }),
 }).superRefine((input, context) => {
   if (new Date(input.endedAt) < new Date(input.startedAt)) {
     context.addIssue({ code: "custom", path: ["endedAt"], message: "La salida debe ser posterior a la entrada." });

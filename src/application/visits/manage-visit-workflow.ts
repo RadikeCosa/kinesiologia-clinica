@@ -6,8 +6,8 @@ import type { ClinicalWorkflowRepository } from "./clinical-workflow.repository"
 import type { MetricRepository } from "./metric.repository";
 import type { VisitRepository } from "./visit.repository";
 import { metricCodeSchema, type FunctionalMetric, type Visit } from "@/domain/visit/visit";
-import { visitClinicalEntriesSchema, type ClinicalEvaluation, type PerformedProcedure, type ProcedureFamily } from "@/domain/visit/clinical-entry";
-import type { ClinicalEvaluationRepository, PerformedProcedureRepository } from "./clinical-entry.repository";
+import { visitClinicalEntriesSchema, type ClinicalEvaluation, type ClinicalSymptom, type PerformedProcedure, type ProcedureFamily } from "@/domain/visit/clinical-entry";
+import type { ClinicalEvaluationRepository, ClinicalSymptomRepository, PerformedProcedureRepository } from "./clinical-entry.repository";
 import type { Clock } from "@/application/schedule/manage-scheduled-visits";
 import { systemClock } from "@/application/schedule/manage-scheduled-visits";
 
@@ -24,7 +24,7 @@ const startVisitSchema = z.object({
 const finishVisitSchema = z.object({
   visitId: resourceId, expectedVersion: z.string().min(1), clinicalNote: noteSchema,
   metrics: z.array(z.object({ code: metricCodeSchema, value: z.number().finite().nonnegative() })).max(4).default([]),
-  clinicalEntries: visitClinicalEntriesSchema.default({ evaluations: [], procedures: [] }),
+  clinicalEntries: visitClinicalEntriesSchema.default({ evaluations: [], symptoms: [], procedures: [] }),
 });
 const annulVisitSchema = z.object({ visitId: resourceId, expectedVersion: z.string().min(1) });
 
@@ -36,6 +36,7 @@ type Dependencies = {
   scheduledVisits: ScheduledVisitRepository;
   workflow: Pick<ClinicalWorkflowRepository, "start" | "annul" | "finish">;
   evaluations?: ClinicalEvaluationRepository;
+  symptoms?: ClinicalSymptomRepository;
   procedures?: PerformedProcedureRepository;
   clock?: Clock;
 };
@@ -74,8 +75,9 @@ function visitId(clientVisitId: string, appointmentId?: string) {
 const procedureSuffix: Record<ProcedureFamily, string> = { "therapeutic-exercise": "exercise", "manual-therapy": "manual", "gait-transfers": "gait", respiratory: "resp", "education-instructions": "education", "environment-assistive-devices": "environment", other: "other" };
 function buildEntries(visit: Visit, input: z.infer<typeof visitClinicalEntriesSchema>, end: string) {
   const evaluations: ClinicalEvaluation[] = input.evaluations.map((item) => ({ ...item, id: `evaluation-${item.clientId}`, patientId: visit.patientId, visitId: visit.id, effectiveDateTime: visit.startedAt }));
+  const symptoms: ClinicalSymptom[] = input.symptoms.map((item) => ({ ...item, id: `symptom-${item.clientId}`, patientId: visit.patientId, visitId: visit.id, effectiveDateTime: visit.startedAt }));
   const procedures: PerformedProcedure[] = input.procedures.map((item) => ({ ...item, id: `proc-${visit.id.replace(/^visit-/, "").slice(0, 36)}-${procedureSuffix[item.family]}`.slice(0, 64), patientId: visit.patientId, visitId: visit.id, performedStart: visit.startedAt, performedEnd: end }));
-  return { evaluations, procedures };
+  return { evaluations, symptoms, procedures };
 }
 
 export async function startVisit(rawInput: unknown, dependencies: Dependencies) {
@@ -117,14 +119,16 @@ export async function finishVisit(rawInput: unknown, dependencies: Dependencies)
   const input = finishVisitSchema.parse(rawInput);
   const visit = await dependencies.visits.getById(input.visitId);
   if (visit?.status === "finished") {
-    const [confirmedMetrics, evaluations, procedures] = await Promise.all([dependencies.metrics.listByVisitId(visit.id), dependencies.evaluations?.listByVisitId(visit.id) ?? Promise.resolve([]), dependencies.procedures?.listByVisitId(visit.id) ?? Promise.resolve([])]);
+    const [confirmedMetrics, evaluations, symptoms, procedures] = await Promise.all([dependencies.metrics.listByVisitId(visit.id), dependencies.evaluations?.listByVisitId(visit.id) ?? Promise.resolve([]), dependencies.symptoms?.listByVisitId(visit.id) ?? Promise.resolve([]), dependencies.procedures?.listByVisitId(visit.id) ?? Promise.resolve([])]);
     const sameNote = JSON.stringify(visit.clinicalNote) === JSON.stringify(input.clinicalNote);
     const sameMetrics = confirmedMetrics.length === input.metrics.length && input.metrics.every((expected) => confirmedMetrics.some((actual) => actual.code === expected.code && actual.value === expected.value));
     const expectedEntries = buildEntries(visit, input.clinicalEntries, visit.endedAt ?? visit.startedAt);
     const managedEvaluations = evaluations.filter((item) => item.id.startsWith("evaluation-"));
     const sameEvaluations = managedEvaluations.length === expectedEntries.evaluations.length && expectedEntries.evaluations.every((expected) => managedEvaluations.some((actual) => actual.id === expected.id && actual.seriesId === expected.seriesId && actual.domain === expected.domain && actual.name === expected.name && JSON.stringify(actual.result) === JSON.stringify(expected.result) && JSON.stringify(actual.context ?? {}) === JSON.stringify(expected.context ?? {})));
+    const managedSymptoms = symptoms.filter((item) => item.id.startsWith("symptom-"));
+    const sameSymptoms = managedSymptoms.length === expectedEntries.symptoms.length && expectedEntries.symptoms.every((expected) => managedSymptoms.some((actual) => actual.id === expected.id && actual.seriesId === expected.seriesId && actual.code === expected.code && actual.name === expected.name && actual.severity === expected.severity && JSON.stringify(actual.context ?? {}) === JSON.stringify(expected.context ?? {})));
     const sameProcedures = procedures.length === expectedEntries.procedures.length && expectedEntries.procedures.every((expected) => procedures.some((actual) => actual.id === expected.id && actual.family === expected.family && (actual.otherName ?? "") === (expected.otherName ?? "")));
-    if (sameNote && sameMetrics && sameEvaluations && sameProcedures) return { visit, metrics: confirmedMetrics, evaluations, procedures };
+    if (sameNote && sameMetrics && sameEvaluations && sameSymptoms && sameProcedures) return { visit, metrics: confirmedMetrics, evaluations, symptoms, procedures };
     throw new VisitStateError("La visita ya fue finalizada con otros datos. Recargá la pantalla.");
   }
   if (!visit || visit.status !== "in-progress" || visit.version !== input.expectedVersion) throw new VisitStateError("La visita cambió. Recargá la pantalla.");
@@ -139,8 +143,9 @@ export async function finishVisit(rawInput: unknown, dependencies: Dependencies)
     unit: metric.code === "tug_seconds" ? "s" : metric.code === "pain_nrs_0_10" ? "score" : "min",
   }));
   const entries = buildEntries(finished, input.clinicalEntries, finished.endedAt!);
-  await dependencies.workflow.finish(finished, metrics, entries.evaluations, entries.procedures);
-  const [confirmed, confirmedMetrics, confirmedEvaluations, confirmedProcedures] = await Promise.all([dependencies.visits.getById(visit.id), dependencies.metrics.listByVisitId(visit.id), dependencies.evaluations?.listByVisitId(visit.id) ?? Promise.resolve(entries.evaluations), dependencies.procedures?.listByVisitId(visit.id) ?? Promise.resolve(entries.procedures)]);
-  if (!confirmed || confirmed.status !== "finished" || confirmedMetrics.length < metrics.length || confirmedEvaluations.length < entries.evaluations.length || confirmedProcedures.length < entries.procedures.length) throw new Error("La visita todavía no pudo confirmarse.");
-  return { visit: confirmed, metrics: confirmedMetrics, evaluations: confirmedEvaluations, procedures: confirmedProcedures };
+  if (entries.symptoms.length && !dependencies.symptoms) throw new Error("La visita clínica no tiene repositorio para confirmar síntomas.");
+  await dependencies.workflow.finish(finished, metrics, entries.evaluations, entries.procedures, entries.symptoms);
+  const [confirmed, confirmedMetrics, confirmedEvaluations, confirmedSymptoms, confirmedProcedures] = await Promise.all([dependencies.visits.getById(visit.id), dependencies.metrics.listByVisitId(visit.id), dependencies.evaluations?.listByVisitId(visit.id) ?? Promise.resolve(entries.evaluations), dependencies.symptoms?.listByVisitId(visit.id) ?? Promise.resolve(entries.symptoms), dependencies.procedures?.listByVisitId(visit.id) ?? Promise.resolve(entries.procedures)]);
+  if (!confirmed || confirmed.status !== "finished" || confirmedMetrics.length < metrics.length || confirmedEvaluations.length < entries.evaluations.length || confirmedSymptoms.filter((item) => item.id.startsWith("symptom-")).length < entries.symptoms.length || confirmedProcedures.length < entries.procedures.length) throw new Error("La visita todavía no pudo confirmarse.");
+  return { visit: confirmed, metrics: confirmedMetrics, evaluations: confirmedEvaluations, symptoms: confirmedSymptoms, procedures: confirmedProcedures };
 }

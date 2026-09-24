@@ -169,15 +169,32 @@ El inicio directo de tratamiento crea `EpisodeOfCare` `active`, con `period.star
 
 Pausa, reanudación y finalización actualizan `EpisodeOfCare` con `If-Match`; el cierre agrega `period.end`. El historial estándar `statusHistory` conserva los períodos y la extensión repetible `episodeofcare-status-change-v1` asocia una nota opcional a cada cambio. La operación rechaza un tratamiento que aún tenga `Appointment` abiertos (`booked` o `proposed`).
 
-## Evaluaciones y procedimientos
+## Evaluaciones, síntomas y procedimientos
 
-Cada evaluación clínica nueva se persiste como `Observation` final con `subject`, `encounter` y `effectiveDateTime`. El dominio se guarda en `category`, el nombre en `code` y el resultado en `valueQuantity`, `valueCodeableConcept`, `valueString` o `dataAbsentReason`. `bodySite`, `method` y `note` conservan el contexto estándar. Extensiones locales guardan únicamente identidad de serie, lateralidad, asistencia o dispositivo y condiciones.
+Cada evaluación funcional nueva se persiste como `Observation` final con `subject`, `encounter` y `effectiveDateTime`. Usa la categoría estándar `exam` y conserva el dominio funcional en el CodeSystem local `clinical-evaluation-domain`; nombre, resultado y contexto se guardan en `code`, `value[x]` y elementos estándar. Extensiones locales guardan únicamente identidad de serie, lateralidad, asistencia o dispositivo y condiciones.
 
-Las observaciones históricas de dolor NRS, TUG, tolerancia de pie y duración de marcha se proyectan como evaluaciones al leerlas; no se migran físicamente. Una serie se identifica con `observation-series-identity-v1` y puede reunir resultados de distintas visitas.
+Los síntomas informados por el paciente son un tipo de dominio distinto y se persisten como una `Observation` por cada síntoma efectivamente puntuado. Usan categoría `survey`, `subject=Patient`, `encounter=Encounter`, `effectiveDateTime` de la visita y `performer=Patient` para indicar quién reportó el dato. La intensidad es `valueQuantity` con `system=http://unitsofmeasure.org`, `code={score}` y `unit=score`. El modelo no asigna cero por omisión: un síntoma sin puntuación no genera una `Observation`; el valor 0 se conserva como ausencia explícita del síntoma.
+
+El catálogo usa estos códigos de ítem ESAS de LOINC, verificados en el panel oficial `112503-8` ([Edmonton Symptom Assessment System](https://loinc.org/112503-8/panel)):
+
+| Código local | Código LOINC | Etiqueta |
+| --- | --- | --- |
+| `pain` | `112494-0` | Dolor |
+| `tiredness` | `112495-7` | Cansancio |
+| `drowsiness` | `112496-5` | Somnolencia |
+| `nausea` | `112497-3` | Náuseas |
+| `lack-of-appetite` | `112498-1` | Falta de apetito |
+| `shortness-of-breath` | `112499-9` | Falta de aire |
+| `depression` | `112500-4` | Ánimo bajo |
+| `anxiety` | `112501-2` | Ansiedad |
+
+Los síntomas personalizados usan `https://kinesiologiaadomicilio.local/fhir/CodeSystem/clinical-symptom` con código `custom-symptom` y el nombre ingresado en `code.text`. La interfaz usa el catálogo como lista de síntomas, no administra el cuestionario ESAS completo: no crea `QuestionnaireResponse` ni calcula su puntaje total. La identidad longitudinal usa `observation-series-identity-v1`.
+
+La lectura reconoce las observaciones históricas de dolor NRS por sus códigos anteriores (`clinical-evaluation|pain-nrs` y `functional-observations|pain-nrs-0-10`), incluso si su categoría es la anterior. Se proyectan como síntomas para la interfaz y no se reescriben ni reclasifican en FHIR. Las observaciones históricas de TUG, tolerancia de pie y duración de marcha continúan proyectándose como evaluaciones funcionales. Una serie se identifica con `observation-series-identity-v1` y puede reunir resultados de distintas visitas.
 
 Cada familia seleccionada se persiste como un `Procedure` `completed`, con código local, paciente, encuentro y `performedPeriod`. El cierre genera IDs deterministas para `Observation` y `Procedure` y los incluye, junto con `Encounter` y la cita cuando corresponde, en una transacción atómica. Reutilizar una identidad con contenido diferente se trata como conflicto.
 
-Una visita finalizada puede corregirse sin cambiar la identidad del `Encounter`. La operación exige su versión y un motivo, actualiza sus horarios o nota y las entradas clínicas en una transacción, y conserva el momento original de registro. Las evaluaciones modificadas usan `Observation.status=corrected`; las entradas retiradas usan `entered-in-error`. La anulación de una visita registrada por error marca el `Encounter` y sus observaciones y procedimientos vigentes como `entered-in-error`, restaura la cita si estaba `fulfilled` y los excluye de las lecturas activas. El motivo y la fecha se guardan en extensiones locales del `Encounter`. HAPI conserva las versiones previas de los recursos.
+Una visita finalizada puede corregirse sin cambiar la identidad del `Encounter`. La operación exige su versión y un motivo, actualiza sus horarios o nota y las entradas clínicas en una transacción, y conserva el momento original de registro. Las evaluaciones modificadas y los síntomas nuevos modificados usan `Observation.status=corrected`; las entradas retiradas usan `entered-in-error`. Las observaciones históricas reconocidas por compatibilidad no se incluyen en esa reescritura. La anulación de una visita registrada por error marca el `Encounter` y sus observaciones y procedimientos vigentes gestionados por la aplicación como `entered-in-error`, restaura la cita si estaba `fulfilled` y los excluye de las lecturas activas. El motivo y la fecha se guardan en extensiones locales del `Encounter`. HAPI conserva las versiones previas de los recursos.
 
 `visit-correction.fhir.integration.test.ts` corrige y anula una visita ficticia en `8081` y comprueba que el resultado corregido puede releerse y que las entradas anuladas dejan de aparecer en las consultas vigentes.
 

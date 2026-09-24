@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ActiveVisitError, annulVisitStart, finishVisit, startVisit } from "./manage-visit-workflow";
 import type { Visit } from "@/domain/visit/visit";
 import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
-import type { ClinicalEvaluation, PerformedProcedure } from "@/domain/visit/clinical-entry";
+import type { ClinicalEvaluation, ClinicalSymptom, PerformedProcedure } from "@/domain/visit/clinical-entry";
 
 const patient = { id: "patient-fixture", givenName: "Rosa", familyName: "Ficticia" };
 const treatment = { id: "treatment-fixture", patientId: patient.id, status: "active" as const, startDate: "2026-09-01" };
@@ -15,10 +15,11 @@ const appointment: ScheduledVisit = {
 function setup(initialVisits: Visit[] = [], appointmentState: ScheduledVisit = appointment) {
   const visits = new Map(initialVisits.map((item) => [item.id, item]));
   const metrics: Array<{ id: string; patientId: string; visitId: string; code: "pain_nrs_0_10"; value: number; effectiveDateTime: string; unit: string }> = [];
+  const symptoms: ClinicalSymptom[] = [];
   const workflow = {
     start: vi.fn(async (visit: Visit, appointmentInput?: ScheduledVisit) => { void appointmentInput; visits.set(visit.id, { ...visit, version: "1" }); }),
     annul: vi.fn(async (visit: Visit, appointmentInput?: ScheduledVisit) => { void appointmentInput; visits.set(visit.id, { ...visit, version: "2" }); }),
-    finish: vi.fn(async (visit: Visit, savedMetrics: typeof metrics, evaluations: ClinicalEvaluation[] = [], procedures: PerformedProcedure[] = []) => { void evaluations; void procedures; visits.set(visit.id, { ...visit, version: "2" }); metrics.push(...savedMetrics); }),
+    finish: vi.fn(async (visit: Visit, savedMetrics: typeof metrics, evaluations: ClinicalEvaluation[] = [], procedures: PerformedProcedure[] = [], savedSymptoms: ClinicalSymptom[] = []) => { void evaluations; void procedures; visits.set(visit.id, { ...visit, version: "2" }); metrics.push(...savedMetrics); symptoms.push(...savedSymptoms); }),
     completeRetrospective: vi.fn(),
   };
   return {
@@ -29,6 +30,7 @@ function setup(initialVisits: Visit[] = [], appointmentState: ScheduledVisit = a
       treatments: { getById: vi.fn(async () => treatment), listActive: vi.fn(async () => [treatment]), listDirectory: vi.fn(async () => [treatment]) },
       visits: { getById: vi.fn(async (id: string) => visits.get(id) ?? null), listByPatientId: vi.fn(async () => [...visits.values()]), listInProgress: vi.fn(async () => [...visits.values()].filter((item) => item.status === "in-progress")), put: vi.fn() },
       metrics: { listByVisitId: vi.fn(async (id: string) => metrics.filter((item) => item.visitId === id)), putIfAbsent: vi.fn() },
+      symptoms: { listByVisitId: vi.fn(async (id: string) => symptoms.filter((item) => item.visitId === id)), listByPatientId: vi.fn(async () => symptoms), putIfAbsent: vi.fn(async (item: ClinicalSymptom) => { symptoms.push(item); }) },
       scheduledVisits: { getById: vi.fn(async () => appointmentState), listByPatientId: vi.fn(), listOpen: vi.fn(), listBetween: vi.fn(), listChangedBetween: vi.fn(), putIfAbsent: vi.fn(), replace: vi.fn(), close: vi.fn() },
       workflow,
     },
@@ -95,11 +97,13 @@ describe("visit workflow use cases", () => {
     await finishVisit({
       visitId: active.id, expectedVersion: "1", clinicalNote: note, metrics: [], clinicalEntries: {
         evaluations: [{ clientId: "11111111-1111-4111-8111-111111111111", seriesId: "22222222-2222-4222-8222-222222222222", domain: "strength", name: "Fuerza ficticia", result: { kind: "coded", value: "Moderada" } }],
+        symptoms: [{ clientId: "33333333-3333-4333-8333-333333333333", seriesId: "44444444-4444-4444-8444-444444444444", code: "pain", severity: 0 }],
         procedures: [{ family: "manual-therapy" }],
       }
     }, dependencies);
     expect(workflow.finish.mock.calls[0]?.[2]).toHaveLength(1);
     expect(workflow.finish.mock.calls[0]?.[3]).toHaveLength(1);
+    expect(workflow.finish.mock.calls[0]?.[4]).toMatchObject([{ code: "pain", severity: 0 }]);
   });
 
   it("annuls a start and restores its appointment", async () => {

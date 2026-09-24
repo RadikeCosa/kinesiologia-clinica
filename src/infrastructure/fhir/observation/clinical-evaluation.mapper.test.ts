@@ -6,11 +6,13 @@ const evaluation: ClinicalEvaluation = { id: "evaluation-11111111-1111-4111-8111
 
 describe("clinical evaluation FHIR mapper", () => {
   it("round trips identity, result and context", () => {
-    expect(mapFhirClinicalEvaluation(mapClinicalEvaluationToFhir(evaluation))).toEqual(evaluation);
+    const resource = mapClinicalEvaluationToFhir(evaluation);
+    expect(resource.category?.[0]?.coding?.[0]).toMatchObject({ system: "http://terminology.hl7.org/CodeSystem/observation-category", code: "exam" });
+    expect(mapFhirClinicalEvaluation(resource)).toEqual(evaluation);
   });
 
-  it("reads a historical functional metric as an evaluation", () => {
+  it("does not classify historical pain observations as functional evaluations", () => {
     const mapped = mapFhirClinicalEvaluation({ resourceType: "Observation", id: "obs-old", status: "final", subject: { reference: "Patient/patient-a" }, encounter: { reference: "Encounter/visit-a" }, effectiveDateTime: "2026-09-16T10:00:00-03:00", code: { coding: [{ system: "https://kinesiologiaadomicilio.local/fhir/CodeSystem/functional-observations", code: "pain-nrs-0-10" }] }, valueQuantity: { value: 4, unit: "score" } });
-    expect(mapped).toMatchObject({ name: "Dolor NRS", domain: "pain-symptoms", result: { kind: "quantity", value: 4 } });
+    expect(mapped).toBeNull();
   });
 });

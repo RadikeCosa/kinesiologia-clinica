@@ -5,8 +5,8 @@ import type { VisitRepository } from "./visit.repository";
 import type { MetricRepository } from "./metric.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { ClinicalWorkflowRepository } from "./clinical-workflow.repository";
-import type { ClinicalEvaluationRepository, PerformedProcedureRepository } from "./clinical-entry.repository";
-import type { ClinicalEvaluation, PerformedProcedure, ProcedureFamily } from "@/domain/visit/clinical-entry";
+import type { ClinicalEvaluationRepository, ClinicalSymptomRepository, PerformedProcedureRepository } from "./clinical-entry.repository";
+import type { ClinicalEvaluation, ClinicalSymptom, PerformedProcedure, ProcedureFamily } from "@/domain/visit/clinical-entry";
 
 export class VisitConflictError extends Error {
   constructor() { super("La identidad de esta visita ya corresponde a otro contenido."); }
@@ -32,6 +32,7 @@ export async function createVisit(rawInput: unknown, dependencies: {
   scheduledVisits?: ScheduledVisitRepository;
   workflow?: Pick<ClinicalWorkflowRepository, "completeRetrospective">;
   evaluations?: ClinicalEvaluationRepository;
+  symptoms?: ClinicalSymptomRepository;
   procedures?: PerformedProcedureRepository;
 }) {
   const input = createVisitSchema.parse(rawInput);
@@ -66,7 +67,9 @@ export async function createVisit(rawInput: unknown, dependencies: {
   });
   const procedureSuffix: Record<ProcedureFamily, string> = { "therapeutic-exercise": "exercise", "manual-therapy": "manual", "gait-transfers": "gait", respiratory: "resp", "education-instructions": "education", "environment-assistive-devices": "environment", other: "other" };
   const evaluations: ClinicalEvaluation[] = input.clinicalEntries.evaluations.map((item) => ({ ...item, id: `evaluation-${item.clientId}`, patientId: input.patientId, visitId: id, effectiveDateTime: input.startedAt }));
+  const symptoms: ClinicalSymptom[] = input.clinicalEntries.symptoms.map((item) => ({ ...item, id: `symptom-${item.clientId}`, patientId: input.patientId, visitId: id, effectiveDateTime: input.startedAt }));
   const procedures: PerformedProcedure[] = input.clinicalEntries.procedures.map((item) => ({ ...item, id: `proc-${id.replace(/^visit-/, "").slice(0, 36)}-${procedureSuffix[item.family]}`.slice(0, 64), patientId: input.patientId, visitId: id, performedStart: input.startedAt, performedEnd: input.endedAt }));
+  if (symptoms.length && !dependencies.symptoms) throw new Error("La visita clínica no tiene repositorio para guardar síntomas.");
   if (existing) {
     if (!matchesRequestedVisit(existing, expected)) throw new VisitConflictError();
     const existingMetrics = await dependencies.metrics.listByVisitId(id);
@@ -76,27 +79,34 @@ export async function createVisit(rawInput: unknown, dependencies: {
   } else {
     if (treatment.status !== "active") throw new Error("El tratamiento activo no está disponible.");
     if (dependencies.workflow) {
-      await dependencies.workflow.completeRetrospective(expected, metricValues, evaluations, procedures, appointment ? { ...appointment, status: "fulfilled" } : undefined);
+      await dependencies.workflow.completeRetrospective(expected, metricValues, evaluations, procedures, appointment ? { ...appointment, status: "fulfilled" } : undefined, symptoms);
     } else {
-      if (!dependencies.evaluations || !dependencies.procedures) {
+      if (!dependencies.evaluations || !dependencies.symptoms || !dependencies.procedures) {
         throw new Error("La visita clínica no tiene repositorios para guardar sus entradas.");
       }
       await dependencies.visits.put(expected);
       for (const evaluation of evaluations) await dependencies.evaluations.putIfAbsent(evaluation);
+      for (const symptom of symptoms) await dependencies.symptoms.putIfAbsent(symptom);
       for (const procedure of procedures) await dependencies.procedures.putIfAbsent(procedure);
     }
   }
   if (!(appointment && dependencies.workflow && !existing)) {
     for (const value of metricValues) await dependencies.metrics.putIfAbsent(value);
   }
-  const [existingEvaluations, existingProcedures] = await Promise.all([
-    dependencies.evaluations?.listByVisitId(id) ?? Promise.resolve([]), dependencies.procedures?.listByVisitId(id) ?? Promise.resolve([]),
+  const [existingEvaluations, existingSymptoms, existingProcedures] = await Promise.all([
+    dependencies.evaluations?.listByVisitId(id) ?? Promise.resolve([]), dependencies.symptoms?.listByVisitId(id) ?? Promise.resolve([]), dependencies.procedures?.listByVisitId(id) ?? Promise.resolve([]),
   ]);
   if (existing) {
     const managedEvaluations = existingEvaluations.filter((item) => item.id.startsWith("evaluation-"));
     const sameEvaluations = managedEvaluations.length === evaluations.length && evaluations.every((expectedEvaluation) => managedEvaluations.some((actual) => actual.id === expectedEvaluation.id && actual.seriesId === expectedEvaluation.seriesId && actual.domain === expectedEvaluation.domain && actual.name === expectedEvaluation.name && JSON.stringify(actual.result) === JSON.stringify(expectedEvaluation.result) && JSON.stringify(actual.context ?? {}) === JSON.stringify(expectedEvaluation.context ?? {})));
+    const managedSymptoms = existingSymptoms.filter((item) => item.id.startsWith("symptom-"));
+    const sameSymptoms = managedSymptoms.length === symptoms.length && symptoms.every((expectedSymptom) => managedSymptoms.some((actual) => actual.id === expectedSymptom.id && actual.seriesId === expectedSymptom.seriesId && actual.code === expectedSymptom.code && actual.name === expectedSymptom.name && actual.severity === expectedSymptom.severity && JSON.stringify(actual.context ?? {}) === JSON.stringify(expectedSymptom.context ?? {})));
     const sameProcedures = existingProcedures.length === procedures.length && procedures.every((expectedProcedure) => existingProcedures.some((actual) => actual.id === expectedProcedure.id && actual.family === expectedProcedure.family && (actual.otherName ?? "") === (expectedProcedure.otherName ?? "")));
-    if (!sameEvaluations || !sameProcedures) throw new VisitConflictError();
+    if (!sameEvaluations || !sameSymptoms || !sameProcedures) throw new VisitConflictError();
+  } else if (symptoms.length) {
+    const managedSymptoms = existingSymptoms.filter((item) => item.id.startsWith("symptom-"));
+    const sameSymptoms = managedSymptoms.length === symptoms.length && symptoms.every((expectedSymptom) => managedSymptoms.some((actual) => actual.id === expectedSymptom.id && actual.seriesId === expectedSymptom.seriesId && actual.code === expectedSymptom.code && actual.name === expectedSymptom.name && actual.severity === expectedSymptom.severity && JSON.stringify(actual.context ?? {}) === JSON.stringify(expectedSymptom.context ?? {})));
+    if (!sameSymptoms) throw new Error("Los síntomas todavía no pudieron confirmarse desde el servidor.");
   }
   const confirmed = await dependencies.visits.getById(id);
   if (!confirmed) throw new Error("La visita todavía no pudo confirmarse desde el servidor.");
@@ -105,5 +115,5 @@ export async function createVisit(rawInput: unknown, dependencies: {
   if (input.metrics.some((metric) => !confirmedMetrics.some((item) => item.code === metric.code && item.value === metric.value))) {
     throw new Error("Las métricas todavía no pudieron confirmarse desde el servidor.");
   }
-  return { visit: confirmed, metrics: confirmedMetrics, evaluations: existing ? existingEvaluations : evaluations, procedures: existing ? existingProcedures : procedures };
+  return { visit: confirmed, metrics: confirmedMetrics, evaluations: existing ? existingEvaluations : evaluations, symptoms: existingSymptoms, procedures: existing ? existingProcedures : procedures };
 }

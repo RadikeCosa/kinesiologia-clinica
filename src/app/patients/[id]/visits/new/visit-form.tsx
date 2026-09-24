@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { submitVisit, type VisitActionState } from "./actions";
 import { ClinicalVisitFields } from "../clinical-visit-fields";
-import type { ClinicalEvaluation } from "@/domain/visit/clinical-entry";
+import type { ClinicalEvaluation, ClinicalSymptom } from "@/domain/visit/clinical-entry";
 
 const initialState: VisitActionState = { error: null };
 
@@ -18,7 +18,7 @@ function toIso(local: string) {
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
-export function VisitForm({ patientId, treatmentId, clientVisitId, appointmentId, initialMode = "live", priorEvaluations = [], precautions, lastPlan }: { patientId: string; treatmentId: string; clientVisitId: string; appointmentId?: string; initialMode?: "live" | "retrospective"; priorEvaluations?: ClinicalEvaluation[]; precautions?: string; lastPlan?: string }) {
+export function VisitForm({ patientId, treatmentId, clientVisitId, appointmentId, initialMode = "live", priorEvaluations = [], priorSymptoms = [], precautions, lastPlan }: { patientId: string; treatmentId: string; clientVisitId: string; appointmentId?: string; initialMode?: "live" | "retrospective"; priorEvaluations?: ClinicalEvaluation[]; priorSymptoms?: ClinicalSymptom[]; precautions?: string; lastPlan?: string }) {
   const [state, action, pending] = useActionState(submitVisit, initialState);
   const [mode, setMode] = useState<"live" | "retrospective">(initialMode);
   const [startedAt, setStartedAt] = useState("");
@@ -46,7 +46,7 @@ export function VisitForm({ patientId, treatmentId, clientVisitId, appointmentId
       <label>Salida<input type="datetime-local" value={endedAt} onChange={(event) => setEndedAt(event.target.value)} required /></label>
       {mode === "live" ? <button className="secondary-button" type="button" onClick={() => setEndedAt(localDateTimeNow())}>Finalizar ahora</button> : null}
     </div>
-    <ClinicalVisitFields priorEvaluations={priorEvaluations} precautions={precautions} lastPlan={lastPlan} errors={state.fieldErrors}/>
+    <ClinicalVisitFields priorEvaluations={priorEvaluations} priorSymptoms={priorSymptoms} precautions={precautions} lastPlan={lastPlan} errors={state.fieldErrors}/>
     {state.error ? <p className="form-error" role="alert">{state.error}</p> : null}
     <div className="mobile-final-action"><button className="submit-button" type="submit" disabled={pending || !startedAt || !endedAt}>{pending ? "Confirmando…" : "Finalizar visita"}</button></div>
     <p className="clinical-footnote">El registro se confirma solo después de volver a leerlo desde HAPI FHIR. Si hubo un problema de red, reintentá desde este formulario para conservar la misma identidad de visita.</p>
