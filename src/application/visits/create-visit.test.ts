@@ -47,6 +47,23 @@ describe("createVisit", () => {
     await expect(createVisit({ ...input, clinicalNote: { ...input.clinicalNote, statusAndResponse: "Otra respuesta ficticia" } }, ports)).rejects.toBeInstanceOf(VisitConflictError);
   });
 
+  it("reconciles a retry when the write committed but its response was lost", async () => {
+    const ports = dependencies();
+    const commit = ports.workflow.completeRetrospective.getMockImplementation();
+    if (!commit) throw new Error("Expected the in-memory workflow implementation.");
+    ports.workflow.completeRetrospective.mockImplementationOnce(async (...args) => {
+      await commit(...args);
+      throw new Error("Respuesta perdida después de guardar.");
+    });
+
+    await expect(createVisit(input, ports)).resolves.toMatchObject({ visit: { status: "finished" } });
+    const retry = await createVisit(input, ports);
+
+    expect(retry.visit.id).toBe(`visit-${input.clientVisitId}`);
+    expect(retry.visit.status).toBe("finished");
+    expect(ports.workflow.completeRetrospective).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects reuse of an evaluation identity with different content", async () => {
     const ports = dependencies();
     const symptom = { clientId: "11111111-1111-4111-8111-111111111111", seriesId: "22222222-2222-4222-8222-222222222222", code: "pain" as const, severity: 3 };

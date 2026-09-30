@@ -1,3 +1,4 @@
+import { firstPeriodId } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createVisit } from "@/application/visits/create-visit";
@@ -31,14 +32,15 @@ describeIntegration("clinical visit FHIR contract", () => {
     procedures: createFhirPerformedProcedureRepository(client),
     workflow: createFhirClinicalWorkflowRepository(client),
   };
-  const patientId = "fixture-visit-patient";
-  const treatmentId = "fixture-visit-treatment";
-  const conditionId = "fixture-visit-condition";
+  const patientId = `fixture-visit-patient-${randomUUID()}`;
+  const treatmentId = `fixture-visit-treatment-${randomUUID()}`;
+  const conditionId = `fixture-visit-condition-${randomUUID()}`;
   const clientVisitId = randomUUID();
   const secondClientVisitId = randomUUID();
   const seriesId = randomUUID();
 
   beforeAll(async () => {
+    await fetch(`${SAFE_FHIR_DEV_URL}/CarePlan/${firstPeriodId(treatmentId)}`, { method: "DELETE" });
     await client.put(`Patient/${patientId}`, {
       resourceType: "Patient", id: patientId,
       name: [{ family: "Ficticia", given: ["Persona"] }],
@@ -51,7 +53,7 @@ describeIntegration("clinical visit FHIR contract", () => {
     await client.put(`EpisodeOfCare/${treatmentId}`, {
       resourceType: "EpisodeOfCare", id: treatmentId, status: "active",
       patient: { reference: `Patient/${patientId}` }, period: { start: "2026-09-14" },
-      extension: [{
+      extension: [{ url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/episodeofcare-planned-session-count-v1", valuePositiveInt: 10 }, {
         url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/episodeofcare-therapeutic-goals-v1",
         valueString: "Objetivo ficticio de prueba",
       }],
@@ -63,24 +65,17 @@ describeIntegration("clinical visit FHIR contract", () => {
   });
 
   afterAll(async () => {
-    const observation = await dependencies.metrics.listByVisitId(`visit-${clientVisitId}`);
-    for (const metric of observation) {
-      const response = await fetch(`${SAFE_FHIR_DEV_URL}/Observation/${metric.id}`, { headers: { Accept: "application/fhir+json" } });
-      if (response.ok) {
-        const resource = await response.json();
-        await fetch(`${SAFE_FHIR_DEV_URL}/Observation/${metric.id}`, { method: "PUT", headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" }, body: JSON.stringify({ ...resource, status: "entered-in-error" }) });
+    const resources = new Map<string, string>();
+    for (const type of ["Observation", "Procedure", "Encounter"]) {
+      const response = await fetch(`${SAFE_FHIR_DEV_URL}/${type}?patient=${patientId}&_count=200`);
+      if (!response.ok) throw new Error(`No se pudo consultar el fixture ${type}.`);
+      const bundle = await response.json();
+      for (const entry of bundle.entry ?? []) {
+        if (entry.resource?.id) resources.set(`${type}/${entry.resource.id}`, `${type}/${entry.resource.id}`);
       }
     }
-    const visitResponse = await fetch(`${SAFE_FHIR_DEV_URL}/Encounter/visit-${clientVisitId}`, { headers: { Accept: "application/fhir+json" } });
-    if (visitResponse.ok) {
-      const visit = await visitResponse.json();
-      await fetch(`${SAFE_FHIR_DEV_URL}/Encounter/visit-${clientVisitId}`, { method: "PUT", headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" }, body: JSON.stringify({ ...visit, status: "entered-in-error" }) });
-    }
-    const treatmentResponse = await fetch(`${SAFE_FHIR_DEV_URL}/EpisodeOfCare/${treatmentId}`, { headers: { Accept: "application/fhir+json" } });
-    if (treatmentResponse.ok) {
-      const treatment = await treatmentResponse.json();
-      await fetch(`${SAFE_FHIR_DEV_URL}/EpisodeOfCare/${treatmentId}`, { method: "PUT", headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" }, body: JSON.stringify({ ...treatment, status: "finished", period: { ...treatment.period, end: "2026-09-15" } }) });
-    }
+    for (const path of [`CarePlan/${firstPeriodId(treatmentId)}`, `Condition/${conditionId}`, `EpisodeOfCare/${treatmentId}`, `Patient/${patientId}`]) resources.set(path, path);
+    await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...resources.keys()].map((url) => ({ request: { method: "DELETE", url } })) });
   });
 
   it("reads treatment context and diagnosis without exposing FHIR resources", async () => {

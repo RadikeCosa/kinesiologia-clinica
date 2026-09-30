@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   allowedDevOrigins: ["dev-pc.local"],
-  serverExternalPackages: ["better-sqlite3"],
+  serverExternalPackages: ["better-sqlite3", "pdfkit"],
+  outputFileTracingIncludes: { "/*": ["./assets/fonts/**/*", "./node_modules/pdfkit/js/data/**/*"] },
   async headers() {
     return [
       {

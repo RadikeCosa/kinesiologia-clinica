@@ -21,6 +21,8 @@ export default async function globalSetup() {
   database.prepare("DELETE FROM sessions").run();
   database.prepare("INSERT INTO sessions (id, token_hash, credential_id, label, created_at, last_seen_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
     .run(randomUUID(), createHash("sha256").update(token).digest("hex"), "e2e-passkey", "Playwright", now, now, now + 3_600_000);
+  database.prepare("INSERT OR REPLACE INTO passkeys (id, public_key, counter, transports, label, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .run("e2e-passkey", Buffer.from([1]), 0, "[]", "Playwright", now);
   database.close();
   writeFileSync(".local/e2e-storage.json", JSON.stringify({ cookies: [{ name: "clinical_session", value: token, domain: "localhost", path: "/", expires: Math.floor(now / 1000) + 3600, httpOnly: true, secure: false, sameSite: "Strict" }], origins: [] }));
 }

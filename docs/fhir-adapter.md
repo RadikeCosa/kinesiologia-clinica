@@ -207,7 +207,11 @@ Para completar el adaptador mínimo previo a podar `/admin` todavía faltan:
 1. validación completa de recuperación y revocación en teléfono y computadora;
 2. borradores, PWA, sincronización offline y resolución interactiva de conflictos;
 3. validación de las correcciones con una copia segura de datos anteriores;
-4. resúmenes, informes y funciones administrativas necesarias para el corte;
+4. aceptación física de informes y funciones administrativas adicionales necesarias para el corte;
 5. validación de dispositivo, infraestructura privada, backup y reversión.
 
-`ServiceRequest`, `Practitioner` y `DocumentReference` pertenecen a etapas posteriores de la V1.
+`ServiceRequest` y `Practitioner` permanecen postergados. `DocumentReference`, `CarePlan` y `Binary` ya se utilizan para períodos e informes.
+
+## Contrato de períodos y emisiones
+
+Ver [periodos-informes.md](periodos-informes.md) para mapeo de CarePlan, pertenencia de Encounter, creación condicional de DocumentReference, archivos Binary, huella sourceFingerprintV1, hashes de integridad y control de versiones. La descarga recibe el identificador del informe y no expone HAPI. Las pruebas `period-report.fhir.integration.test.ts` usan fixtures de identidad propia y los eliminan en una transacción, sin intervenir registros ajenos.

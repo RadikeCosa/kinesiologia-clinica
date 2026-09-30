@@ -1,3 +1,5 @@
+import { createFhirTreatmentRepository } from "../episode-of-care/fhir-treatment.repository";
+import { treatmentEntry } from "../periods/fhir-period.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
 import { readAllResourcesByType } from "@/infrastructure/fhir/core/fhir.bundle";
@@ -34,13 +36,18 @@ export function createFhirScheduledVisitRepository(client: FhirClient): Schedule
   }
 
   async function transact(entries: Array<{ visit: ScheduledVisit; ifMatch?: string }>) {
+    const treatments = createFhirTreatmentRepository(client);
+    const affected = await Promise.all([...new Set(entries.map(e => e.visit.treatmentId))].map(id => treatments.getById(id)));
+    for (const treatment of affected) {
+      if (!treatment || entries.some(e => e.visit.treatmentId === treatment.id && ["booked", "proposed"].includes(e.visit.status)) && treatment.status !== "active") throw new ScheduledVisitConflictError("El tratamiento no está activo para agendar visitas.");
+    }
     await client.transaction<FhirBundle>({
       resourceType: "Bundle",
       type: "transaction",
-      entry: entries.map(({ visit, ifMatch }) => ({
+      entry: [...affected.map(t => treatmentEntry({ ...t!, metadataRevision: (t!.metadataRevision ?? 0) + 1 })), ...entries.map(({ visit, ifMatch }) => ({
         resource: mapScheduledVisitToFhir(visit),
         request: { method: "PUT", url: `Appointment/${visit.id}`, ...(ifMatch ? { ifMatch: `W/\"${ifMatch}\"` } : {}) },
-      })),
+      }))],
     });
   }
 
@@ -66,7 +73,7 @@ export function createFhirScheduledVisitRepository(client: FhirClient): Schedule
         if (!sameIdentity(existing, visit)) throw new ScheduledVisitConflictError();
         return existing;
       }
-      await client.put(`Appointment/${visit.id}`, mapScheduledVisitToFhir(visit));
+      await transact([{ visit }]);
       const confirmed = await getById(visit.id);
       if (!confirmed || !sameIdentity(confirmed, visit)) throw new ScheduledVisitConflictError();
       return confirmed;

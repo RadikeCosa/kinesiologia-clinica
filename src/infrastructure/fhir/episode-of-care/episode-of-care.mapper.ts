@@ -43,6 +43,8 @@ export function mapFhirEpisodeOfCare(
       const values = episode.extension?.filter((entry) => entry.url === `${CONTEXT_BASE}episodeofcare-precaution-v1`).map((entry) => entry.valueString?.trim()).filter((value): value is string => Boolean(value)) ?? [];
       return values.length ? values : undefined;
     })(),
+    currentPeriodId: episode.extension?.find(e => e.url === `${CONTEXT_BASE}episodeofcare-current-period-v1`)?.valueString,
+    metadataRevision: episode.extension?.find(e => e.url === `${CONTEXT_BASE}episodeofcare-metadata-revision-v1`)?.valueInteger ?? 0,
     version: episode.meta?.versionId?.trim() || undefined,
     statusHistory: (() => {
       const notes = episode.extension?.filter((entry) => entry.url === STATUS_CHANGE_URL).map((entry) => ({

@@ -34,8 +34,22 @@ test.describe.serial("pantalla inicial clínica", () => {
     await expect(page.getByRole("heading", { name: "Elena Suárez" })).toBeVisible();
     await page.getByRole("button", { name: "Agenda", exact: true }).click();
     await expect(page.locator(".month-calendar")).toBeVisible();
-    const nextBlockDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(Date.now() + 35 * 86_400_000));
-    await page.getByRole("link", { name: "Mes siguiente" }).click();
+    const timeZone = "America/Argentina/Buenos_Aires";
+    const nextBlockDate = new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date(Date.now() + 35 * 86_400_000));
+    const currentMonth = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit" }).format(new Date());
+    const monthIndex = (value: string) => {
+      const [year, month] = value.split("-").map(Number);
+      return year * 12 + month;
+    };
+    let expectedMonth = currentMonth;
+    const monthsAhead = monthIndex(nextBlockDate.slice(0, 7)) - monthIndex(currentMonth);
+    for (let month = 0; month < monthsAhead; month += 1) {
+      const [year, monthNumber] = expectedMonth.split("-").map(Number);
+      const next = new Date(Date.UTC(year, monthNumber, 1));
+      expectedMonth = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
+      await page.getByRole("link", { name: "Mes siguiente" }).click();
+      await expect(page).toHaveURL(new RegExp(`mes=${expectedMonth}`));
+    }
     await expect(page).toHaveURL(new RegExp(`mes=${nextBlockDate.slice(0, 7)}`));
     await page.locator(".month-calendar button").filter({ has: page.locator("span", { hasText: new RegExp(`^${Number(nextBlockDate.slice(-2))}$`) }) }).click();
     await expect(page.getByRole("heading", { name: "Rosa Benítez" }).first()).toBeVisible();
@@ -83,26 +97,51 @@ test.describe.serial("pantalla inicial clínica", () => {
     await page.getByRole("button", { name: "Confirmar y comenzar" }).click();
     await expect(page).toHaveURL(/\/patients\/demo-carlos\/visits\/[^/]+\/edit$/);
     await page.getByRole("button", { name: "Anular inicio accidental" }).click();
+    await expect(page).toHaveURL(/\/inicio$/);
     await page.goto("/inicio");
     const restored = page.locator("article.visit-card").filter({ hasText: "Carlos Méndez" }).first();
     await restored.getByRole("button", { name: /Más opciones/ }).click();
-    await page.getByRole("link", { name: "Registrar visita" }).click();
+    await page.getByRole("dialog").getByRole("link", { name: "Registrar visita" }).click();
     await expect(page.getByRole("heading", { name: "Registrar visita realizada" })).toBeVisible();
   });
 
   test("conecta las evaluaciones de una visita con su evolución longitudinal", async ({ page }) => {
     await page.goto("/patients/demo-rosa/visits/demo-visit-rosa-2");
-    const evaluations = page.getByText("Evaluaciones · 2");
+    const evaluations = page.getByText("Evaluaciones · 1");
     await expect(evaluations).toBeVisible();
     await evaluations.click();
     await expect(page.getByRole("heading", { name: "Evaluaciones" })).toBeVisible();
-    const pain = page.locator("article.visit-evaluation-card").filter({ hasText: "Dolor NRS" });
-    await expect(pain).toContainText("4");
-    await pain.getByRole("link", { name: "Ver evolución de Dolor NRS" }).click();
+    const knee = page.locator("article.visit-evaluation-card").filter({ hasText: "Flexión de rodilla" });
+    await expect(knee).toContainText("102 grados");
+    await knee.getByRole("link", { name: "Ver evolución de Flexión de rodilla" }).click();
     await expect(page).toHaveURL(/\/patients\/demo-rosa#evaluation-series-/);
     await expect(page.getByRole("heading", { name: "Evolución de evaluaciones" })).toBeVisible();
-    const series = page.locator(".evaluation-series-list article").filter({ hasText: "Dolor NRS" });
+    const series = page.locator(".evaluation-series-list article").filter({ hasText: "Flexión de rodilla" });
     await expect(series.locator("li")).toHaveCount(2);
+  });
+
+  test("prepara un resumen familiar editable sin cambiar la nota de la visita", async ({ page }) => {
+    await page.goto("/patients/demo-rosa/visits/demo-visit-rosa-2");
+    const summary = page.locator("details.family-visit-summary");
+    await summary.locator("summary").click();
+    const editor = summary.getByRole("textbox", { name: "Resumen para compartir" });
+    await expect(editor).toHaveValue(/Rosa/);
+    await expect(editor).toHaveValue(/Durante la visita se trabajó:/);
+    await expect(editor).toHaveValue(/Flexión de rodilla \(Rodilla derecha\): 102 grados/);
+
+    const shareLink = summary.getByRole("link", { name: "Abrir WhatsApp con el texto" });
+    const originalDraft = await editor.inputValue();
+    const originalUrl = new URL((await shareLink.getAttribute("href"))!);
+    expect(originalUrl.hostname).toBe("wa.me");
+    expect(originalUrl.searchParams.get("text")).toBe(originalDraft);
+
+    await editor.fill("Texto ficticio editado para la familia.");
+    const editedUrl = new URL((await shareLink.getAttribute("href"))!);
+    expect(editedUrl.searchParams.get("text")).toBe("Texto ficticio editado para la familia.");
+    await expect(summary.getByText("Este borrador no se guarda en la ficha.")).toBeVisible();
+    await page.reload();
+    await page.locator("details.family-visit-summary summary").click();
+    await expect(page.getByRole("textbox", { name: "Resumen para compartir" })).toHaveValue(originalDraft);
   });
 
   test("advierte un cruce y permite confirmarlo", async ({ page }) => {
@@ -147,7 +186,7 @@ test.describe.serial("pantalla inicial clínica", () => {
 
     await page.goto("/inicio");
     const overdue = page.locator("article").filter({ hasText: "11:00" }).first();
-    await overdue.getByRole("button", { name: "Registrar visita" }).click();
+    await overdue.getByRole("button", { name: /Más opciones/ }).click();
     await page.getByRole("button", { name: "No se realizó" }).click();
     await page.getByLabel("Motivo").selectOption("patient-not-at-home");
     await page.getByRole("button", { name: "Confirmar" }).click();
@@ -157,70 +196,45 @@ test.describe.serial("pantalla inicial clínica", () => {
     await expect(changes.locator(".history-row").filter({ hasText: "Rosa Benítez" }).filter({ hasText: "No se realizó" }).first()).toBeVisible();
   });
 
-  test("comienza, continúa y finaliza una visita enlazada", async ({ page, request }) => {
-    // Este caso necesita una cita futura para que el resultado no dependa de la
-    // hora en que se ejecute la suite. Se restablece el recurso ficticio antes
-    // de comenzar y conserva el mismo ID para probar la idempotencia.
-    const start = new Date(Date.now() + 30 * 60_000);
-    const end = new Date(start.getTime() + 60 * 60_000);
-    const appointment = {
-      resourceType: "Appointment",
-      id: "demo-appt-today",
-      status: "booked",
-      start: start.toISOString(),
-      end: end.toISOString(),
-      minutesDuration: 60,
-      participant: [{ actor: { reference: "Patient/demo-alicia" }, status: "accepted" }],
-      supportingInformation: [{ reference: "EpisodeOfCare/demo-treatment-alicia" }],
-      serviceType: [{ text: "Kinesiología domiciliaria" }],
-    };
-    const reset = await request.put("http://localhost:8081/fhir/Appointment/demo-appt-today", {
-      headers: { "content-type": "application/fhir+json", accept: "application/fhir+json" },
-      data: appointment,
-    });
-    expect(reset.ok()).toBeTruthy();
-
+  test("comienza, continúa y finaliza una visita sin horario enlazada", async ({ page }) => {
     await page.goto("/inicio");
-    const scheduled = page.locator("article").filter({ hasText: "Alicia Figueroa" }).first();
-    const begin = scheduled.getByRole("button", { name: /Comenzar (visita|ahora)/ });
-    if (await begin.count()) {
-      await begin.click();
-    } else {
-      await scheduled.getByRole("button", { name: "Registrar visita" }).click();
-      await page.getByRole("dialog", { name: "Opciones de la visita" }).getByRole("button", { name: "Comenzar visita" }).click();
-    }
-    await expect(page).toHaveURL(/\/patients\/demo-alicia\/visits\/[^/]+\/edit$/);
+    const scheduled = page.locator("article").filter({ hasText: "Carlos Méndez" }).first();
+    await expect(scheduled).toContainText("Sin horario");
+    await scheduled.getByRole("button", { name: /Más opciones/ }).click();
+    await page.getByRole("dialog", { name: "Opciones de la visita" }).getByRole("button", { name: "Comenzar visita" }).click();
+    await page.getByRole("dialog", { name: "Comenzar visita ahora" }).getByRole("button", { name: "Confirmar y comenzar" }).click();
+    await expect(page).toHaveURL(/\/patients\/demo-carlos\/visits\/[^/]+\/edit$/);
     const visitPath = new URL(page.url()).pathname.replace(/\/edit$/, "");
-    await expect(page.getByRole("heading", { level: 1, name: "Alicia Figueroa" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Carlos Méndez" })).toBeVisible();
     await page.getByLabel(/Estado y respuesta/).fill("Estado y respuesta ficticios para Playwright");
     await page.getByLabel("Intervención realizada").fill("Intervención ficticia para Playwright");
-    await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
-    await expect(page.getByLabel("Dolor de 0 a 10")).toBeEmpty();
-    await page.getByLabel("Dolor de 0 a 10").fill("2");
-    await page.getByRole("button", { name: "Guardar evaluación" }).click();
+    await page.getByText("Síntomas referidos").click();
+    await page.getByRole("button", { name: "Dolor", exact: true }).click();
+    await expect(page.getByLabel("Intensidad de 0 a 10")).toBeEmpty();
+    await page.getByLabel("Intensidad de 0 a 10").fill("2");
     await page.getByText(/^Procedimientos/).click();
     await page.getByText("Ejercicio terapéutico").click();
     await page.getByRole("button", { name: "Finalizar visita" }).click();
-    await expect(page.getByText("Estado y respuesta ficticios para Playwright")).toBeVisible();
-    const evaluationSummary = page.getByText(/Evaluaciones · \d+/).first();
-    if (await evaluationSummary.count()) await evaluationSummary.click();
-    await expect(page.getByRole("heading", { name: "Dolor NRS" })).toBeVisible();
+    await expect(page.getByText("Estado y respuesta ficticios para Playwright", { exact: true })).toBeVisible();
+    const symptomSummary = page.getByText(/Síntomas referidos · \d+/).first();
+    if (await symptomSummary.count()) await symptomSummary.click();
+    await expect(page.getByRole("heading", { name: "Síntomas referidos por el paciente" })).toBeVisible();
     await page.getByText("Horarios y registro").click();
     await expect(page.getByText("Registrada en el momento")).toBeVisible();
     await page.getByRole("link", { name: "Corregir visita" }).click();
-    await expect(page.getByRole("heading", { name: "Alicia Figueroa" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Carlos Méndez" })).toBeVisible();
     await page.getByLabel(/Estado y respuesta/).fill("Estado ficticio corregido para Playwright");
-    await page.getByRole("button", { name: "Editar" }).click();
-    await page.getByLabel("Dolor de 0 a 10").fill("3");
-    await page.getByRole("button", { name: "Guardar evaluación" }).click();
+    await page.getByText("Síntomas referidos").click();
+    await page.getByLabel("Intensidad de 0 a 10").fill("3");
     await page.getByLabel(/Motivo de la corrección/).fill("Se corrigió la evaluación ficticia.");
     await page.getByRole("button", { name: "Guardar corrección" }).click();
-    await expect(page.getByText("Estado ficticio corregido para Playwright")).toBeVisible();
-    await expect(page.locator(".visit-evaluation-card.is-pain")).toContainText("3");
+    await expect(page.getByText("Estado ficticio corregido para Playwright", { exact: true })).toBeVisible();
+    await page.getByText("Síntomas referidos · 1").click();
+    await expect(page.locator(".symptom-record-card")).toContainText("3/10");
     await page.locator(".visit-annul-panel summary").click();
     await page.getByLabel("Motivo de la anulación").fill("La visita ficticia se registró por error.");
     await page.getByRole("button", { name: "Confirmar anulación" }).click();
-    await expect(page).toHaveURL(/\/patients\/demo-alicia\?annulled=1$/);
+    await expect(page).toHaveURL(/\/patients\/demo-carlos\?annulled=1$/);
     await page.locator(".annulled-visit-history summary").click();
     await expect(page.locator(`.annulled-visit-history a[href="${visitPath}"]`)).toBeVisible();
   });

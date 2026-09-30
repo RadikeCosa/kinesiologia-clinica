@@ -1,3 +1,7 @@
+import { changePeriod, type PeriodDependencies } from "../periods/manage-periods";
+import { periodCount, reconcilePeriod, validQuota } from "@/domain/treatment-period/treatment-period";
+import type { PeriodRepository } from "../periods/period.repository";
+import type { VisitRepository } from "../visits/visit.repository";
 import { z } from "zod";
 import type { ClinicalAdministrationRepository } from "./clinical-administration.repository";
 import type { PatientRepository } from "@/application/patients/patient.repository";
@@ -13,7 +17,7 @@ export const patientInputSchema = z.object({ clientId: id, givenName: text, fami
 export const treatmentInputSchema = z.object({ clientId: id, patientId: z.string().min(1), startDate: z.iso.date(), plannedSessionCount: z.coerce.number().int().min(1).max(500), plannedFrequency: text, initialFunctionalStatus: optionalText, therapeuticGoals: optionalText, frameworkPlan: optionalText, precautions: z.array(z.string().trim().min(1).max(300)).max(20).default([]), diagnoses: z.array(z.object({ clientId: id, text, kind: z.enum(["medical_reference", "kinesiologic_diagnosis"]) })).max(20).default([]) });
 
 export class AdministrationStateError extends Error {}
-type Dependencies = { patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; administration: ClinicalAdministrationRepository; clock?: { now(): Date } };
+type Dependencies = { periodFlow?: PeriodDependencies; periods?: PeriodRepository; visits?: VisitRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; administration: ClinicalAdministrationRepository; clock?: { now(): Date } };
 function day(now: Date) { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" }).format(now); }
 function normalizePhone(value: string) { return value.replace(/\D/g, ""); }
 function clientId(prefix: string, raw: string) { return `${prefix}-${raw}`; }
@@ -72,8 +76,13 @@ export async function updateTreatment(raw: unknown, expectedVersion: string | un
   if (!current) throw new AdministrationStateError("El tratamiento ya no está disponible.");
   if (current.version !== expectedVersion) throw new AdministrationStateError("El tratamiento cambió en otro dispositivo. Recargá la pantalla.");
   if (current.patientId !== input.patientId) throw new AdministrationStateError("El tratamiento no pertenece a este paciente.");
+  if (dependencies.periods && dependencies.visits) {
+    const period = reconcilePeriod(await dependencies.periods.current(current), await dependencies.visits.listByPatientId(current.patientId));
+    const count = periodCount(period, await dependencies.visits.listByPatientId(current.patientId));
+    if ((input.plannedSessionCount !== period.quota || input.plannedFrequency !== period.frequency) && (period.phase !== "open" || validQuota(period.quota) && count.completed + count.reserved >= period.quota || validQuota(period.quota) && input.plannedSessionCount < count.completed + count.reserved)) throw new AdministrationStateError("El cupo y la frecuencia se cambian en un período abierto o al renovar; no pueden eludir el informe.");
+  }
   const conditionId = (value: string) => value.startsWith("condition-") || value.startsWith("demo-") ? value : clientId("condition", value);
-  const treatment: Treatment = { ...current, plannedSessionCount: input.plannedSessionCount, plannedFrequency: input.plannedFrequency, clinicalContext: { initialFunctionalStatus: input.initialFunctionalStatus, therapeuticGoals: input.therapeuticGoals, frameworkPlan: input.frameworkPlan }, precautions: input.precautions, diagnosisReferences: input.diagnoses.map((item) => ({ kind: item.kind, conditionId: conditionId(item.clientId) })) };
+  const treatment: Treatment = { ...current, metadataRevision: (current.metadataRevision ?? 0) + 1, plannedSessionCount: input.plannedSessionCount, plannedFrequency: input.plannedFrequency, clinicalContext: { initialFunctionalStatus: input.initialFunctionalStatus, therapeuticGoals: input.therapeuticGoals, frameworkPlan: input.frameworkPlan }, precautions: input.precautions, diagnosisReferences: input.diagnoses.map((item) => ({ kind: item.kind, conditionId: conditionId(item.clientId) })) };
   const now = dependencies.clock?.now() ?? new Date();
   await dependencies.administration.putTreatment(treatment, input.diagnoses.map((item) => ({ id: conditionId(item.clientId), patientId: current.patientId, text: item.text, recordedAt: now.toISOString() })), current.version);
   return treatment;
@@ -91,6 +100,14 @@ export async function changeTreatmentStatus(treatmentId: string, expectedVersion
   if ((status === "paused" || status === "finished")) {
     const open = (await dependencies.scheduledVisits.listByPatientId(treatment.patientId)).filter((item) => item.treatmentId === treatment.id && ["booked", "proposed"].includes(item.status));
     if (open.length) throw new AdministrationStateError(`Primero resolvé ${open.length} ${open.length === 1 ? "visita abierta" : "visitas abiertas"}.`);
+  }
+  if (dependencies.visits && (status === "paused" || status === "finished") && (await dependencies.visits.listByPatientId(treatment.patientId)).some(v => v.treatmentId === treatment.id && v.status === "in-progress")) throw new AdministrationStateError("Primero finalizá o anulá la visita en curso.");
+  if (status === "finished" && dependencies.periodFlow) {
+    await dependencies.periods!.materialize(treatment);
+    const latest = (await dependencies.treatments.getById(treatment.id))!;
+    const period = await dependencies.periods!.current(latest);
+    await changePeriod({ patientId: treatment.patientId, treatmentId, periodId: period.id, expectedVersion: period.version, event: "finish", endDate }, dependencies.periodFlow);
+    return (await dependencies.treatments.getById(treatmentId))!;
   }
   const history = [...(treatment.statusHistory ?? [{ status: treatment.status, startedAt: treatment.startDate }])];
   const last = history.at(-1); if (last && !last.endedAt) last.endedAt = now.toISOString();

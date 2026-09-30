@@ -1,3 +1,4 @@
+import { periodVisits } from "@/domain/treatment-period/treatment-period";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
@@ -8,6 +9,8 @@ import { requireClinicalSession } from "@/infrastructure/auth/auth-http";
 import { deriveDocumentationTimeliness, deriveStartPunctuality } from "@/domain/visit/visit-timeliness";
 import type { ClinicalEvaluation, ClinicalSymptom, EvaluationAbsentReason, EvaluationDomain, ProcedureFamily } from "@/domain/visit/clinical-entry";
 import { AnnulVisitForm } from "./annul-visit-form";
+import { FamilyVisitSummaryEditor } from "./family-visit-summary-editor";
+import { createFamilyVisitSummary } from "@/features/visit-summary/family-visit-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -49,14 +52,25 @@ export default async function VisitPage({ params }: { params: Promise<{ id: stri
   const appointment = visit.appointmentId ? await dependencies.scheduledVisits.getById(visit.appointmentId) : null;
   const punctuality = deriveStartPunctuality(visit, appointment);
   const documentation = deriveDocumentationTimeliness(visit);
-  const orderedVisits = patientVisits.filter((item) => item.treatmentId === visit.treatmentId && item.status === "finished").sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+  const period = treatment ? visit.periodId ? await dependencies.periods.get(visit.periodId) : (await dependencies.periods.list(treatment)).find(p => p.ordinal === 1) : null;
+  const orderedVisits = (period ? periodVisits(period, patientVisits) : patientVisits).filter((item) => item.treatmentId === visit.treatmentId && item.status === "finished").sort((a, b) => a.startedAt.localeCompare(b.startedAt));
   const sessionNumber = orderedVisits.findIndex((item) => item.id === visit.id) + 1;
   const punctualityLabel = punctuality ? punctuality === "on-time" ? "En horario" : punctuality === "delayed" ? "Demorada" : "Demora importante" : appointment ? "Sin horario acordado" : "Visita espontánea";
+  const familySummary = visit.status === "finished" ? createFamilyVisitSummary({
+    patientGivenName: patient.givenName,
+    visitDate: visitDate(visit.startedAt),
+    response: visit.clinicalNote?.statusAndResponse || visit.clinicalNote?.assessment || visit.clinicalNote?.subjective || "",
+    intervention: visit.clinicalNote?.intervention || "",
+    nextPlan: visit.clinicalNote?.nextPlan,
+    evaluations,
+    symptoms,
+    metrics,
+  }) : null;
   return <main className="shell clinical-shell visit-record-shell">
     <Link className="back-link" href={`/patients/${encodeURIComponent(id)}`}>Volver al paciente</Link>
     <p className="eyebrow">Registro completo de la visita</p>
     <h1>{patient.givenName} {patient.familyName}</h1>
-    <p className="lede visit-record-date">{sessionNumber > 0 ? `Sesión ${sessionNumber}${treatment?.plannedSessionCount ? ` de ${treatment.plannedSessionCount}` : ""} · ` : ""}{visitDate(visit.startedAt)}</p>
+    <p className="lede visit-record-date">{sessionNumber > 0 ? `Sesión ${sessionNumber}${period?.quota ? ` de ${period.quota}` : ""} · ` : ""}{visitDate(visit.startedAt)}</p>
     <section className="visit-record-summary" aria-label="Resumen de la visita">
       <strong className="visit-time-range">{visitTime(visit.startedAt)}–{visitTime(visit.endedAt)}</strong>
       <span className="record-badge">{visit.captureMode === "retrospective" ? "Carga diferida" : "En vivo"}</span>
@@ -102,6 +116,7 @@ export default async function VisitPage({ params }: { params: Promise<{ id: stri
       {!evaluations.length && !symptoms.length && metrics.length ? <ul>{metrics.map((metric) => <li key={metric.id}>{metric.code}: {metric.value} {metric.unit}</li>)}</ul> : null}
       <details className="visit-operational-detail"><summary>Horarios y registro</summary><dl className="context-list"><div><dt>Horario acordado</dt><dd>{appointment?.startsAt ? formatClinicalDateTime(appointment.startsAt) : appointment ? `${appointment.scheduledDate} · Sin horario` : "Visita espontánea"}</dd></div><div><dt>Documentación</dt><dd>{documentation ? documentation === "at-the-time" ? "Registrada en el momento" : documentation === "same-day" ? "Registrada en el día" : "Registrada posteriormente" : "Sin calcular"}</dd></div></dl></details>
     </section>
+    {familySummary ? <FamilyVisitSummaryEditor initialText={familySummary}/> : null}
     {visit.status === "finished" && visit.version ? <div className="visit-record-management"><Link className="button-link" href={`/patients/${encodeURIComponent(id)}/visits/${encodeURIComponent(visitId)}/correct`}>Corregir visita</Link><AnnulVisitForm patientId={id} visitId={visitId} expectedVersion={visit.version}/></div> : null}
     <Link className="primary-link" href={`/inicio?vista=agenda&agendar=${encodeURIComponent(id)}`}>Agendar próxima visita</Link>
   </main>;

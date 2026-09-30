@@ -334,6 +334,18 @@ h1 {
   background: var(--accent);
 }
 
+.secondary-button:disabled {
+  color: #52645b;
+  border-color: #9caea4;
+  background: #edf2ef;
+  cursor: not-allowed;
+}
+
+.secondary-button:disabled:hover {
+  color: #52645b;
+  background: #edf2ef;
+}
+
 .diagnostic-note {
   box-shadow: none;
 }
@@ -607,6 +619,7 @@ h1 {
 .device-list { display: grid; gap: 0.75rem; padding: 0; list-style: none; }
 .device-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--border); }
 .device-list small { display: block; margin-top: 0.3rem; color: var(--muted); }
+.device-list .disabled-action-help { max-width: 24rem; }
 @media (max-width: 42rem) { .device-list li { align-items: stretch; flex-direction: column; } }
 
 /* Operational clinical home */
@@ -919,6 +932,15 @@ h1 {
 .visit-operational-detail summary { color: var(--muted); font-size: 0.86rem; font-weight: 750; cursor: pointer; }
 .visit-operational-detail .context-list { margin-top: 0.9rem; }
 .visit-procedure-tags { margin: 0.7rem 0 0; }
+.family-visit-summary { margin-top: 1rem; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: 0.75rem; background: #f8fbfa; }
+.family-visit-summary > summary { min-height: 2.75rem; display: flex; align-items: center; color: var(--accent); font-weight: 800; cursor: pointer; }
+.family-visit-summary-content { display: grid; gap: 0.75rem; padding-top: 0.5rem; }
+.family-visit-summary-content > p { margin: 0; color: var(--muted); line-height: 1.5; }
+.family-visit-summary-content label { font-weight: 750; }
+.family-visit-summary-content textarea { width: 100%; min-height: 10rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 0.65rem; color: var(--ink); background: white; font: inherit; line-height: 1.55; resize: vertical; }
+.family-visit-summary-content textarea:focus-visible, .family-visit-summary-content a:focus-visible { outline: 3px solid #d49b2d; outline-offset: 2px; }
+.family-visit-summary-content .family-visit-summary-note { font-size: 0.84rem; }
+.family-visit-summary-content .primary-link { justify-self: start; margin-top: 0; }
 .visit-correction-note { padding: 0.7rem 0.85rem; border-radius: 0.6rem; color: #72551d; background: #fbefce; font-size: 0.86rem; }
 .visit-record-management { display: flex; align-items: start; flex-wrap: wrap; gap: 0.7rem; margin-top: 1rem; }
 .visit-annul-panel { flex: 1 1 18rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border); border-radius: 0.65rem; background: #fff; }
@@ -1145,3 +1167,25 @@ h1 {
   .agenda-week-view, .agenda-month-view .month-toggle { display: none; }
   .agenda-month-view { display: block; }
 }
+
+.period-shell { max-width: 64rem; }
+.period-shell > .clinical-panel { margin-top: 1.5rem; }
+.period-navigation, .report-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.25rem 0; }
+.period-navigation a { padding: .65rem 1rem; border: 1px solid var(--border, #bed5d0); border-radius: 999px; }
+.period-navigation a[aria-current="page"] { background: #e2f2eb; font-weight: 700; }
+.report-structured { padding: 1rem; background: #f2f8f5; border-radius: 1rem; overflow-wrap: anywhere; }
+.report-structured ul { padding-left: 1.4rem; }
+.report-structured li { margin: .5rem 0; }
+.report-document p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-document section { margin-top: 1.5rem; }
+.report-draft-warning, .report-source-update { padding: 1rem; background: #fff3db; color: #604300; border-radius: .75rem; }
+.report-confirmation { display: flex; align-items: center; gap: .75rem; }
+.report-confirmation input { width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
+.period-controls details { margin: 1rem 0; }
+.period-controls summary { padding: .75rem 0; cursor: pointer; }
+.period-status-notice { margin: 1rem 0; padding: 1rem; border: 1px solid #bed5d0; border-radius: .75rem; }
+@media (max-width: 42rem) { .report-actions > * { width: 100%; text-align: center; } .period-shell { padding-inline: 1rem; } }
+
+.period-shell h2 { font-size: 1.3rem; font-weight: 750; margin: 1rem 0 .75rem; }
+.period-shell h3 { font-size: 1.05rem; font-weight: 700; margin: 1rem 0 .5rem; }
+.period-shell button:focus-visible, .period-shell a:focus-visible, .period-shell input:focus-visible, .period-shell textarea:focus-visible { outline: 3px solid #d49b2d; outline-offset: 3px; }

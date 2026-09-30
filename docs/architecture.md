@@ -4,7 +4,7 @@
 
 Este repositorio es el reemplazo privado de `/admin`. El frontend se construye desde cero y el admin anterior sigue siendo el respaldo operativo hasta alcanzar las condiciones de corte.
 
-La fundación contiene bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y un piloto clínico online completo para agenda y visita: pacientes, tratamientos, `Appointment`, `Encounter`, evaluaciones `Observation` y procedimientos `Procedure` opcionales. `/inicio` es la entrada autenticada y compone sus vistas desde los repositorios clínicos reales. Las rutas y la escritura se habilitan exclusivamente contra el HAPI descartable de `8081` y se bloquean en Vercel. El acceso con passkeys, sesiones persistentes, revocación y recuperación está implementado. Todavía no implementa PWA, offline ni informes.
+La fundación contiene bloqueo de indexación, pruebas, un chequeo server-side de disponibilidad FHIR y un piloto clínico online completo para agenda y visita: pacientes, tratamientos, `Appointment`, `Encounter`, evaluaciones `Observation` y procedimientos `Procedure` opcionales. `/inicio` es la entrada autenticada y compone sus vistas desde los repositorios clínicos reales. Las rutas y la escritura se habilitan exclusivamente contra el HAPI descartable de `8081` y se bloquean en Vercel. El acceso con passkeys, sesiones persistentes, revocación y recuperación está implementado. Implementa informes de período con PDF y archivos inmutables desde la aplicación; su aceptación física está pendiente. Todavía no implementa PWA ni offline.
 
 ## Capas
 
@@ -76,3 +76,7 @@ El directorio incluye tratamientos `active`, `onhold` y `finished`; solo los act
 5. PWA, borradores offline e idempotencia;
 6. seguimiento longitudinal y reportes;
 7. retiro de `/admin` del repositorio público después de validar reversión.
+
+## Períodos e informes
+
+El tratamiento mantiene EpisodeOfCare y cada período tiene su CarePlan propio. Las visitas conservan periodId y los contadores se derivan de ellas. Las escrituras clínicas bloquean el período mediante If-Match; los informes, renovación y finalización comprueban además tratamiento y paciente. DocumentReference conserva la emisión y referencia Binary para PDF y JSON archivado. Todos los contratos, límites y estados se describen en [periodos-informes.md](periodos-informes.md). La descarga autenticada resuelve archivos en el servidor.

@@ -3,4 +3,5 @@ export interface Diagnosis {
   patientId: string;
   text: string;
   recordedAt?: string;
+  version?: string;
 }

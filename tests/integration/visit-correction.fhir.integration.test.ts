@@ -1,3 +1,4 @@
+import { firstPeriodId } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createVisit } from "@/application/visits/create-visit";
@@ -37,11 +38,13 @@ describeIntegration("visit correction and annulment on fictional HAPI data", () 
   const visitId = `visit-${clientVisitId}`;
 
   beforeAll(async () => {
+    await fetch(`${BASE}/CarePlan/${firstPeriodId(treatmentId)}`, { method: "DELETE" });
     await client.put(`Patient/${patientId}`, { resourceType: "Patient", id: patientId, name: [{ family: "Ficticia", given: ["Persona"] }] });
-    await client.put(`EpisodeOfCare/${treatmentId}`, { resourceType: "EpisodeOfCare", id: treatmentId, status: "active", patient: { reference: `Patient/${patientId}` }, period: { start: "2026-09-14" } });
+    await client.put(`EpisodeOfCare/${treatmentId}`, { resourceType: "EpisodeOfCare", id: treatmentId, status: "active", patient: { reference: `Patient/${patientId}` }, extension: [{ url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/episodeofcare-planned-session-count-v1", valuePositiveInt: 10 }], period: { start: "2026-09-14" } });
   });
 
   afterAll(async () => {
+    await fetch(`${BASE}/CarePlan/${firstPeriodId(treatmentId)}`, { method: "DELETE" });
     for (const path of [`Observation/evaluation-${evaluationId}`, `Observation/symptom-${symptomId}`, `Procedure/proc-${clientVisitId}-exercise`, `Encounter/${visitId}`, `EpisodeOfCare/${treatmentId}`, `Patient/${patientId}`]) {
       await fetch(`${BASE}/${path}`, { method: "DELETE" }).catch(() => undefined);
     }

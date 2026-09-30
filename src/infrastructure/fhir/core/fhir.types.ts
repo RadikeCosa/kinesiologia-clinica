@@ -13,6 +13,7 @@ export interface FhirBundleEntry<
     method: "PUT" | "POST";
     url: string;
     ifMatch?: string;
+    ifNoneExist?: string;
   };
   response?: { status?: string; location?: string; etag?: string };
 }

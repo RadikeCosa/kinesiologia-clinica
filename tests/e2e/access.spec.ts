@@ -14,4 +14,13 @@ test.describe("pantalla de acceso", () => {
     await expect(page.getByText("Herramientas de desarrollo")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
+
+  test("explica por qué no se puede revocar la única passkey", async ({ page }) => {
+    await page.goto("/configuracion/dispositivos");
+
+    const revokePasskey = page.getByRole("button", { name: "Revocar passkey" });
+    await expect(revokePasskey).toBeDisabled();
+    await expect(revokePasskey).toHaveAttribute("aria-describedby", /passkey-revoke-help-/);
+    await expect(page.getByText("Es la única passkey; no se puede revocar para evitar perder el acceso.")).toBeVisible();
+  });
 });

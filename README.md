@@ -6,13 +6,15 @@ Aplicación privada para organizar pacientes, tratamientos y visitas de kinesiol
 
 ## Estado del proyecto
 
-La aplicación cuenta con una pantalla de inicio autenticada con **Hoy**, **Agenda** y **Pacientes**; administración de pacientes y tratamientos; agenda de visitas; registro de visitas en vivo o de forma diferida; evaluaciones funcionales y procedimientos; y corrección o anulación justificada de visitas. Los datos clínicos se guardan en HAPI FHIR desde el servidor, nunca directamente desde el navegador.
+La aplicación cuenta con una pantalla de inicio autenticada con **Hoy**, **Agenda** y **Pacientes**; administración de pacientes y tratamientos; agenda de visitas; registro de visitas en vivo o de forma diferida; evaluaciones funcionales y procedimientos; corrección o anulación justificada de visitas; y un borrador editable de resumen familiar que prepara texto para compartir por WhatsApp. Los datos clínicos se guardan en HAPI FHIR desde el servidor, nunca directamente desde el navegador.
 
-El acceso usa passkeys para una cuenta profesional provisionada, con sesiones por dispositivo, revocación y códigos de recuperación. El ingreso y registro con passkey se validaron en computadora; siguen pendientes la validación completa en móvil, recuperación y revocación.
+El acceso usa passkeys para una cuenta profesional provisionada, con sesiones por dispositivo, revocación y códigos de recuperación. El ingreso con passkey se validó en Ubuntu y Android y se comprobó la revocación de sesión. Siguen pendientes las pruebas con un autenticador independiente, la recuperación completa y la revocación de una segunda passkey.
 
 **Todos los datos usados actualmente en desarrollo, pruebas, demostraciones y documentación son inventados. No cargar datos reales.** El flujo clínico es un piloto online que solo se habilita localmente contra el HAPI descartable en `http://localhost:8081/fhir`; las rutas y escrituras clínicas están bloqueadas en Vercel. El antiguo `/admin` sigue siendo el respaldo operativo durante la migración.
 
-Todavía no están implementados PWA, trabajo offline, sincronización posterior ni informes exportables. El proyecto no está listo para datos clínicos reales.
+Se implementaron períodos de sesiones e informes breves definitivos con PDF, renovación, cierre parcial y reemplazos conservando el original. La aceptación física del incremento está pendiente. Todavía no están implementados PWA, trabajo offline ni sincronización posterior. El resumen familiar no se persiste y abrir WhatsApp no envía el mensaje; hay que revisar el texto y confirmar el envío allí. El proyecto no está listo para datos clínicos reales.
+
+Los contratos y la verificación están en [períodos e informes](docs/periodos-informes.md); la prueba en Ubuntu y Moto G15, en [pruebas físicas](docs/pruebas-fisicas-periodos.md).
 
 ## Recorrido de la aplicación
 

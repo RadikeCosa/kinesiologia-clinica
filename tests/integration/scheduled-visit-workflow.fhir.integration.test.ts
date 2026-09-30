@@ -1,3 +1,4 @@
+import { firstPeriodId } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { closeScheduledVisit, createScheduledVisit, rescheduleVisit } from "@/application/schedule/manage-scheduled-visits";
@@ -35,6 +36,7 @@ describeIntegration("scheduled visit and encounter FHIR contract", () => {
     const treatmentId = `fixture-agenda-treatment-${suffix}`;
     const appointmentIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()] as const;
     cleanupResources = [
+      `CarePlan/${firstPeriodId(treatmentId)}`,
       `Observation/obs-${appointmentIds[1]}-pain-nrs-0-10`,
       `Encounter/visit-${appointmentIds[1]}`,
       `Encounter/visit-${appointmentIds[4]}`,
@@ -43,7 +45,7 @@ describeIntegration("scheduled visit and encounter FHIR contract", () => {
       `Patient/${patientId}`,
     ];
     await client.put(`Patient/${patientId}`, { resourceType: "Patient", id: patientId, name: [{ family: "Agenda", given: ["Ficticia"] }] });
-    await client.put(`EpisodeOfCare/${treatmentId}`, { resourceType: "EpisodeOfCare", id: treatmentId, status: "active", patient: { reference: `Patient/${patientId}` }, period: { start: "2026-09-01" } });
+    await client.put(`EpisodeOfCare/${treatmentId}`, { resourceType: "EpisodeOfCare", id: treatmentId, status: "active", patient: { reference: `Patient/${patientId}` }, extension: [{ url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/episodeofcare-planned-session-count-v1", valuePositiveInt: 10 }], period: { start: "2026-09-01" } });
 
     const dependencies = {
       patients: createFhirPatientRepository(client), treatments: createFhirTreatmentRepository(client),

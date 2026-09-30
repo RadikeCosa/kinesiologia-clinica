@@ -35,6 +35,9 @@ export interface HomePatientViewModel {
     id?: string;
     status: TreatmentStatus;
     completedSessions: number;
+    periodUnavailable?: boolean;
+    periodPhase?: "open" | "report-pending" | "reported" | "closed";
+    visitBlockedReason?: string;
     totalSessions?: number;
     frequency?: string;
     nextVisit?: {

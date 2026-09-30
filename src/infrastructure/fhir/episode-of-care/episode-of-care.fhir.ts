@@ -9,7 +9,7 @@ export interface FhirEpisodeOfCare extends FhirResource {
     start?: string;
     end?: string;
   };
-  extension?: Array<{ url?: string; valueString?: string; valuePositiveInt?: number; extension?: Array<{ url?: string; valueString?: string; valueDateTime?: string; valueCode?: string }> }>;
+  extension?: Array<{ url?: string; valueString?: string; valuePositiveInt?: number; valueInteger?: number; extension?: Array<{ url?: string; valueString?: string; valueDateTime?: string; valueCode?: string }> }>;
   statusHistory?: Array<{ status?: "active" | "onhold" | "finished"; period?: { start?: string; end?: string } }>;
   diagnosis?: Array<{
     condition?: { reference?: string };

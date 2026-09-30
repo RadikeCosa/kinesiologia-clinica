@@ -49,6 +49,8 @@ La cita representa lo acordado. Puede crearse, reprogramarse conservando la ante
 
 La interfaz muestra puntualidad de inicio y demora de documentación a partir de los horarios crudos. Las tendencias y resúmenes agregados pertenecen a los informes posteriores.
 
+En una visita finalizada se puede preparar un borrador editable para la familia a partir de la evolución, la intervención, las evaluaciones y mediciones vinculadas a esa misma visita y el próximo paso. El borrador no cambia ni se guarda junto a la nota clínica; la persona profesional revisa el contenido, elige el contacto y confirma el envío desde WhatsApp.
+
 Una visita prevista sin horario puede comenzar en el momento si corresponde al día actual, definirse antes de la fecha acordada o registrarse como ya realizada si quedó pendiente. Conserva su día acordado sin inventar una hora prevista, por lo que no genera indicador de puntualidad. Los estados de Hoy se calculan al cargar con la hora de referencia del servidor y la zona `America/Argentina/Buenos_Aires`; la pantalla no cambia de estado automáticamente mientras permanece abierta.
 
 ## Registro clínico breve
@@ -67,3 +69,9 @@ El detalle confirmado prioriza horarios efectivos y puntualidad, cómo estaba y 
 - recomendaciones clínicas automáticas;
 - réplica offline de toda la historia;
 - acceso directo del navegador a HAPI FHIR.
+
+## Períodos e informes implementados
+
+Las sesiones se agrupan por período con cupo 1–500, contador derivado y reservas por visita en curso. Al completar el cupo se prepara un informe breve editable, definitivo después de guardar. Antes de registrar otra visita hay que guardar el informe actualizado y renovar. La renovación conserva el tratamiento, permite otro cupo/frecuencia y comienza el contador en cero. El cierre parcial exige motivo e informe, permite finalizar y no renovar anticipadamente. Cero sesiones se cierran sin un informe vacío.
+
+Corregir fuentes de un informe guardado exige un reemplazo antes de renovar/finalizar. En un período ya cerrado el reemplazo es opcional y no reabre el período ni bloquea el nuevo. Originales y reemplazos permanecen consultables. Nombre profesional obligatorio, matrícula opcional; no hay firma digital ni garantía de aceptación por una obra social. Los borradores no se respaldan después de cerrar la pantalla. Ver [contrato completo](periodos-informes.md) y [aceptación física pendiente](pruebas-fisicas-periodos.md).

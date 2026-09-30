@@ -26,7 +26,9 @@ Dependencies point inward:
 
 ## Current status
 
-The technical foundation, server-side FHIR health check, active-patient adapter, local-only fictional patient context and online visit pilot, WebAuthn capability diagnostic, and passkey authentication code are implemented. Clinical pages and the visit action are allowed only against `http://localhost:8081/fhir` and are blocked on Vercel. The visit pilot writes a finished Encounter and optional functional metrics, then re-reads them. Authentication uses a single provisioned account, per-device sessions and recovery codes, but real passkey enrollment, recovery and revocation still need validation on Ubuntu and Android. Do not claim that offline sync, PWA, reports, or real-data readiness exist until the code proves it.
+The online clinical core, appointments, longitudinal evaluations, corrections/annulments, passkeys and per-device sessions are implemented. Clinical surfaces remain restricted to fictional data at `http://localhost:8081/fhir` and blocked on Vercel. Fresh passkey login on Ubuntu and Moto G15 and session revocation were validated; enrollment/revocation of a second independent authenticator and complete recovery remain pending.
+
+Treatment periods, derived quotas/reservations, final period reports, PDF downloads, renewal, partial closure and immutable replacement history are implemented. See `docs/periodos-informes.md` for the contract and `docs/audit-estado-actual.md` for automatic results. The new report workflow still requires physical acceptance on Ubuntu and Moto G15 (`docs/pruebas-fisicas-periodos.md`). Reports are immutable through application ports, not against HAPI administrators. Drafts stay in memory. PWA/offline sync and real-data readiness are not implemented or accredited.
 
 ## Privacy
 

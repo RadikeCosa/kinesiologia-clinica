@@ -79,7 +79,8 @@ export async function createVisit(rawInput: unknown, dependencies: {
   } else {
     if (treatment.status !== "active") throw new Error("El tratamiento activo no está disponible.");
     if (dependencies.workflow) {
-      await dependencies.workflow.completeRetrospective(expected, metricValues, evaluations, procedures, appointment ? { ...appointment, status: "fulfilled" } : undefined, symptoms);
+      try { await dependencies.workflow.completeRetrospective(expected, metricValues, evaluations, procedures, appointment ? { ...appointment, status: "fulfilled" } : undefined, symptoms); }
+      catch (error) { if ((await dependencies.visits.getById(id))?.status === "finished") return createVisit(rawInput, dependencies); throw error; }
     } else {
       if (!dependencies.evaluations || !dependencies.symptoms || !dependencies.procedures) {
         throw new Error("La visita clínica no tiene repositorios para guardar sus entradas.");

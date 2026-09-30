@@ -40,6 +40,7 @@ export function mapFhirEncounter(resource: FhirEncounter): Visit {
   return {
     id: resource.id?.trim() ?? "",
     patientId: extractIdFromReference(resource.subject?.reference) ?? "",
+    periodId: resource.extension?.find(item => item.url === "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-period-v1")?.valueString,
     treatmentId: extractIdFromReference(resource.episodeOfCare?.[0]?.reference) ?? "",
     status: resource.status === "finished" ? "finished" : resource.status === "entered-in-error" ? "entered-in-error" : "in-progress",
     startedAt: resource.period?.start ?? "",
@@ -65,6 +66,7 @@ export function mapVisitToFhir(visit: Visit): FhirEncounter {
     const value = visit.clinicalNote?.[field];
     return value ? [{ url: `${BASE}${SUFFIX[field]}`, valueString: value }] : [];
   });
+  if (visit.periodId) extension.push({ url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/encounter-period-v1", valueString: visit.periodId });
   if (visit.captureMode) extension.push({ url: CAPTURE_MODE_URL, valueString: visit.captureMode });
   if (visit.recordedAt) extension.push({ url: RECORDED_AT_URL, valueString: visit.recordedAt });
   if (visit.correctedAt) extension.push({ url: CORRECTED_AT_URL, valueString: visit.correctedAt });

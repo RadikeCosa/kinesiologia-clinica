@@ -1,3 +1,6 @@
+import { createFhirPeriodRepository } from "./periods/fhir-period.repository";
+import { createFhirReportRepository } from "./periods/fhir-report.repository";
+import { reportTools } from "../reports/report-tools";
 import "server-only";
 
 import { createFhirClient } from "./core/fhir.client";
@@ -18,7 +21,10 @@ export function createClinicalDependencies() {
   const config = readFhirConfig();
   if (!config) throw new Error("La integración clínica no está configurada correctamente.");
   const client = createFhirClient({ baseUrl: config.baseUrl });
-  return {
+  const dependencies = {
+    periods: createFhirPeriodRepository(client),
+    reports: createFhirReportRepository(client),
+    reportTools,
     patients: createFhirPatientRepository(client),
     treatments: createFhirTreatmentRepository(client),
     conditions: createFhirConditionRepository(client),
@@ -31,4 +37,5 @@ export function createClinicalDependencies() {
     workflow: createFhirClinicalWorkflowRepository(client),
     administration: createFhirClinicalAdministrationRepository(client),
   };
+  return { ...dependencies, periodFlow: dependencies };
 }

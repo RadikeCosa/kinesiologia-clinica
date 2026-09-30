@@ -34,6 +34,7 @@ export interface Visit {
   id: string;
   patientId: string;
   treatmentId: string;
+  periodId?: string;
   status: "in-progress" | "finished" | "entered-in-error";
   startedAt: string;
   endedAt?: string;

@@ -1,6 +1,8 @@
 export interface Treatment {
   id: string;
   patientId: string;
+  currentPeriodId?: string;
+  metadataRevision?: number;
   status: "active" | "paused" | "finished";
   startDate: string;
   endDate?: string;

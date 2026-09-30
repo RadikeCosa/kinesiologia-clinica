@@ -57,28 +57,32 @@ test("agrupa las acciones secundarias y devuelve el foco al cerrar", async ({ pa
   await expect(more).toBeFocused();
 });
 
-test("muestra precauciones y ficha desde Más sin duplicar contacto", async ({ page }) => {
+test("Más en una visita muestra precauciones, ficha y contacto", async ({ page }) => {
   await page.goto("/inicio");
-  const rosa = page.locator("article.visit-card").filter({ hasText: "Rosa Benítez" }).first();
-  await rosa.getByRole("button", { name: /Más opciones/ }).click();
+  const visit = page.locator("article.visit-card").first();
+  await visit.getByRole("button", { name: /Más opciones/ }).click();
   const dialog = page.getByRole("dialog", { name: "Opciones de la visita" });
   await expect(dialog.getByText("Precauciones")).toBeVisible();
   await expect(dialog.getByRole("link", { name: "Ver ficha del paciente" })).toBeVisible();
-  await expect(dialog.getByText("Teléfono")).toHaveCount(0);
-  await expect(dialog.getByText("Dirección")).toHaveCount(0);
+  await expect(dialog.getByText("Teléfono", { exact: true })).toHaveCount(1);
+  await expect(dialog.getByRole("link", { name: "Llamar" })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Enviar mensaje por WhatsApp" })).toBeVisible();
+  await expect(dialog.getByText("Dirección", { exact: true })).toHaveCount(1);
+  const map = dialog.getByRole("link", { name: /Ver mapa/ });
+  await expect(map).toHaveAttribute("target", "_blank");
+  await expect(map).toHaveAttribute("rel", "noopener noreferrer");
 });
 
-test("agrupa contacto y ubicación dentro de cada visita de Hoy", async ({ page }) => {
+test("el contacto y la ubicación de una visita están agrupados en Más", async ({ page }) => {
   await page.goto("/inicio");
   const visit = page.locator("article.visit-card").filter({ hasText: "Carlos Méndez" }).first();
-  await visit.getByRole("button", { name: /Teléfono/ }).click();
-  await expect(page.getByRole("dialog", { name: "Contacto" }).getByRole("link", { name: "Llamar" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Enviar mensaje por WhatsApp" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await visit.getByRole("button", { name: /Dirección/ }).click();
-  const location = page.getByRole("dialog", { name: "Cómo llegar" });
-  await expect(location.getByText("Indicaciones para llegar")).toBeVisible();
-  await expect(location.getByRole("link", { name: "Ver mapa" })).toBeVisible();
+  await visit.getByRole("button", { name: /Más opciones para Carlos Méndez/ }).click();
+  const options = page.getByRole("dialog", { name: "Opciones de la visita" });
+  const contact = options.getByRole("region", { name: "Contacto" });
+  await expect(contact.getByRole("link", { name: "Llamar" })).toBeVisible();
+  await expect(contact.getByRole("link", { name: "Enviar mensaje por WhatsApp" })).toBeVisible();
+  await expect(contact.getByText("Indicaciones para llegar")).toBeVisible();
+  await expect(contact.getByRole("link", { name: /Ver mapa/ })).toBeVisible();
 });
 
 test("la agenda semanal y el directorio aprovechan el ancho móvil", async ({ page }) => {
@@ -99,14 +103,17 @@ test("la agenda semanal y el directorio aprovechan el ancho móvil", async ({ pa
   await expect(filters).toHaveCSS("flex-wrap", "nowrap");
   const rosa = page.locator("article.directory-card").filter({ hasText: "Rosa Benítez" });
   await expect(rosa.getByRole("link", { name: "Rosa Benítez" })).toBeVisible();
-  const mapLink = rosa.getByRole("link", { name: /Ver mapa/ });
+  await rosa.getByRole("button", { name: /Más opciones para Rosa Benítez/ }).click();
+  const options = page.getByRole("dialog", { name: "Más opciones" });
+  const mapLink = options.getByRole("link", { name: /Ver mapa/ });
   await expect(mapLink).toBeVisible();
   await expect(mapLink).toHaveAttribute("target", "_blank");
   await expect(mapLink).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(rosa.getByRole("link", { name: "Llamar" })).toBeVisible();
-  await expect(rosa.getByRole("link", { name: "WhatsApp" })).toBeVisible();
-  await expect(rosa).toContainText("299 555 0101");
-  await expect(rosa.locator(".patient-location-fact").getByText("Indicaciones para llegar")).toBeVisible();
+  await expect(options.getByRole("link", { name: "Llamar" })).toBeVisible();
+  await expect(options.getByRole("link", { name: "Enviar mensaje por WhatsApp" })).toBeVisible();
+  await expect(options).toContainText("299 555 0101");
+  await expect(options.getByText("Indicaciones para llegar")).toBeVisible();
+  await page.keyboard.press("Escape");
   const precautions = rosa.locator(".patient-precautions-disclosure");
   await expect(precautions).toBeVisible();
   await expect(precautions).not.toHaveAttribute("open", "");
@@ -148,10 +155,10 @@ test("una cita demorada se registra como visita realizada", async ({ page, reque
   await request.put("http://localhost:8081/fhir/Appointment/demo-appt-overdue", { data: fixture, headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" } });
   await page.goto("/inicio");
   const pending = page.locator("article.visit-card").filter({ hasText: "11:00" }).first();
-  await pending.getByRole("button", { name: "Registrar visita" }).click();
-  const options = page.getByRole("dialog", { name: "Opciones de la visita" });
-  await expect(options.getByRole("button", { name: "Comenzar visita" })).toHaveCount(0);
-  await options.getByRole("link", { name: "Registrar visita" }).click();
+  const registerVisit = pending.getByRole("link", { name: "Registrar visita" });
+  await expect(registerVisit).toBeVisible();
+  await registerVisit.click();
+  await expect(page).toHaveURL(/cita=demo-appt-overdue&modo=diferida/);
   await expect(page.getByRole("heading", { level: 1, name: "Registrar visita realizada" })).toBeVisible();
   await expect(page.getByLabel("Carga diferida")).toBeChecked();
 });
@@ -192,6 +199,22 @@ test("evaluaciones y síntomas se despliegan por separado en móvil", async ({ p
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test("el resumen familiar se puede editar y compartir desde una pantalla móvil", async ({ page }) => {
+  await page.setViewportSize({ width: 356, height: 640 });
+  await page.goto("/patients/demo-rosa/visits/demo-visit-rosa-2");
+  const summary = page.locator("details.family-visit-summary");
+  await summary.locator("summary").click();
+  const editor = summary.getByRole("textbox", { name: "Resumen para compartir" });
+  await expect(editor).toBeVisible();
+  await editor.fill("Resumen ficticio para probar el uso móvil.");
+  const shareLink = summary.getByRole("link", { name: "Abrir WhatsApp con el texto" });
+  await expect(shareLink).toBeVisible();
+  const shareUrl = new URL((await shareLink.getAttribute("href"))!);
+  expect(shareUrl.hostname).toBe("wa.me");
+  expect(shareUrl.searchParams.get("text")).toBe("Resumen ficticio para probar el uso móvil.");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("el registro breve conserva contexto y módulos ampliables en móvil", async ({ page }) => {
   await page.goto("/patients/demo-rosa/visits/new?modo=diferida");
   await expect(page.getByRole("heading", { name: "Registrar visita realizada" })).toBeVisible();
@@ -199,48 +222,48 @@ test("el registro breve conserva contexto y módulos ampliables en móvil", asyn
   await expect(page.getByText(/Último plan:/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Finalizar visita" })).toBeInViewport();
   await expect(page.locator("details.clinical-module").filter({ hasText: "Procedimientos" })).not.toHaveAttribute("open", "");
-  await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
-  await expect(page.getByText("Sin elegir")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Guardar evaluación" })).toBeDisabled();
-  const painSlider = page.getByRole("slider", { name: "Elegir con la barra" });
+
+  const symptoms = page.locator("details.clinical-module").filter({ hasText: "Síntomas referidos" });
+  await symptoms.locator("summary").click();
+  await symptoms.getByRole("button", { name: "Dolor", exact: true }).click();
+  const pain = symptoms.locator(".symptom-entry-card");
+  const painInput = pain.getByLabel("Intensidad de 0 a 10");
+  await expect(painInput).toHaveValue("");
+  await expect(pain.locator(".pain-nrs-readout")).toHaveText("Sin puntuar");
+  const painSlider = pain.getByRole("slider", { name: "Elegir intensidad" });
   await painSlider.focus();
   await painSlider.press("Home");
-  await expect(page.getByLabel("Dolor de 0 a 10")).toHaveValue("0");
-  await page.getByLabel("Dolor de 0 a 10").fill("4");
+  await expect(painInput).toHaveValue("0");
+  await painInput.fill("4");
   await expect(painSlider).toHaveValue("4");
   await painSlider.focus();
   await painSlider.press("ArrowRight");
-  await expect(page.getByLabel("Dolor de 0 a 10")).toHaveValue("5");
-  await page.getByLabel("Dolor de 0 a 10").fill("4.5");
-  await expect(page.getByRole("button", { name: "Guardar evaluación" })).toBeDisabled();
-  await page.getByLabel("Dolor de 0 a 10").fill("4");
-  await page.getByText("Agregar contexto").click();
-  await page.getByLabel("Región corporal").fill("Rodilla");
-  await page.getByRole("button", { name: "Guardar evaluación" }).click();
-  await expect(page.getByText("Evaluaciones · 1")).toBeVisible();
-  await page.getByRole("button", { name: "Editar" }).click();
-  await expect(page.getByLabel("Región corporal")).toHaveValue("Rodilla");
+  await expect(painInput).toHaveValue("5");
+  await pain.getByText("Contexto opcional").click();
+  await pain.getByLabel("Región corporal").fill("Rodilla");
 });
 
-test("cambiar el dominio inicia otra evaluación sin arrastrar Dolor NRS", async ({ page }) => {
+test("cambiar el área de evaluación limpia el nombre y el resultado previos", async ({ page }) => {
   await page.goto("/patients/demo-rosa/visits/new?modo=diferida");
-  await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
-  await page.getByLabel("Dolor de 0 a 10").fill("4");
-  await page.getByLabel("Área de evaluación").selectOption("joint-mobility");
+  const evaluations = page.locator("details.clinical-module").filter({ hasText: "Evaluaciones" });
+  await evaluations.locator("summary").click();
+  await evaluations.getByRole("button", { name: "Evaluación personalizada" }).click();
+  const editor = page.getByRole("group", { name: "Editor de evaluación" });
+  await editor.getByLabel("Área de evaluación").selectOption("joint-mobility");
+  await editor.getByLabel("¿Qué evaluaste?").fill("Flexión de rodilla");
+  await editor.getByLabel("¿Cómo querés registrar el resultado?").selectOption("quantity");
+  await editor.getByLabel("Resultado numérico").fill("90");
+  await editor.getByLabel("Unidad, si corresponde").fill("grados");
 
-  await expect(page.getByLabel("¿Qué evaluaste?")).toBeEmpty();
-  await expect(page.getByLabel("Dolor de 0 a 10")).toHaveCount(0);
-  await expect(page.getByLabel("¿Qué observaste?")).toBeVisible();
-  await page.getByLabel("¿Qué evaluaste?").fill("Flexión de rodilla");
-  await page.getByLabel("¿Qué observaste?").fill("Movilidad ficticia limitada");
-  await page.getByRole("button", { name: "Guardar evaluación" }).click();
+  await editor.getByLabel("Área de evaluación").selectOption("strength");
+  await expect(editor.getByLabel("¿Qué evaluaste?")).toBeEmpty();
+  await expect(editor.getByLabel("¿Cómo querés registrar el resultado?")).toHaveValue("narrative");
+  await expect(editor.getByLabel("¿Qué observaste?")).toBeEmpty();
 
-  await page.getByRole("button", { name: "Nueva evaluación" }).click();
-  await expect(page.getByLabel("¿Qué evaluaste?")).toBeEmpty();
-  await page.getByRole("button", { name: "Registrar dolor (0–10)" }).click();
-  await page.getByLabel("Dolor de 0 a 10").fill("3");
-  await page.getByRole("button", { name: "Guardar evaluación" }).click();
-  await expect(page.locator(".evaluation-card")).toHaveCount(2);
+  await editor.getByLabel("¿Qué evaluaste?").fill("Prensión funcional");
+  await editor.getByLabel("¿Qué observaste?").fill("Limitada");
+  await editor.getByRole("button", { name: "Guardar evaluación" }).click();
+  await expect(evaluations.locator(".evaluation-card")).toContainText("Prensión funcional");
 });
 
 test("el registro confirmado usa una cabecera clínica compacta en móvil", async ({ page }) => {

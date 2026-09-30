@@ -69,10 +69,15 @@ export function DevicesPanel() {
         <button className="secondary-button" disabled={busy} onClick={() => void post("sessions/revoke", session.id)}>Revocar sesión</button>
       </li>)}</ul>
       <h2>Passkeys registradas</h2>
-      <ul className="device-list">{state.passkeys.map((passkey) => <li key={passkey.id}>
-        <div><strong>{passkey.label}</strong><small>Registrada: {formatDate(passkey.createdAt)}</small></div>
-        <button className="secondary-button" disabled={busy || state.passkeys.length <= 1} onClick={() => void post("passkeys/revoke", passkey.id)}>Revocar passkey</button>
-      </li>)}</ul>
+      <ul className="device-list">{state.passkeys.map((passkey) => {
+        const onlyPasskey = state.passkeys.length <= 1;
+        const explanationId = `passkey-revoke-help-${passkey.id}`;
+        return <li key={passkey.id}>
+          <div><strong>{passkey.label}</strong><small>Registrada: {formatDate(passkey.createdAt)}</small></div>
+          <button className="secondary-button" disabled={busy || onlyPasskey} aria-describedby={onlyPasskey ? explanationId : undefined} onClick={() => void post("passkeys/revoke", passkey.id)}>Revocar passkey</button>
+          {onlyPasskey ? <small id={explanationId} className="disabled-action-help">Es la única passkey; no se puede revocar para evitar perder el acceso.</small> : null}
+        </li>;
+      })}</ul>
       <p className="clinical-footnote">Revocar una sesión cierra ese navegador, pero no elimina una passkey que pueda volver a usarse. Conservá al menos una passkey y tus códigos de recuperación.</p>
       <h2>Códigos de recuperación</h2>
       {recoveryCodes.length ? <><p>Guardá estos códigos nuevos fuera del teléfono. Los anteriores ya no sirven.</p><ol className="recovery-codes">{recoveryCodes.map((code) => <li key={code}><code>{code}</code></li>)}</ol><button className="secondary-button" onClick={() => setRecoveryCodes([])}>Ya los guardé</button></> : <button className="secondary-button" disabled={busy} onClick={() => void rotateRecoveryCodes()}>Renovar códigos</button>}

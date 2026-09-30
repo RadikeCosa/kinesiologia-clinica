@@ -76,6 +76,29 @@ describe("scheduled visit use cases", () => {
     expect(dependencies.scheduledVisits.replace).toHaveBeenCalledTimes(1);
   });
 
+  it("does not create another replacement when the committed response is lost", async () => {
+    const original: ScheduledVisit = {
+      id: "appointment-existing", patientId: patient.id, treatmentId: treatment.id, status: "booked",
+      scheduledDate: "2026-09-16", startsAt: "2026-09-16T13:00:00.000Z", endsAt: "2026-09-16T14:00:00.000Z", durationMinutes: 60, createdAt: now.toISOString(), version: "1",
+    };
+    const { dependencies, records } = setup([original]);
+    const replace = dependencies.scheduledVisits.replace.getMockImplementation();
+    if (!replace) throw new Error("Expected the in-memory scheduling implementation.");
+    dependencies.scheduledVisits.replace.mockImplementationOnce(async (...args) => {
+      await replace(...args);
+      throw new Error("Respuesta perdida después de reprogramar.");
+    });
+    const input = { ...createInput, appointmentId: original.id, expectedVersion: "1", date: "2026-09-17", reason: "patient-or-family" as const };
+
+    await expect(rescheduleVisit(input, dependencies)).rejects.toThrow("Respuesta perdida después de reprogramar.");
+    const retry = await rescheduleVisit(input, dependencies);
+
+    expect(retry.replacement.id).toBe(`appointment-${input.clientAppointmentId}`);
+    expect(retry.replacement.replacesId).toBe(original.id);
+    expect([...records.values()].filter((item) => item.replacesId === original.id)).toHaveLength(1);
+    expect(dependencies.scheduledVisits.replace).toHaveBeenCalledTimes(1);
+  });
+
   it("only allows no-show after the expected time and makes close idempotent", async () => {
     const future: ScheduledVisit = {
       id: "appointment-existing", patientId: patient.id, treatmentId: treatment.id, status: "booked",
@@ -87,6 +110,27 @@ describe("scheduled visit use cases", () => {
     const cancelled = await closeScheduledVisit(input, "cancelled", dependencies);
     const retry = await closeScheduledVisit(input, "cancelled", dependencies);
     expect(retry.id).toBe(cancelled.id);
+    expect(dependencies.scheduledVisits.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirms a committed cancellation when its response was lost", async () => {
+    const future: ScheduledVisit = {
+      id: "appointment-existing", patientId: patient.id, treatmentId: treatment.id, status: "booked",
+      scheduledDate: "2026-09-16", startsAt: "2026-09-16T13:00:00.000Z", endsAt: "2026-09-16T14:00:00.000Z", durationMinutes: 60, createdAt: now.toISOString(), version: "1",
+    };
+    const { dependencies } = setup([future]);
+    const close = dependencies.scheduledVisits.close.getMockImplementation();
+    if (!close) throw new Error("Expected the in-memory scheduling implementation.");
+    dependencies.scheduledVisits.close.mockImplementationOnce(async (...args) => {
+      await close(...args);
+      throw new Error("Respuesta perdida después de cancelar.");
+    });
+    const input = { appointmentId: future.id, expectedVersion: "1", reason: "patient-or-family" as const, note: "Cancelación ficticia" };
+
+    await expect(closeScheduledVisit(input, "cancelled", dependencies)).rejects.toThrow("Respuesta perdida después de cancelar.");
+    const retry = await closeScheduledVisit(input, "cancelled", dependencies);
+
+    expect(retry.status).toBe("cancelled");
     expect(dependencies.scheduledVisits.close).toHaveBeenCalledTimes(1);
   });
 });

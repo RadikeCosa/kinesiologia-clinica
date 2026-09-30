@@ -1,3 +1,8 @@
+import { createFhirPeriodRepository, firstPeriodId } from "../periods/fhir-period.repository";
+import { mapPeriodToFhir, periodEntry } from "../periods/period.mapper";
+import { createFhirTreatmentRepository } from "../episode-of-care/fhir-treatment.repository";
+import { createFhirVisitRepository } from "../encounter/fhir-visit.repository";
+import { reconcilePeriod, validQuota, periodCount, PeriodStateError } from "@/domain/treatment-period/treatment-period";
 import type { ClinicalAdministrationRepository } from "@/application/administration/clinical-administration.repository";
 import type { Diagnosis } from "@/domain/condition/condition";
 import type { Patient } from "@/domain/patient/patient";
@@ -12,8 +17,10 @@ function patientResource(patient: Patient) {
   return { resourceType: "Patient", id: patient.id, name: [{ given: [patient.givenName], family: patient.familyName }], telecom: [{ system: "phone", value: patient.phone }], address: [{ text: patient.address }], extension: patient.accessInstructions ? [{ url: `${BASE}patient-home-access-instructions-v1`, valueString: patient.accessInstructions }] : undefined };
 }
 function conditionResource(value: Diagnosis) { return { resourceType: "Condition", id: value.id, subject: { reference: `Patient/${value.patientId}` }, code: { text: value.text }, recordedDate: value.recordedAt }; }
-function treatmentResource(treatment: Treatment) {
+export function treatmentResource(treatment: Treatment) {
   const extensions: unknown[] = [];
+  if (treatment.currentPeriodId) extensions.push({ url: `${BASE}episodeofcare-current-period-v1`, valueString: treatment.currentPeriodId });
+  extensions.push({ url: `${BASE}episodeofcare-metadata-revision-v1`, valueInteger: treatment.metadataRevision ?? 0 });
   if (treatment.clinicalContext?.initialFunctionalStatus) extensions.push({ url: `${BASE}episodeofcare-initial-functional-status-v1`, valueString: treatment.clinicalContext.initialFunctionalStatus });
   if (treatment.clinicalContext?.therapeuticGoals) extensions.push({ url: `${BASE}episodeofcare-therapeutic-goals-v1`, valueString: treatment.clinicalContext.therapeuticGoals });
   if (treatment.clinicalContext?.frameworkPlan) extensions.push({ url: `${BASE}episodeofcare-framework-plan-v1`, valueString: treatment.clinicalContext.frameworkPlan });
@@ -25,9 +32,37 @@ function treatmentResource(treatment: Treatment) {
 }
 function entry(resource: unknown, url: string, expectedVersion?: string) { return { resource, request: { method: "PUT", url, ...(version(expectedVersion) ? { ifMatch: version(expectedVersion) } : {}) } }; }
 export function createFhirClinicalAdministrationRepository(client: FhirClient): ClinicalAdministrationRepository {
+  const periods = createFhirPeriodRepository(client), treatments = createFhirTreatmentRepository(client), visits = createFhirVisitRepository(client);
   return {
-    putPatient: async (patient, expectedVersion) => { await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [entry(patientResource(patient), `Patient/${patient.id}`, expectedVersion)] }); },
-    startTreatment: async (treatment, diagnoses) => { await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...diagnoses.map((item) => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource(treatment), `EpisodeOfCare/${treatment.id}`)] }); },
-    putTreatment: async (treatment, diagnoses, expectedVersion) => { await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...diagnoses.map((item) => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource(treatment), `EpisodeOfCare/${treatment.id}`, expectedVersion)] }); },
+    async putPatient(patient, expectedVersion) {
+      const linked = expectedVersion ? await treatments.listByPatientId!(patient.id) : [];
+      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [entry(patientResource(patient), `Patient/${patient.id}`, expectedVersion), ...linked.map(t => entry(treatmentResource({ ...t, metadataRevision: (t.metadataRevision ?? 0) + 1 }), `EpisodeOfCare/${t.id}`, t.version))] });
+    },
+    async startTreatment(treatment, diagnoses) {
+      const period = { id: firstPeriodId(treatment.id), patientId: treatment.patientId, treatmentId: treatment.id, ordinal: 1, quota: treatment.plannedSessionCount, frequency: treatment.plannedFrequency, phase: "open" as const, available: true, clinicalRevision: 0 };
+      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...diagnoses.map(item => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource({ ...treatment, currentPeriodId: period.id }), `EpisodeOfCare/${treatment.id}`), entry(mapPeriodToFhir(period), `CarePlan/${period.id}`)] });
+    },
+    async putTreatment(treatment, diagnoses, expectedVersion) {
+      const current = await treatments.getById(treatment.id);
+      if (!current || current.version !== expectedVersion) throw new PeriodStateError("El tratamiento cambió. Recargá la pantalla.");
+      // Materialization is a separate guarded transaction, so refresh its new treatment version.
+      let period = await periods.current(current);
+      if (!period.version) {
+        await periods.materialize(current);
+        const refreshed = await treatments.getById(current.id);
+        if (!refreshed || (refreshed.metadataRevision ?? 0) !== (current.metadataRevision ?? 0) || refreshed.currentPeriodId !== period.id) throw new PeriodStateError("El tratamiento cambió mientras se preparaba su período. Recargá la pantalla.");
+        expectedVersion = refreshed.version;
+        treatment = { ...treatment, currentPeriodId: refreshed.currentPeriodId };
+        period = await periods.current(refreshed);
+      }
+      const allVisits = await visits.listByPatientId(current.patientId);
+      const count = periodCount(period, allVisits);
+      period = reconcilePeriod(period, allVisits);
+      if ((treatment.plannedSessionCount !== period.quota || treatment.plannedFrequency !== period.frequency) && (period.phase !== "open" || validQuota(period.quota) && count.completed + count.reserved >= period.quota || validQuota(period.quota) && (treatment.plannedSessionCount ?? 0) < count.completed + count.reserved)) throw new PeriodStateError("No se puede modificar el cupo de un período completo ni informado.");
+      if (treatment.status === "finished" && current.status !== "finished") throw new PeriodStateError("Finalizá desde el período con su informe actualizado.");
+      if (treatment.status !== "active" && count.reserved) throw new PeriodStateError("Primero resolvé la visita en curso.");
+      period = reconcilePeriod({ ...period, quota: treatment.plannedSessionCount, frequency: treatment.plannedFrequency, available: treatment.status === "active", clinicalRevision: period.clinicalRevision + 1 }, allVisits);
+      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...diagnoses.map(item => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource({ ...treatment, currentPeriodId: period.id }), `EpisodeOfCare/${treatment.id}`, expectedVersion), periodEntry(period)] });
+    },
   };
 }

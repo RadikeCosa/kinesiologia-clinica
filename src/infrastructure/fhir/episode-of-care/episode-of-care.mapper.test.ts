@@ -12,6 +12,7 @@ describe("mapFhirEpisodeOfCare", () => {
         period: { start: "2026-09-01" },
       }),
     ).toEqual({
+      metadataRevision: 0,
       id: "episode-1",
       patientId: "patient-1",
       status: "active",

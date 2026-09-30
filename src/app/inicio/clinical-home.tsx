@@ -21,11 +21,13 @@ const REASONS = [["patient-or-family", "Paciente o familia"], ["patient-not-at-h
 const initialHomeActionState: HomeActionState = { error: null };
 
 function progress(patient: HomePatientViewModel, add = 0) {
+  if (patient.treatment.periodUnavailable) return "Período sin verificar";
   const done = patient.treatment.completedSessions + add;
   return patient.treatment.totalSessions ? `${done} de ${patient.treatment.totalSessions}` : `${done} realizadas`;
 }
 
 function visitProgress(patient: HomePatientViewModel, currentSession: boolean) {
+  if (patient.treatment.periodUnavailable) return "Período sin verificar";
   const completed = patient.treatment.completedSessions;
   if (currentSession) return patient.treatment.totalSessions ? `Sesión ${completed + 1} de ${patient.treatment.totalSessions}` : `Próxima sesión: ${completed + 1}`;
   return patient.treatment.totalSessions ? `Sesiones ${completed} de ${patient.treatment.totalSessions}` : `${completed} realizadas`;
@@ -47,9 +49,10 @@ function formatMonth(month: string) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-function BeginVisitForm({ patientId, treatmentId, appointmentId, label }: { patientId: string; treatmentId?: string; appointmentId?: string; label: string }) {
+function BeginVisitForm({ patientId, treatmentId, appointmentId, label, blockedReason }: { patientId: string; treatmentId?: string; appointmentId?: string; label: string; blockedReason?: string }) {
   const [clientVisitId] = useState(() => crypto.randomUUID());
   if (!treatmentId) return null;
+  if (blockedReason) return <Link className="button-link" href={`/patients/${patientId}/periods`}>{blockedReason.includes("verificar") ? "Revisar período" : blockedReason.includes("Definir cupo") ? "Definir cupo del período" : blockedReason.includes("en curso") ? "Visita en curso" : "Revisar informe para continuar"}</Link>;
   return <form action={beginVisit}><input type="hidden" name="clientVisitId" value={clientVisitId}/><input type="hidden" name="patientId" value={patientId}/><input type="hidden" name="treatmentId" value={treatmentId}/>{appointmentId ? <input type="hidden" name="appointmentId" value={appointmentId}/> : null}<button className="home-primary-action">{label}</button></form>;
 }
 
@@ -131,7 +134,7 @@ function CloseForm({ state, onClose }: { state: Exclude<DialogState, null> & { k
 }
 
 function AppointmentActions({ state, patient, referenceNow, canNoShow, onStartUntimed, onSchedule, onCloseAppointment, onClose }: { state: Exclude<DialogState, null> & { kind: "actions" }; patient?: HomePatientViewModel; referenceNow: string; canNoShow: boolean; onStartUntimed: () => void; onSchedule: () => void; onCloseAppointment: (operation: "cancelled" | "no-show") => void; onClose: () => void }) {
-  const canRegister = state.appointment.scheduledDate <= getLocalDate(referenceNow);
+  const canRegister = !patient?.treatment.visitBlockedReason && state.appointment.scheduledDate <= getLocalDate(referenceNow);
   const isPrevious = state.appointment.scheduledDate < getLocalDate(referenceNow);
   return <AccessibleDialog title="Opciones de la visita" className="home-action-sheet" onClose={onClose}>
     <p className="action-sheet-context"><strong>{state.patientName}</strong><br/>{formatFriendlyDateTime(state.appointment.scheduledDate, state.appointment.scheduledTime)}</p>
@@ -212,9 +215,9 @@ function VisitCard({ item, appointment, referenceNow, onDialog }: { item: Presen
     <div className="visit-actions">
       <div className="visit-clinical-actions">
         {item.displayState === "in-progress" && item.visitId ? <Link className="home-primary-action button-link" href={`/patients/${item.patientId}/visits/${item.visitId}/edit`}>Continuar</Link> : null}
-        {appointment && previous && ["booked", "proposed"].includes(appointment.status) ? <Link className="home-primary-action button-link" href={`/patients/${encodeURIComponent(item.patientId)}/visits/new?cita=${encodeURIComponent(appointment.id)}&modo=diferida`}>Registrar visita</Link> : null}
-        {appointment?.status === "booked" && item.displayState === "upcoming" ? <BeginVisitForm patientId={item.patientId} treatmentId={item.treatmentId} appointmentId={item.id} label="Comenzar visita"/> : null}
-        {appointment?.status === "proposed" && !future && !previous ? <button className="home-primary-action" type="button" onClick={(event) => onDialog({ kind: "start-untimed", appointment, patientName: item.patient.displayName }, event.currentTarget)}>Comenzar visita</button> : null}
+        {!item.patient.treatment.visitBlockedReason && appointment && previous && ["booked", "proposed"].includes(appointment.status) ? <Link className="home-primary-action button-link" href={`/patients/${encodeURIComponent(item.patientId)}/visits/new?cita=${encodeURIComponent(appointment.id)}&modo=diferida`}>Registrar visita</Link> : null}
+        {appointment?.status === "booked" && item.displayState === "upcoming" ? <BeginVisitForm blockedReason={item.patient.treatment.visitBlockedReason} patientId={item.patientId} treatmentId={item.treatmentId} appointmentId={item.id} label="Comenzar visita"/> : null}
+        {!item.patient.treatment.visitBlockedReason && appointment?.status === "proposed" && !future && !previous ? <button className="home-primary-action" type="button" onClick={(event) => onDialog({ kind: "start-untimed", appointment, patientName: item.patient.displayName }, event.currentTarget)}>Comenzar visita</button> : null}
         {appointment?.status === "proposed" && future ? <button className="home-primary-action" type="button" onClick={(event) => onDialog({ kind: "schedule", appointment }, event.currentTarget)}>Definir horario</button> : null}
         {future && item.displayState === "upcoming" ? <Link className="button-link" href={`/patients/${item.patientId}`}>Ver paciente</Link> : null}
       </div>
@@ -349,7 +352,7 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
       </section>
     </section> : null}
 
-    {tab === "patients" ? <section className="home-view patients-view"><div className="directory-tools-heading"><label className="directory-search">Buscar por nombre, teléfono o dirección<input type="search" value={query} onChange={(event)=>setQuery(event.target.value)}/></label><p aria-live="polite">{patients.length} {patients.length === 1 ? "resultado" : "resultados"}</p></div><div className="directory-filters" aria-label="Filtros de pacientes">{(["active","paused","finished","not-started","all"] as const).map((value)=><button type="button" key={value} aria-pressed={filter===value} onClick={()=>setFilter(value)}>{value==="all"?"Todos":STATUS[value]}</button>)}</div><div className="directory-list">{patients.length ? patients.map((patient)=><article className="home-card directory-card" key={patient.id}><div className="home-card-heading"><div className="patient-heading-main"><h3><Link className="patient-name-link" href={`/patients/${patient.id}`}>{patient.displayName}</Link></h3><span className={`treatment-state treatment-${patient.treatment.status}`}>{STATUS[patient.treatment.status]}</span></div><PatientTreatmentSummary patient={patient}/></div><PatientPrecautionsDisclosure patient={patient}/><div className="home-actions directory-primary-actions">{patient.treatment.status==="active"?<><button className="home-primary-action" onClick={(event)=>openDialog({kind:"schedule",patient,date:selectedDate}, event.currentTarget)}>Agendar visita</button><BeginVisitForm patientId={patient.id} treatmentId={patient.treatment.id} label="Comenzar visita"/></>:patient.treatment.status === "not-started"?<Link className="primary-link" href={`/patients/${patient.id}`}>Comenzar tratamiento</Link>:null}{patient.phone || patient.address || patient.accessInstructions ? <button type="button" className="more-action directory-more" onClick={(event)=>openDialog({kind:"patient-more",patient}, event.currentTarget)} aria-label={`Más opciones para ${patient.displayName}`}>Más</button> : null}</div></article>) : <div className="home-empty directory-empty"><h3>No hay pacientes para este filtro</h3><p>Probá con otro estado o quitá el texto de búsqueda.</p></div>}</div></section> : null}
+    {tab === "patients" ? <section className="home-view patients-view"><div className="directory-tools-heading"><label className="directory-search">Buscar por nombre, teléfono o dirección<input type="search" value={query} onChange={(event)=>setQuery(event.target.value)}/></label><p aria-live="polite">{patients.length} {patients.length === 1 ? "resultado" : "resultados"}</p></div><div className="directory-filters" aria-label="Filtros de pacientes">{(["active","paused","finished","not-started","all"] as const).map((value)=><button type="button" key={value} aria-pressed={filter===value} onClick={()=>setFilter(value)}>{value==="all"?"Todos":STATUS[value]}</button>)}</div><div className="directory-list">{patients.length ? patients.map((patient)=><article className="home-card directory-card" key={patient.id}><div className="home-card-heading"><div className="patient-heading-main"><h3><Link className="patient-name-link" href={`/patients/${patient.id}`}>{patient.displayName}</Link></h3><span className={`treatment-state treatment-${patient.treatment.status}`}>{STATUS[patient.treatment.status]}</span></div><PatientTreatmentSummary patient={patient}/>{patient.treatment.periodPhase === "report-pending" ? <Link href={`/patients/${patient.id}/periods`}>Informe pendiente</Link> : null}</div><PatientPrecautionsDisclosure patient={patient}/><div className="home-actions directory-primary-actions">{patient.treatment.status==="active"?<><button className="home-primary-action" onClick={(event)=>openDialog({kind:"schedule",patient,date:selectedDate}, event.currentTarget)}>Agendar visita</button><BeginVisitForm blockedReason={patient.treatment.visitBlockedReason} patientId={patient.id} treatmentId={patient.treatment.id} label="Comenzar visita"/></>:patient.treatment.status === "not-started"?<Link className="primary-link" href={`/patients/${patient.id}`}>Comenzar tratamiento</Link>:null}{patient.phone || patient.address || patient.accessInstructions ? <button type="button" className="more-action directory-more" onClick={(event)=>openDialog({kind:"patient-more",patient}, event.currentTarget)} aria-label={`Más opciones para ${patient.displayName}`}>Más</button> : null}</div></article>) : <div className="home-empty directory-empty"><h3>No hay pacientes para este filtro</h3><p>Probá con otro estado o quitá el texto de búsqueda.</p></div>}</div></section> : null}
 
     {dialog?.kind === "create" ? <CreateOptions onClose={closeDialog} onSchedule={() => openDialog({ kind: "schedule", date: selectedDate })}/> : null}
     {dialog?.kind === "schedule" ? <ScheduleForm key={`${dialog.appointment?.id??dialog.patient?.id??dialog.date??"new"}`} patients={data.patients} state={dialog} onClose={closeDialog}/> : null}

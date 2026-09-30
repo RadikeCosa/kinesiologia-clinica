@@ -144,7 +144,13 @@ export async function finishVisit(rawInput: unknown, dependencies: Dependencies)
   }));
   const entries = buildEntries(finished, input.clinicalEntries, finished.endedAt!);
   if (entries.symptoms.length && !dependencies.symptoms) throw new Error("La visita clínica no tiene repositorio para confirmar síntomas.");
-  await dependencies.workflow.finish(finished, metrics, entries.evaluations, entries.procedures, entries.symptoms);
+  try { await dependencies.workflow.finish(finished, metrics, entries.evaluations, entries.procedures, entries.symptoms); }
+  catch (error) {
+    // A concurrent identical finish, or a lost response, can already have committed.
+    const committed = await dependencies.visits.getById(visit.id);
+    if (committed?.status === "finished") return finishVisit(rawInput, dependencies);
+    throw error;
+  }
   const [confirmed, confirmedMetrics, confirmedEvaluations, confirmedSymptoms, confirmedProcedures] = await Promise.all([dependencies.visits.getById(visit.id), dependencies.metrics.listByVisitId(visit.id), dependencies.evaluations?.listByVisitId(visit.id) ?? Promise.resolve(entries.evaluations), dependencies.symptoms?.listByVisitId(visit.id) ?? Promise.resolve(entries.symptoms), dependencies.procedures?.listByVisitId(visit.id) ?? Promise.resolve(entries.procedures)]);
   if (!confirmed || confirmed.status !== "finished" || confirmedMetrics.length < metrics.length || confirmedEvaluations.length < entries.evaluations.length || confirmedSymptoms.filter((item) => item.id.startsWith("symptom-")).length < entries.symptoms.length || confirmedProcedures.length < entries.procedures.length) throw new Error("La visita todavía no pudo confirmarse.");
   return { visit: confirmed, metrics: confirmedMetrics, evaluations: confirmedEvaluations, symptoms: confirmedSymptoms, procedures: confirmedProcedures };

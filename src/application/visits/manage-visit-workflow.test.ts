@@ -51,6 +51,23 @@ describe("visit workflow use cases", () => {
     expect(workflow.start.mock.calls[0]?.[1]).toMatchObject({ status: "fulfilled" });
   });
 
+  it("continues the committed start when its response was lost", async () => {
+    const { dependencies, workflow } = setup();
+    const start = workflow.start.getMockImplementation();
+    if (!start) throw new Error("Expected the in-memory workflow implementation.");
+    workflow.start.mockImplementationOnce(async (...args) => {
+      await start(...args);
+      throw new Error("Respuesta perdida después de iniciar.");
+    });
+
+    await expect(startVisit(startInput, dependencies)).rejects.toThrow("Respuesta perdida después de iniciar.");
+    const retry = await startVisit(startInput, dependencies);
+
+    expect(retry.id).toBe("visit-b73e87c5-76e4-4c75-82e2-507b91d1288a");
+    expect(retry.status).toBe("in-progress");
+    expect(workflow.start).toHaveBeenCalledTimes(1);
+  });
+
   it("prevents a second simultaneous visit", async () => {
     const active: Visit = { id: "visit-other", patientId: "other", treatmentId: "other", status: "in-progress", startedAt: "2026-09-15T12:00:00.000Z", captureMode: "live", version: "1" };
     const { dependencies } = setup([active]);
@@ -81,6 +98,25 @@ describe("visit workflow use cases", () => {
     expect(first.visit.status).toBe("finished");
     expect(first.metrics[0]?.id).toBe("obs-active-pain-nrs-0-10");
     expect(retry.visit.id).toBe(first.visit.id);
+    expect(workflow.finish).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirms a committed finish when its response was lost", async () => {
+    const active: Visit = { id: "visit-active", patientId: patient.id, treatmentId: treatment.id, status: "in-progress", startedAt: "2026-09-15T13:00:00.000Z", captureMode: "live", version: "1" };
+    const { dependencies, workflow } = setup([active]);
+    const finish = workflow.finish.getMockImplementation();
+    if (!finish) throw new Error("Expected the in-memory workflow implementation.");
+    workflow.finish.mockImplementationOnce(async (...args) => {
+      await finish(...args);
+      throw new Error("Respuesta perdida después de finalizar.");
+    });
+    const input = { visitId: active.id, expectedVersion: "1", clinicalNote: note, metrics: [{ code: "pain_nrs_0_10" as const, value: 3 }] };
+
+    await expect(finishVisit(input, dependencies)).resolves.toMatchObject({ visit: { status: "finished" } });
+    const retry = await finishVisit(input, dependencies);
+
+    expect(retry.visit.status).toBe("finished");
+    expect(retry.metrics).toHaveLength(1);
     expect(workflow.finish).toHaveBeenCalledTimes(1);
   });
 

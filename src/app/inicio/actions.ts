@@ -1,4 +1,5 @@
 "use server";
+import { PeriodStateError } from "@/domain/treatment-period/treatment-period";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -72,6 +73,7 @@ export async function beginVisit(formData: FormData) {
     visitId = visit.id;
   } catch (error) {
     if (error instanceof ActiveVisitError) { visitId = error.activeVisit.id; patientId = error.activeVisit.patientId; }
+    else if (error instanceof PeriodStateError || error instanceof FhirClientError && [409,412].includes(error.status ?? 0)) redirect(`/patients/${encodeURIComponent(patientId)}/periods`);
     else throw error;
   }
   redirect(`/patients/${encodeURIComponent(patientId)}/visits/${encodeURIComponent(visitId)}/edit`);

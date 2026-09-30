@@ -1,3 +1,5 @@
+import type { PeriodRepository } from "../periods/period.repository";
+import { admissionIssue, periodCount, reconcilePeriod, PeriodStateError, type TreatmentPeriod } from "@/domain/treatment-period/treatment-period";
 import type { PatientRepository } from "@/application/patients/patient.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { TreatmentRepository } from "@/application/treatments/treatment.repository";
@@ -7,7 +9,7 @@ import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
 import { deriveDocumentationTimeliness, deriveStartPunctuality } from "@/domain/visit/visit-timeliness";
 import type { AgendaItemViewModel, ClinicalHomeData, HomePatientViewModel, TodayItemViewModel } from "@/features/clinical-home/clinical-home.types";
 
-type Dependencies = { patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
+type Dependencies = { periods?: PeriodRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
 
 function localDate(value: Date) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
@@ -58,16 +60,21 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
     const existing = latestTreatmentByPatient.get(treatment.patientId);
     if (!existing || treatment.startDate > existing.startDate) latestTreatmentByPatient.set(treatment.patientId, treatment);
   }
+  const periodByTreatment = new Map<string, TreatmentPeriod | null>(dependencies.periods ? await Promise.all(treatments.map(async t => {
+    try { return [t.id, reconcilePeriod(await dependencies.periods!.current(t), visits)] as const; }
+    catch(error) { if (error instanceof PeriodStateError) return [t.id, null] as const; throw error; }
+  })) : []);
   const homePatients: HomePatientViewModel[] = patients.flatMap<HomePatientViewModel>((patient) => {
     const treatment = latestTreatmentByPatient.get(patient.id);
     if (!treatment) return [{ id: patient.id, displayName: getPatientDisplayName(patient), phone: patient.phone, address: patient.address, accessInstructions: patient.accessInstructions, treatment: { status: "not-started" as const, completedSessions: 0 } }];
     const treatmentVisits = visits.filter((visit) => visit.treatmentId === treatment.id && visit.status === "finished").sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    const period = periodByTreatment.get(treatment.id);
     const next = appointments.filter((item) => item.patientId === patient.id && ["proposed", "booked"].includes(item.status)).sort((a, b) => (a.startsAt ?? a.scheduledDate).localeCompare(b.startsAt ?? b.scheduledDate))[0];
     return [{
       id: patient.id, displayName: getPatientDisplayName(patient), phone: patient.phone, address: patient.address,
       accessInstructions: patient.accessInstructions, precautions: treatment.precautions,
       lastVisitLabel: treatmentVisits[0]?.startedAt, latestPlan: treatmentVisits[0]?.clinicalNote?.nextPlan,
-      treatment: { id: treatment.id, status: treatment.status, completedSessions: treatmentVisits.length, totalSessions: treatment.plannedSessionCount, frequency: treatment.plannedFrequency, nextVisit: next ? { date: next.scheduledDate, time: localTime(next.startsAt) } : undefined },
+      treatment: { id: treatment.id, status: treatment.status, completedSessions: period ? periodCount(period, visits).completed : treatmentVisits.length, totalSessions: period?.quota ?? treatment.plannedSessionCount, frequency: period?.frequency ?? treatment.plannedFrequency, periodPhase: period?.phase, periodUnavailable: period === null, visitBlockedReason: period === null ? "No se pudo verificar el período vigente." : period ? admissionIssue(period, visits) ?? undefined : undefined, nextVisit: next ? { date: next.scheduledDate, time: localTime(next.startsAt) } : undefined },
     }];
   }).sort((a, b) => a.displayName.localeCompare(b.displayName, "es"));
 

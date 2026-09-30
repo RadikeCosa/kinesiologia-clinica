@@ -27,7 +27,7 @@ export function createFhirConditionRepository(client: FhirClient): ConditionRepo
         const id = resource.id?.trim();
         const patientId = extractIdFromReference(resource.subject?.reference);
         if (!id || !patientId) return [];
-        return [{ id, patientId, text: resource.code?.text?.trim() ?? "", recordedAt: resource.recordedDate }];
+        return [{ id, patientId, text: resource.code?.text?.trim() ?? "", recordedAt: resource.recordedDate, version: resource.meta?.versionId }];
       });
     },
   };
