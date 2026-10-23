@@ -104,13 +104,13 @@ describe("weekly operational view", () => {
     expect(day.previousPending).toEqual([]);
   });
 
-  it("counts unresolved earlier visits in the Today badge", () => {
+  it("keeps earlier pending visits out of the Today badge", () => {
     const week = presentWeek(LAB_REFERENCE_NOW, [
       { id: "today", patientId: "rosa", date: "2026-09-15", sourceState: "scheduled" },
       { id: "overdue", patientId: "rosa", date: "2026-09-14", scheduledTime: "09:00", sourceState: "scheduled" },
       { id: "closed", patientId: "rosa", date: "2026-09-14", scheduledTime: "10:00", sourceState: "cancelled" },
     ]);
-    expect(week[0].visitCount).toBe(2);
+    expect(week[0].visitCount).toBe(1);
   });
 
   it("shows a past appointment under the day when it was closed", () => {

@@ -184,7 +184,7 @@ export function presentWeek(referenceNow: string, dayItems: TodayItemViewModel[]
     const visitCount = dayItems.filter((item) => {
       const state = getTodayDisplayState(item, referenceNow);
       if (item.date === date) return !["cancelled", "rescheduled"].includes(state);
-      return index === 0 && item.date < today && (PENDING_STATES.includes(state) || state === "in-progress");
+      return index === 0 && item.date < today && state === "in-progress";
     }).length;
     const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "short", timeZone: "UTC" }).format(value).replace(".", "");
     const fullDate = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(value);

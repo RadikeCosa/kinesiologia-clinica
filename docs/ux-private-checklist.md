@@ -1,5 +1,7 @@
 # Revisión UX/UI de la superficie privada
 
+La ronda guiada del 23/10/2026 y su evidencia están en [revision-ux-ui.md](revision-ux-ui.md). Esa ronda adapta Hoy y sus paneles de opciones; las comprobaciones históricas de este archivo no sustituyen la aceptación visual nueva ni la prueba física pendiente.
+
 Esta lista acompaña el hito de gestión clínica y se aplica sólo a datos ficticios en HAPI `8081`.
 
 ## Criterios usados

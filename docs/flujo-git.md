@@ -58,3 +58,7 @@ Incidencias preservadas como evidencia:
 - Las inclusiones temporales que Next agregó a `tsconfig.json` para `.next-baseline` se retiraron al terminar; no forman parte del contrato del proyecto.
 
 La consolidación conserva los pendientes de la auditoría del 17/10 y de aceptación física. No se ejecutaron pruebas contra 8080 ni se habilitó el piloto. La revisión visual nueva sigue sin implementar.
+
+## Publicación y comienzo de la ronda UX/UI
+
+Por instrucción explícita del usuario, los commits de base se publicaron en `origin/main` hasta `7509b67`. Después se creó `codex/ux-hoy-ronda-1` desde esa base limpia. La nueva ronda se conserva en su rama para revisión visual antes de integrar; el push de la base no publica automáticamente el rediseño.

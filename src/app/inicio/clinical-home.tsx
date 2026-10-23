@@ -1,6 +1,9 @@
 "use client";
 
 import { ClinicalEnvironmentLabel } from "@/app/clinical-environment";
+import { ClinicalCard } from "@/app/components/clinical-card";
+import { ConsultationCard } from "@/app/consultas/consultation-card";
+import { consultationsToAttend } from "@/features/clinical-home/consultations.presenter";
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { addLocalDays, filterDirectory, formatArgentinePhone, formatFriendlyDate, formatFriendlyDateTime, formatWeekRange, getLocalDate, presentDay, presentWeek, resolveAgendaDate, startOfWeek } from "@/features/clinical-home/clinical-home.presenter";
@@ -27,11 +30,10 @@ function progress(patient: HomePatientViewModel, add = 0) {
   return patient.treatment.totalSessions ? `${done} de ${patient.treatment.totalSessions}` : `${done} realizadas`;
 }
 
-function visitProgress(patient: HomePatientViewModel, currentSession: boolean) {
+function visitProgress(patient: HomePatientViewModel) {
   if (patient.treatment.periodUnavailable) return "Período sin verificar";
   const completed = patient.treatment.completedSessions;
-  if (currentSession) return patient.treatment.totalSessions ? `Sesión ${completed + 1} de ${patient.treatment.totalSessions}` : `Próxima sesión: ${completed + 1}`;
-  return patient.treatment.totalSessions ? `Sesiones ${completed} de ${patient.treatment.totalSessions}` : `${completed} realizadas`;
+  return patient.treatment.totalSessions ? `${completed} de ${patient.treatment.totalSessions} realizadas` : `${completed} realizadas`;
 }
 
 function formatSelectedDate(date: string, isToday: boolean) {
@@ -63,31 +65,44 @@ function PatientPrecautionIndicator({ patient, compact = false }: { patient: Hom
   return <div className="patient-precautions"><strong>Precauciones</strong><span>{patient.precautions.join(" · ")}</span></div>;
 }
 
-function PatientPrecautionsDisclosure({ patient }: { patient: HomePatientViewModel }) {
+function PatientPrecautionsDisclosure({ patient, compact = false }: { patient: HomePatientViewModel; compact?: boolean }) {
   if (!patient.precautions?.length) return null;
-  return <details className="patient-precautions-disclosure"><summary><span aria-hidden="true">!</span> Tiene precauciones</summary><ul>{patient.precautions.map((precaution) => <li key={precaution}>{precaution}</li>)}</ul></details>;
+  return <details className={`patient-precautions-disclosure${compact ? " precaution-inline" : ""}`}><summary><span aria-hidden="true">!</span> {compact ? "Precauciones" : "Tiene precauciones"}</summary><ul>{patient.precautions.map((precaution) => <li key={precaution}>{precaution}</li>)}</ul></details>;
 }
 
 function PatientTreatmentSummary({ patient }: { patient: HomePatientViewModel }) {
   return <div className="patient-treatment-summary"><div className="patient-session-frequency"><strong>{patient.treatment.status === "not-started" ? "Sin tratamiento" : progress(patient)}</strong><span>{patient.treatment.frequency ?? "Frecuencia sin registrar"}</span></div>{patient.treatment.nextVisit ? <div className="patient-next-visit-summary"><span>Próxima visita</span><span className="patient-next-visit-full">{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</span><span className="patient-next-visit-compact">{formatFriendlyDateTime(patient.treatment.nextVisit.date, patient.treatment.nextVisit.time)}</span></div> : null}</div>;
 }
 
-function AccessibleDialog({ title, onClose, className = "", children }: { title: string; onClose: () => void; className?: string; children: React.ReactNode }) {
+function AccessibleDialog({ title, onClose, className = "", dismissOnBackdrop = false, children }: { title: string; onClose: () => void; className?: string; dismissOnBackdrop?: boolean; children: React.ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const outsidePointer = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
     const dialog = ref.current;
     if (dialog && !dialog.open) dialog.showModal();
     const firstControl = dialog?.querySelector<HTMLElement>("input:not([type=hidden]), select, textarea, button:not(.dialog-close), a[href]");
     firstControl?.focus();
   }, []);
-  return <dialog ref={ref} className={`home-dialog ${className}`} onClose={onClose} aria-labelledby="home-dialog-title" onCancel={() => ref.current?.close()}>
+  function isOutside(event: React.PointerEvent<HTMLDialogElement>) {
+    if (event.target !== event.currentTarget) return false;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+  }
+  return <dialog ref={ref} className={`home-dialog ${className}`} onClose={onClose} aria-labelledby="home-dialog-title" onCancel={() => ref.current?.close()}
+    onPointerDown={event => { outsidePointer.current = dismissOnBackdrop && event.button === 0 && isOutside(event) ? { x: event.clientX, y: event.clientY } : null; }}
+    onPointerCancel={() => { outsidePointer.current = null; }}
+    onPointerUp={event => {
+      const start = outsidePointer.current;
+      outsidePointer.current = null;
+      if (start && isOutside(event) && Math.hypot(event.clientX - start.x, event.clientY - start.y) < 8) event.currentTarget.close();
+    }}>
     <button className="dialog-close" type="button" onClick={() => ref.current?.close()} aria-label="Cerrar">×</button>
     <h2 id="home-dialog-title">{title}</h2>{children}
   </dialog>;
 }
 
 function CreateOptions({ onClose, onSchedule }: { onClose: () => void; onSchedule: () => void }) {
-  return <AccessibleDialog title="Crear" className="home-action-sheet" onClose={onClose}><div className="action-sheet-list"><Link href="/consultas/nueva">Nueva consulta</Link><Link href="/patients/new">Nuevo paciente</Link><button type="button" onClick={onSchedule}>Agendar visita</button></div></AccessibleDialog>;
+  return <AccessibleDialog title="Crear" className="home-action-sheet" dismissOnBackdrop onClose={onClose}><div className="action-sheet-list"><Link href="/consultas/nueva">Nueva consulta</Link><Link href="/patients/new">Nuevo paciente</Link><button type="button" onClick={onSchedule}>Agendar visita</button></div></AccessibleDialog>;
 }
 
 function ScheduleForm({ patients, state, onClose }: { patients: HomePatientViewModel[]; state: Exclude<DialogState, null> & { kind: "schedule" }; onClose: () => void }) {
@@ -137,15 +152,16 @@ function CloseForm({ state, onClose }: { state: Exclude<DialogState, null> & { k
 function AppointmentActions({ state, patient, referenceNow, canNoShow, onStartUntimed, onSchedule, onCloseAppointment, onClose }: { state: Exclude<DialogState, null> & { kind: "actions" }; patient?: HomePatientViewModel; referenceNow: string; canNoShow: boolean; onStartUntimed: () => void; onSchedule: () => void; onCloseAppointment: (operation: "cancelled" | "no-show") => void; onClose: () => void }) {
   const canRegister = !patient?.treatment.visitBlockedReason && state.appointment.scheduledDate <= getLocalDate(referenceNow);
   const isPrevious = state.appointment.scheduledDate < getLocalDate(referenceNow);
-  return <AccessibleDialog title="Opciones de la visita" className="home-action-sheet" onClose={onClose}>
+  return <AccessibleDialog title="Opciones de la visita" className="home-action-sheet" dismissOnBackdrop onClose={onClose}>
     <p className="action-sheet-context"><strong>{state.patientName}</strong><br/>{formatFriendlyDateTime(state.appointment.scheduledDate, state.appointment.scheduledTime)}</p>
-    {patient ? <><PatientPrecautionIndicator patient={patient}/><Link className="action-sheet-patient-link" href={`/patients/${patient.id}`}>Ver ficha del paciente</Link><PatientContactOptions patient={patient}/></> : null}
+    {patient ? <PatientPrecautionIndicator patient={patient}/> : null}
     <section className="more-option-group" aria-labelledby="visit-options-heading"><h3 id="visit-options-heading">Visita</h3><div className="action-sheet-list">
       {canRegister && !isPrevious && state.appointment.status === "booked" ? <BeginVisitForm patientId={state.appointment.patientId} treatmentId={state.appointment.treatmentId} appointmentId={state.appointment.id} label="Comenzar visita"/> : null}
       {canRegister && !isPrevious && state.appointment.status === "proposed" ? <button type="button" onClick={onStartUntimed}>Comenzar visita</button> : null}
       {canRegister ? <Link href={`/patients/${state.appointment.patientId}/visits/new?cita=${state.appointment.id}&modo=diferida`}>Registrar visita</Link> : null}
       <button type="button" onClick={onSchedule}>Reprogramar</button><button type="button" onClick={() => onCloseAppointment("cancelled")}>Cancelar visita</button>{canNoShow ? <button type="button" onClick={() => onCloseAppointment("no-show")}>No se realizó</button> : null}
     </div></section>
+    {patient ? <><Link className="action-sheet-patient-link" href={`/patients/${patient.id}`}>Ver ficha del paciente</Link><PatientContactOptions patient={patient}/></> : null}
   </AccessibleDialog>;
 }
 
@@ -160,7 +176,7 @@ function PatientContactOptions({ patient }: { patient: HomePatientViewModel }) {
 }
 
 function PatientMoreOptions({ patient, onClose }: { patient: HomePatientViewModel; onClose: () => void }) {
-  return <AccessibleDialog title="Más opciones" className="home-action-sheet" onClose={onClose}>
+  return <AccessibleDialog title="Más opciones" className="home-action-sheet" dismissOnBackdrop onClose={onClose}>
     <p className="action-sheet-context"><strong>{patient.displayName}</strong></p>
     <PatientContactOptions patient={patient}/>
     <Link className="action-sheet-patient-link" href={`/patients/${patient.id}`}>Ver ficha del paciente</Link>
@@ -203,20 +219,14 @@ function documentationTimingLabel(item: PresentedTodayItem) {
 function VisitCard({ item, appointment, referenceNow, onDialog }: { item: PresentedTodayItem; appointment?: AgendaItemViewModel; referenceNow: string; onDialog: (dialog: Exclude<DialogState, null>, trigger: HTMLElement) => void }) {
   const future = item.date > getLocalDate(referenceNow);
   const previous = item.date < getLocalDate(referenceNow);
-  const currentSession = !["completed", "rescheduled", "cancelled", "no-show"].includes(item.displayState);
   const punctuality = visitTimingLabel(item);
   const documentationTiming = documentationTimingLabel(item);
   const hasVisitOptions = Boolean(appointment && ["booked", "proposed"].includes(appointment.status));
   const showMore = Boolean(item.patient.phone || item.patient.address || item.patient.accessInstructions || hasVisitOptions);
-  return <article id={`appointment-${item.id}`} tabIndex={-1} className={`home-card visit-card state-${item.displayState}`}>
-    <div className="visit-card-layout">
-      <div className="visit-patient-block"><div className="visit-card-main"><h3><Link className="patient-name-link" href={`/patients/${item.patientId}`}>{item.patient.displayName}</Link></h3></div></div>
-      <div className="visit-summary-block"><div className="visit-card-top"><strong className="visit-time">{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong><span className="home-status">{item.statusLabel}</span></div><p className="treatment-progress">{visitProgress(item.patient, currentSession)}</p>{punctuality ? <span className="visit-timing-badge">{punctuality}</span> : null}{documentationTiming ? <span className="visit-documentation-badge">{documentationTiming}</span> : null}{item.actualStart ? <p className="home-detail">Inicio real {item.actualStart}{item.actualEnd ? ` · Finalizó ${item.actualEnd}` : ""}</p> : null}</div>
-    </div>
-    <div className="visit-actions">
+  const actions = <div className="visit-actions">
       <div className="visit-clinical-actions">
         {item.displayState === "in-progress" && item.visitId ? <Link className="home-primary-action button-link" href={`/patients/${item.patientId}/visits/${item.visitId}/edit`}>Continuar</Link> : null}
-        {!item.patient.treatment.visitBlockedReason && appointment && previous && ["booked", "proposed"].includes(appointment.status) ? <Link className="home-primary-action button-link" href={`/patients/${encodeURIComponent(item.patientId)}/visits/new?cita=${encodeURIComponent(appointment.id)}&modo=diferida`}>Registrar visita</Link> : null}
+        {!item.patient.treatment.visitBlockedReason && appointment && (previous || item.displayState === "past-unresolved") && ["booked", "proposed"].includes(appointment.status) ? <Link className="home-primary-action button-link" href={`/patients/${encodeURIComponent(item.patientId)}/visits/new?cita=${encodeURIComponent(appointment.id)}&modo=diferida`}>Registrar visita</Link> : null}
         {appointment?.status === "booked" && item.displayState === "upcoming" ? <BeginVisitForm blockedReason={item.patient.treatment.visitBlockedReason} patientId={item.patientId} treatmentId={item.treatmentId} appointmentId={item.id} label="Comenzar visita"/> : null}
         {!item.patient.treatment.visitBlockedReason && appointment?.status === "proposed" && !future && !previous ? <button className="home-primary-action" type="button" onClick={(event) => onDialog({ kind: "start-untimed", appointment, patientName: item.patient.displayName }, event.currentTarget)}>Comenzar visita</button> : null}
         {appointment?.status === "proposed" && future ? <button className="home-primary-action" type="button" onClick={(event) => onDialog({ kind: "schedule", appointment }, event.currentTarget)}>Definir horario</button> : null}
@@ -225,9 +235,20 @@ function VisitCard({ item, appointment, referenceNow, onDialog }: { item: Presen
       <div className="visit-utility-actions">
         {showMore ? <button type="button" className="more-action" onClick={(event) => hasVisitOptions && appointment ? onDialog({ kind: "actions", appointment, patientName: item.patient.displayName }, event.currentTarget) : onDialog({ kind: "patient-more", patient: item.patient }, event.currentTarget)} aria-label={`Más opciones para ${item.patient.displayName}`}>Más</button> : null}
       </div>
+    </div>;
+  return <ClinicalCard id={`appointment-${item.id}`} className={`visit-card state-${item.displayState}`}
+    title={item.patient.displayName} href={`/patients/${item.patientId}`}
+    badge={<span className="home-status">{item.statusLabel}</span>}
+    identityDetail={<PatientPrecautionsDisclosure patient={item.patient} compact/>}
+    actions={actions}>
+    <div className="visit-summary-block">
+      <strong className="visit-time">{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong>
+      <p className="treatment-progress">{visitProgress(item.patient)}</p>
+      {punctuality ? <span className="visit-timing-badge">{punctuality}</span> : null}
+      {documentationTiming ? <span className="visit-documentation-badge">{documentationTiming}</span> : null}
+      {item.actualStart ? <p className="home-detail">Inicio real {item.actualStart}{item.actualEnd ? ` · Finalizó ${item.actualEnd}` : ""}</p> : null}
     </div>
-    <PatientPrecautionIndicator patient={item.patient} compact/>
-  </article>;
+  </ClinicalCard>;
 }
 
 function compactDate(date: string) {
@@ -260,6 +281,8 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
   });
   const day = useMemo(() => presentDay({ referenceNow: data.referenceNow, selectedDate, patients: data.patients, dayItems: data.dayItems }), [data, selectedDate]);
   const patients = useMemo(() => filterDirectory(data.patients, query, filter), [data.patients, query, filter]);
+  const consultationTasks = consultationsToAttend(data.openConsultations ?? [], data.referenceNow);
+  const [pendingOpen, setPendingOpen] = useState(Boolean(initialResolveAppointmentId));
   const agendaCounts = useMemo(() => data.agendaItems.reduce((grouped, item) => grouped.set(item.scheduledDate, (grouped.get(item.scheduledDate) ?? 0) + 1), new Map<string, number>()), [data.agendaItems]);
   const agendaDays = useMemo(() => {
     const offset = (new Date(`${data.agendaFrom}T12:00:00Z`).getUTCDay() + 6) % 7;
@@ -285,7 +308,7 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
   const heading = tab === "today" ? (day.isToday ? "Hoy" : new Intl.DateTimeFormat("es-AR", { weekday: "long", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`))) : tab === "agenda" ? "Agenda" : "Pacientes";
   const selectedLabel = formatSelectedDate(selectedDate, day.isToday);
   const appointmentFor = (item: PresentedTodayItem) => appointmentFromItem(item, data.agendaItems.find((value) => value.id === item.id));
-  const actionableCount = day.timed.length + day.withoutTime.length + day.previousPending.length + (day.activeVisit ? 1 : 0);
+  const actionableCount = day.timed.length + day.withoutTime.length + (day.activeVisit ? 1 : 0);
   useEffect(() => {
     if (initialTab === "today" && initialSelectedDate && initialSelectedDate !== validInitialDate) {
       window.history.replaceState(null, "", `/inicio?vista=hoy&fecha=${validInitialDate}`);
@@ -321,15 +344,29 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
     <header className="operational-header"><div><h1>{heading.charAt(0).toUpperCase() + heading.slice(1)}</h1><p>{tab === "today" ? selectedLabel.replace(/^Hoy,\s*/, "") : "Kinesiología Clínica"}</p></div><button aria-label="Crear: Agendar visita o alta" className="home-primary-action schedule-shortcut" onClick={(event) => openDialog({ kind: "create" }, event.currentTarget)}>＋ Crear</button></header>
     <nav className="home-tabs home-tabs-three" aria-label="Vista principal">{([["today","Hoy"],["agenda","Agenda"],["patients","Pacientes"]] as const).map(([value,label]) => <button key={value} type="button" aria-current={tab === value ? "page" : undefined} onClick={() => selectTab(value)}>{label}</button>)}</nav>
 
-    {tab === "today" ? <section className="clinical-module" aria-labelledby="consultations-heading"><h2 id="consultations-heading">Consultas abiertas</h2>{data.openConsultations?.length ? data.openConsultations.map(item => <article className="home-card" key={item.id}><h3><Link href={`/consultas/${item.id}`}>{item.patientName}</Link></h3><p>{item.statusLabel}</p>{item.followUps.length ? <ul>{item.followUps.map(f => <li key={f.id}>{f.overdue ? "Vencido · " : "Pendiente · "}{new Date(f.dueAt).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}</li>)}</ul> : <p>Sin próximo contacto pendiente</p>}</article>) : <p>No hay consultas abiertas.</p>}</section> : null}
+
     {tab === "today" ? <section className="operational-day" aria-labelledby="day-heading">
       <div className="week-strip" aria-label="Próximos siete días">{week.map((weekDay) => <button type="button" key={weekDay.date} aria-label={weekDay.fullLabel} aria-pressed={selectedDate === weekDay.date} onClick={() => selectDate(weekDay.date)}><span>{weekDay.weekdayLabel}</span><strong>{weekDay.dayLabel}</strong><small>{weekDay.visitCount || "–"}</small></button>)}</div>
       <div className="day-heading"><p id="day-heading" aria-live="polite">{actionableCount} {actionableCount === 1 ? "visita por atender" : "visitas por atender"}</p></div>
-      {day.activeVisit ? <section className="operational-section priority-section"><h3>Visita en curso</h3><VisitCard item={day.activeVisit} appointment={appointmentFor(day.activeVisit)} referenceNow={data.referenceNow} onDialog={openDialog}/></section> : null}
-      {day.previousPending.length ? <section className="operational-section attention-section"><div className="section-heading-with-action"><h3>Visitas pendientes de días anteriores <span>{day.previousPending.length}</span></h3><Link href={`/inicio?vista=agenda&mes=${today.slice(0, 7)}&fecha=${today}&pendientes=1`}>Ver en Agenda</Link></div><div className="today-list">{day.previousPending.map((item) => <VisitCard key={item.id} item={item} appointment={appointmentFor(item)} referenceNow={data.referenceNow} onDialog={openDialog}/>)}</div></section> : null}
-      {day.timed.length ? <section className="operational-section"><h3>{day.isToday ? "Horarios de hoy" : "Con horario"}</h3><div className="today-list">{day.timed.map((item) => <VisitCard key={item.id} item={item} appointment={appointmentFor(item)} referenceNow={data.referenceNow} onDialog={openDialog}/>)}</div></section> : null}
-      {day.withoutTime.length ? <section className="operational-section"><h3>Sin horario definido</h3><div className="today-list">{day.withoutTime.map((item) => <VisitCard key={item.id} item={item} appointment={appointmentFor(item)} referenceNow={data.referenceNow} onDialog={openDialog}/>)}</div></section> : null}
-      {!day.activeVisit && !day.previousPending.length && !day.timed.length && !day.withoutTime.length ? <div className="day-empty"><h3>No hay visitas previstas</h3><p>Podés agendar una visita directamente para este día.</p><button className="home-primary-action" onClick={(event) => openDialog({ kind: "schedule", date: selectedDate }, event.currentTarget)}>Agendar en este día</button></div> : null}
+      {day.activeVisit ? <section className="operational-section priority-section"><h2>Visita en curso</h2><VisitCard item={day.activeVisit} appointment={appointmentFor(day.activeVisit)} referenceNow={data.referenceNow} onDialog={openDialog}/></section> : null}
+
+      {day.timed.length ? <section className="operational-section"><h2>{day.isToday ? "Horarios de hoy" : "Con horario"}</h2><div className="today-list">{day.timed.map((item) => <VisitCard key={item.id} item={item} appointment={appointmentFor(item)} referenceNow={data.referenceNow} onDialog={openDialog}/>)}</div></section> : null}
+      {day.withoutTime.length ? <section className="operational-section"><h2>Sin horario definido</h2><div className="today-list">{day.withoutTime.map((item) => <VisitCard key={item.id} item={item} appointment={appointmentFor(item)} referenceNow={data.referenceNow} onDialog={openDialog}/>)}</div></section> : null}
+      {!day.activeVisit && !day.timed.length && !day.withoutTime.length ? <div className="day-empty"><h3>No hay visitas previstas</h3><p>Podés agendar una visita directamente para este día.</p><button className="home-primary-action" onClick={(event) => openDialog({ kind: "schedule", date: selectedDate }, event.currentTarget)}>Agendar en este día</button></div> : null}
+      {day.isToday ? <section className="consultation-attention operational-section" aria-labelledby="consultations-heading">
+        <div className="section-heading-with-action"><div><h2 id="consultations-heading">Consultas por atender <span className="section-count">{consultationTasks.length}</span></h2><p>Contactos pendientes y consultas sin próximo paso.</p></div><Link href="/consultas">Ver todas</Link></div>
+        {consultationTasks.length ? <>
+          {([['follow-up', 'Seguimientos'], ['no-next-step', 'Sin próximo paso']] as const).map(([group, label]) => {
+            const tasks = consultationTasks.slice(0, 3).filter(task => task.attention.group === group);
+            return tasks.length ? <section className="consultation-task-group" key={group} aria-label={label}><h3>{label}</h3><div className="consultation-task-list">{tasks.map(task => <ConsultationCard key={task.consultation.id} consultation={task.consultation} description={task.attention.label} headingLevel={4}/>)}</div></section> : null;
+          })}
+          {consultationTasks.length > 3 ? <p className="consultation-overflow">Mostrando 3 de {consultationTasks.length}. <Link href="/consultas">Ver todas las consultas</Link></p> : null}
+        </> : <p className="consultation-empty">No hay consultas por atender hoy.</p>}
+      </section> : null}
+      {day.previousPending.length ? <details className="pending-visits operational-section" open={pendingOpen} onToggle={event => setPendingOpen(event.currentTarget.open)}>
+        <summary><h2>Visitas pendientes de días anteriores <span className="section-count">{day.previousPending.length}</span></h2><span className="disclosure-chevron" aria-hidden="true">⌄</span></summary>
+        <div className="pending-visits-content"><Link className="clinical-card-link" href={`/inicio?vista=agenda&mes=${today.slice(0, 7)}&fecha=${today}&pendientes=1`}>Ver en Agenda <span aria-hidden="true">→</span></Link><div className="today-list">{day.previousPending.map(item => <div className="pending-visit" key={item.id}><p className="pending-original-date">{formatFriendlyDate(item.date)}</p><VisitCard item={item} appointment={appointmentFor(item)} referenceNow={data.referenceNow} onDialog={openDialog}/></div>)}</div></div>
+      </details> : null}
       {day.completed.length ? <details className="history-group"><summary>Realizadas <span>{day.completed.length}</span></summary><HistoryRows items={day.completed}/></details> : null}
       {day.changes.length ? <details className="history-group"><summary>Cambios registrados hoy <span>{day.changes.length}</span></summary><p className="history-helper">Incluye cambios sobre visitas de hoy y de otros días.</p><HistoryRows items={day.changes} showOriginalDate/></details> : null}
     </section> : null}

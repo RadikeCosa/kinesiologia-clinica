@@ -230,7 +230,8 @@ test.describe.serial("pantalla inicial clínica", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await page.goto("/inicio");
-    const overdue = page.locator("article").filter({ hasText: "11:00" }).first();
+    await page.locator(".pending-visits > summary").click();
+    const overdue = page.locator("#appointment-demo-appt-overdue");
     await overdue.getByRole("button", { name: /Más opciones/ }).click();
     await page.getByRole("button", { name: "No se realizó" }).click();
     await page.getByLabel("Motivo").selectOption("patient-not-at-home");

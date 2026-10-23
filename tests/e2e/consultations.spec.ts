@@ -90,8 +90,12 @@ test("retoma una consulta y guarda evaluación retrospectiva sin cita ni presupu
     await page.goto(`/patients/${patientId}`);
     await page.getByRole("link", { name: "Ver consulta activa" }).click();
     await page.goto("/inicio");
-    const consultations = page.getByRole("region", { name: "Consultas abiertas" });
-    await consultations.getByRole("link", { name: "Alias Ficticio Retro" }).click();
+    const attention = page.getByRole("region", { name: /Consultas por atender/ });
+    await attention.getByRole("link", { name: "Ver todas", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Consultas abiertas" })).toBeVisible();
+    const consultation = page.getByRole("article").filter({ hasText: "Alias Ficticio Retro" });
+    await expect(consultation).toContainText("Próximo contacto");
+    await consultation.getByRole("link", { name: /Revisar consulta/ }).click();
     const date = localDateTime(-1).slice(0, 10);
     await page.getByLabel("Inicio real").fill(`${date}T10:00`);
     await page.getByLabel("Fin real").fill(`${date}T10:50`);

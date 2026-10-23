@@ -4,7 +4,7 @@
 
 La consulta permite una síntesis referida de hasta 2.000 caracteres. Si hay motivo, debe elegirse fuente: paciente, familiar o profesional. No representa una evaluación profesional. Teléfono y domicilio siguen siendo opcionales.
 
-Inicio muestra consultas abiertas, en coordinación o con evaluación realizada, incluidos sus seguimientos pendientes ordenados por fecha y los vencidos. La hora de referencia se toma al cargar; no se actualiza automáticamente. Una consulta sin próximo contacto también aparece. La ficha enlaza la consulta activa.
+Inicio muestra «Consultas por atender» después de las visitas del día: hasta tres consultas con contactos de hoy o atrasados, o sin seguimiento pendiente ni evaluación agendada. Cada consulta aparece una vez; los contactos más antiguos se muestran primero. «Ver todas» abre `/consultas`, con el conjunto de consultas activas y su próximo paso, incluidos los contactos futuros y las evaluaciones propuestas o confirmadas. La hora de referencia se toma al cargar; no se actualiza automáticamente. La ficha conserva el enlace a la consulta activa. Este bloque no sustituye la integración pendiente de evaluaciones en la agenda principal.
 
 La evaluación ya realizada puede registrarse sin cita ni presupuesto aceptado, con horarios efectivos y consentimiento explícito anterior o igual al inicio. Si hay cita abierta debe vincularse y confirmarse su resolución (o resolverse antes); la fecha debe coincidir. No se inventan horarios acordados. Las citas de evaluación admiten duraciones enteras de 15–240 minutos, incluidos 50.
 

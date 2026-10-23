@@ -122,8 +122,16 @@ export interface AgendaItemViewModel {
   version?: string;
 }
 
+export interface OpenConsultationViewModel {
+  id: string;
+  patientName: string;
+  statusLabel: string;
+  followUps: Array<{ id: string; dueAt: string; overdue: boolean }>;
+  nextEvaluation?: { date: string; time?: string };
+}
+
 export interface ClinicalHomeData {
-  openConsultations?: Array<{ id: string; patientName: string; statusLabel: string; followUps: Array<{ id: string; dueAt: string; overdue: boolean }> }>;
+  openConsultations?: OpenConsultationViewModel[];
   referenceNow: string;
   agendaMonth: string;
   agendaFrom: string;

@@ -154,7 +154,8 @@ test("una cita demorada se registra como visita realizada", async ({ page, reque
   fixture.status = "booked";
   await request.put("http://localhost:8081/fhir/Appointment/demo-appt-overdue", { data: fixture, headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" } });
   await page.goto("/inicio");
-  const pending = page.locator("article.visit-card").filter({ hasText: "11:00" }).first();
+  await page.locator(".pending-visits > summary").click();
+  const pending = page.locator("#appointment-demo-appt-overdue");
   const registerVisit = pending.getByRole("link", { name: "Registrar visita" });
   await expect(registerVisit).toBeVisible();
   await registerVisit.click();
