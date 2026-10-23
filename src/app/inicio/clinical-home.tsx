@@ -1,5 +1,6 @@
 "use client";
 
+import { ClinicalEnvironmentLabel } from "@/app/clinical-environment";
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { addLocalDays, filterDirectory, formatArgentinePhone, formatFriendlyDate, formatFriendlyDateTime, formatWeekRange, getLocalDate, presentDay, presentWeek, resolveAgendaDate, startOfWeek } from "@/features/clinical-home/clinical-home.presenter";
@@ -86,7 +87,7 @@ function AccessibleDialog({ title, onClose, className = "", children }: { title:
 }
 
 function CreateOptions({ onClose, onSchedule }: { onClose: () => void; onSchedule: () => void }) {
-  return <AccessibleDialog title="Crear" className="home-action-sheet" onClose={onClose}><div className="action-sheet-list"><Link href="/patients/new">Nuevo paciente</Link><button type="button" onClick={onSchedule}>Agendar visita</button></div></AccessibleDialog>;
+  return <AccessibleDialog title="Crear" className="home-action-sheet" onClose={onClose}><div className="action-sheet-list"><Link href="/consultas/nueva">Nueva consulta</Link><Link href="/patients/new">Nuevo paciente</Link><button type="button" onClick={onSchedule}>Agendar visita</button></div></AccessibleDialog>;
 }
 
 function ScheduleForm({ patients, state, onClose }: { patients: HomePatientViewModel[]; state: Exclude<DialogState, null> & { kind: "schedule" }; onClose: () => void }) {
@@ -316,9 +317,11 @@ export function ClinicalHome({ data, initialTab = "today", initialPatientId, ini
     return () => window.removeEventListener("popstate", syncFromUrl);
   }, [today]);
   return <main className="clinical-home-shell clinical-home-real">
+    <p className="eyebrow"><ClinicalEnvironmentLabel/></p>
     <header className="operational-header"><div><h1>{heading.charAt(0).toUpperCase() + heading.slice(1)}</h1><p>{tab === "today" ? selectedLabel.replace(/^Hoy,\s*/, "") : "Kinesiología Clínica"}</p></div><button aria-label="Crear: Agendar visita o alta" className="home-primary-action schedule-shortcut" onClick={(event) => openDialog({ kind: "create" }, event.currentTarget)}>＋ Crear</button></header>
     <nav className="home-tabs home-tabs-three" aria-label="Vista principal">{([["today","Hoy"],["agenda","Agenda"],["patients","Pacientes"]] as const).map(([value,label]) => <button key={value} type="button" aria-current={tab === value ? "page" : undefined} onClick={() => selectTab(value)}>{label}</button>)}</nav>
 
+    {tab === "today" ? <section className="clinical-module" aria-labelledby="consultations-heading"><h2 id="consultations-heading">Consultas abiertas</h2>{data.openConsultations?.length ? data.openConsultations.map(item => <article className="home-card" key={item.id}><h3><Link href={`/consultas/${item.id}`}>{item.patientName}</Link></h3><p>{item.statusLabel}</p>{item.followUps.length ? <ul>{item.followUps.map(f => <li key={f.id}>{f.overdue ? "Vencido · " : "Pendiente · "}{new Date(f.dueAt).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })}</li>)}</ul> : <p>Sin próximo contacto pendiente</p>}</article>) : <p>No hay consultas abiertas.</p>}</section> : null}
     {tab === "today" ? <section className="operational-day" aria-labelledby="day-heading">
       <div className="week-strip" aria-label="Próximos siete días">{week.map((weekDay) => <button type="button" key={weekDay.date} aria-label={weekDay.fullLabel} aria-pressed={selectedDate === weekDay.date} onClick={() => selectDate(weekDay.date)}><span>{weekDay.weekdayLabel}</span><strong>{weekDay.dayLabel}</strong><small>{weekDay.visitCount || "–"}</small></button>)}</div>
       <div className="day-heading"><p id="day-heading" aria-live="polite">{actionableCount} {actionableCount === 1 ? "visita por atender" : "visitas por atender"}</p></div>

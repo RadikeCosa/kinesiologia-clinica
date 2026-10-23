@@ -33,3 +33,12 @@ describe("isLocalClinicalSurfaceEnabled", () => {
     ).toBe(false);
   });
 });
+
+
+describe("modo piloto explícito", () => {
+  const pilot = { FHIR_BASE_URL: "http://localhost:8080/fhir", CLINICAL_MODE: "pilot", CLINICAL_PILOT_READY: "yes", AUTH_ORIGIN: "http://localhost:3000" };
+  it("habilita solo configuración local completa y verificada", () => {
+    expect(isLocalClinicalSurfaceEnabled(pilot)).toBe(true);
+    for (const override of [{ CLINICAL_PILOT_READY: undefined }, { CLINICAL_MODE: undefined }, { FHIR_BASE_URL: "http://localhost:8081/fhir" }, { AUTH_ORIGIN: "https://example.com" }, { VERCEL: "1" }]) expect(isLocalClinicalSurfaceEnabled({ ...pilot, ...override })).toBe(false);
+  });
+});

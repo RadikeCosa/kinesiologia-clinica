@@ -14,12 +14,19 @@ const ROLE_SYSTEM = "https://kinesiologiaadomicilio.local/fhir/CodeSystem/episod
 
 function version(value?: string) { return value ? `W/\"${value}\"` : undefined; }
 function patientResource(patient: Patient) {
-  return { resourceType: "Patient", id: patient.id, name: [{ given: [patient.givenName], family: patient.familyName }], telecom: [{ system: "phone", value: patient.phone }], address: [{ text: patient.address }], extension: patient.accessInstructions ? [{ url: `${BASE}patient-home-access-instructions-v1`, valueString: patient.accessInstructions }] : undefined };
+  const extension = [
+    ...(patient.accessInstructions ? [{ url: `${BASE}patient-home-access-instructions-v1`, valueString: patient.accessInstructions }] : []),
+    ...(patient.activeConsultationId ? [{ url: `${BASE}patient-active-consultation-v1`, valueString: patient.activeConsultationId }] : []),
+  ];
+  return { resourceType: "Patient", id: patient.id, name: patient.givenName || patient.familyName ? [{ given: patient.givenName ? [patient.givenName] : [], family: patient.familyName || undefined }] : undefined, telecom: patient.phone ? [{ system: "phone", value: patient.phone }] : undefined, address: patient.address ? [{ text: patient.address }] : undefined, extension: extension.length ? extension : undefined };
 }
 function conditionResource(value: Diagnosis) { return { resourceType: "Condition", id: value.id, subject: { reference: `Patient/${value.patientId}` }, code: { text: value.text }, recordedDate: value.recordedAt }; }
 export function treatmentResource(treatment: Treatment) {
   const extensions: unknown[] = [];
   if (treatment.currentPeriodId) extensions.push({ url: `${BASE}episodeofcare-current-period-v1`, valueString: treatment.currentPeriodId });
+  if (treatment.sourceConsultationId) extensions.push({ url: `${BASE}treatment-origin-consultation-v1`, valueReference: { reference: `ServiceRequest/${treatment.sourceConsultationId}` } });
+  if (treatment.initialEvaluationId) extensions.push({ url: `${BASE}treatment-initial-evaluation-v1`, valueReference: { reference: `Encounter/${treatment.initialEvaluationId}` } });
+  if (treatment.acceptedTreatmentQuoteId) extensions.push({ url: `${BASE}treatment-accepted-budget-v1`, valueString: treatment.acceptedTreatmentQuoteId });
   extensions.push({ url: `${BASE}episodeofcare-metadata-revision-v1`, valueInteger: treatment.metadataRevision ?? 0 });
   if (treatment.clinicalContext?.initialFunctionalStatus) extensions.push({ url: `${BASE}episodeofcare-initial-functional-status-v1`, valueString: treatment.clinicalContext.initialFunctionalStatus });
   if (treatment.clinicalContext?.therapeuticGoals) extensions.push({ url: `${BASE}episodeofcare-therapeutic-goals-v1`, valueString: treatment.clinicalContext.therapeuticGoals });

@@ -34,6 +34,14 @@ async function closePreviousFixtureVisits() {
 
 await closePreviousFixtureVisits();
 
+await put("Device", "clinical-agenda-coordinator", {
+  status: "active", type: { text: "Coordinador ficticio de agenda clínica" },
+});
+await put("Schedule", "clinical-agenda-coordinator-v1", {
+  active: true, actor: [{ reference: "Device/clinical-agenda-coordinator" }],
+  serviceType: [{ text: "Kinesiología domiciliaria ficticia" }],
+});
+
 const patients = [
   ["demo-rosa", "Rosa", "Benítez", "+5492995550101", "Las Mutisias 245, Neuquén", "Portón gris; tocar timbre de la derecha."],
   ["demo-alicia", "Alicia", "Figueroa", "+5492995550104", "Domicilio Demo 1, Neuquén", "Casa de una planta; llamar antes de ingresar."],

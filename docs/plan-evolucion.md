@@ -1,5 +1,7 @@
 # Plan de evolución
 
+**Actualización (2026-10-15):** el primer paso hacia uso real es el flujo de consulta de servicio y la matriz de brechas en `docs/preparacion-uso-real.md`. El uso de datos reales sigue bloqueado. La decisión anterior de alta directa de tratamiento describe el flujo heredado; un paciente con una consulta nueva activa no puede iniciar tratamiento por ese atajo.
+
 Este plan toma como baseline la auditoría del 2026-09-28. No asigna fechas: el avance depende de evidencia y condiciones de cierre. Las funciones nuevas comienzan después del hito **Núcleo estable**; preparar el uso real es un hito distinto y más exigente.
 
 **Actualización (2026-09-29):** la persona confirmó que todas las pruebas guiadas que pudo completar pasaron, salvo usar un autenticador independiente, que no tiene disponible. La etapa 1 quedó cerrada al configurar Webpack para el build. En la etapa 2, se corrigió la explicación visual de la última passkey y se añadieron pruebas de reintento tras perderse una respuesta; las suites completas pasan. Con autorización explícita, se borraron lógicamente de HAPI 8081 las cuatro citas ficticias activas duplicadas del 30/09 a las 11:00; las canceladas, la cita semilla y las demás citas se conservaron y verificaron.

@@ -123,6 +123,7 @@ export interface AgendaItemViewModel {
 }
 
 export interface ClinicalHomeData {
+  openConsultations?: Array<{ id: string; patientName: string; statusLabel: string; followUps: Array<{ id: string; dueAt: string; overdue: boolean }> }>;
   referenceNow: string;
   agendaMonth: string;
   agendaFrom: string;

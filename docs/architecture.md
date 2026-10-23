@@ -77,6 +77,12 @@ El directorio incluye tratamientos `active`, `onhold` y `finished`; solo los act
 6. seguimiento longitudinal y reportes;
 7. retiro de `/admin` del repositorio público después de validar reversión.
 
+## Consulta de ingreso
+
+El dominio de consulta vive en `src/domain/consultation`; sus operaciones y el puerto de persistencia viven en `src/application/consultations`. El adaptador HAPI usa `ServiceRequest` y una extensión local para su contrato. La interfaz accede al caso de uso mediante acciones de servidor autenticadas.
+
+Para serializar altas activas, el adaptador usa la versión de `Patient` como punto de coordinación: actualiza la referencia a consulta y `ServiceRequest` en una transacción con `If-Match`. La prueba concurrente contra HAPI `8081` confirmó una sola consulta activa entre dos clientes; la integración también verificó el inicio transaccional del tratamiento y su período inicial. La evaluación inicial se registra como `Encounter` independiente, sin crear un tratamiento ficticio. La interfaz permite reprogramar, completar y cancelar seguimientos, y cerrar la consulta con sus motivos trazables.
+
 ## Períodos e informes
 
 El tratamiento mantiene EpisodeOfCare y cada período tiene su CarePlan propio. Las visitas conservan periodId y los contadores se derivan de ellas. Las escrituras clínicas bloquean el período mediante If-Match; los informes, renovación y finalización comprueban además tratamiento y paciente. DocumentReference conserva la emisión y referencia Binary para PDF y JSON archivado. Todos los contratos, límites y estados se describen en [periodos-informes.md](periodos-informes.md). La descarga autenticada resuelve archivos en el servidor.

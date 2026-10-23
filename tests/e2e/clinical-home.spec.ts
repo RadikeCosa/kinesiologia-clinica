@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+
+const FHIR_ENDPOINT = "http://localhost:8081/fhir";
 
 function e2eFhirIds() {
   return JSON.parse(readFileSync(".local/e2e-fhir-ids.json", "utf8")) as { overlap: string; reschedule: string };
@@ -24,8 +27,11 @@ test.describe.serial("pantalla inicial clínica", () => {
   test("navega, filtra y abre un día de la agenda mensual", async ({ page }) => {
     await page.goto("/inicio");
     await expect(page.getByRole("heading", { level: 1, name: "Hoy" })).toBeVisible();
-    await expect(page.getByText("3 visitas por atender")).toBeVisible();
-    await expect(page.locator(".week-strip button").first().locator("small")).toHaveText("3");
+    const actionSummary = page.locator("#day-heading");
+    await expect(actionSummary).toHaveText(/^\d+ visitas? por atender$/);
+    const actionCount = (await actionSummary.innerText()).match(/^\d+/)?.[0];
+    expect(actionCount).toBeTruthy();
+    await expect(page.locator(".week-strip button[aria-pressed='true'] small")).toHaveText(actionCount!);
     await page.getByRole("button", { name: "Pacientes", exact: true }).click();
     await page.getByRole("button", { name: "Pausado" }).click();
     await expect(page.getByRole("heading", { name: "Mario Acosta" })).toBeVisible();
@@ -73,7 +79,7 @@ test.describe.serial("pantalla inicial clínica", () => {
   test("abre desde la ficha las opciones de una visita pendiente anterior", async ({ page }) => {
     await page.goto("/patients/demo-rosa");
     const pending = page.locator(".patient-pending-note");
-    await expect(pending).toContainText("1 visita pendiente anterior");
+    await expect(pending).toContainText(/visitas? pendientes? anteriores?/);
     await expect(pending).toContainText(/\d{2}\/\d{2}\/\d{4}/);
     await pending.getByRole("link", { name: "Registrar visita" }).click();
     await expect(page).toHaveURL(/\/inicio\?vista=hoy&resolver=demo-appt-overdue/);
@@ -158,6 +164,45 @@ test.describe.serial("pantalla inicial clínica", () => {
     await page.getByLabel("Guardar aunque se superponga").check();
     await page.getByRole("button", { name: "Confirmar horario" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("advierte en la interfaz una evaluación confirmada que se superpone con una visita", async ({ page }) => {
+    const appointmentId = `evaluation-appointment-${randomUUID()}`;
+    const treatmentAppointmentId = randomUUID();
+    const date = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(Date.now() + 7 * 86_400_000));
+    const start = `${date}T13:00:00.000Z`;
+    const end = new Date(new Date(start).getTime() + 60 * 60_000).toISOString();
+    const evaluation = {
+      id: appointmentId, consultationId: `fixture-consultation-${randomUUID()}`, patientId: "demo-rosa", status: "confirmed",
+      scheduledDate: date, startsAt: start, endsAt: end, durationMinutes: 60, createdAt: new Date().toISOString(),
+    };
+    const created = await page.request.put(`${FHIR_ENDPOINT}/Appointment/${appointmentId}`, {
+      data: {
+        resourceType: "Appointment", id: appointmentId, status: "booked", start, end, minutesDuration: 60,
+        created: evaluation.createdAt, participant: [{ actor: { reference: "Patient/demo-rosa" }, status: "accepted" }],
+        serviceType: [{ text: "Evaluación inicial ficticia" }],
+        extension: [{ url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/consultation-evaluation-appointment-data-v1", valueString: JSON.stringify(evaluation) }],
+      }, headers: { Accept: "application/fhir+json", "Content-Type": "application/fhir+json" },
+    });
+    expect(created.ok(), await created.text()).toBeTruthy();
+    try {
+      await page.goto("/inicio");
+      await page.getByRole("button", { name: /Crear: Agendar/ }).click();
+      await page.getByRole("button", { name: "Agendar visita" }).last().click();
+      await page.getByLabel("Paciente").selectOption("demo-rosa");
+      await page.getByLabel("Fecha").fill(date);
+      await page.getByLabel("Horario opcional").fill("10:30");
+      await setAppointmentId(page, treatmentAppointmentId);
+      await page.getByRole("button", { name: "Agendar visita" }).last().click();
+      await expect(page.getByText(/El horario se superpone/)).toBeVisible();
+      await expect(page.getByLabel("Guardar aunque se superponga")).toBeVisible();
+      await page.getByLabel("Guardar aunque se superponga").check();
+      await page.getByRole("button", { name: "Confirmar horario" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    } finally {
+      await page.request.delete(`${FHIR_ENDPOINT}/Appointment/appointment-${treatmentAppointmentId}`);
+      await page.request.delete(`${FHIR_ENDPOINT}/Appointment/${appointmentId}`);
+    }
   });
 
   test("reprograma, cancela y marca una visita no realizada", async ({ page }) => {

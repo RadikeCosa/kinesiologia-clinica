@@ -5,6 +5,9 @@ import type { FhirEpisodeOfCare } from "./episode-of-care.fhir";
 const CONTEXT_BASE = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/";
 const DIAGNOSIS_ROLE_SYSTEM = "https://kinesiologiaadomicilio.local/fhir/CodeSystem/episodeofcare-diagnosis-role-v1";
 const STATUS_CHANGE_URL = `${CONTEXT_BASE}episodeofcare-status-change-v1`;
+const ORIGIN_CONSULTATION_URL = `${CONTEXT_BASE}treatment-origin-consultation-v1`;
+const INITIAL_EVALUATION_URL = `${CONTEXT_BASE}treatment-initial-evaluation-v1`;
+const ACCEPTED_TREATMENT_QUOTE_URL = `${CONTEXT_BASE}treatment-accepted-budget-v1`;
 
 function readContext(episode: FhirEpisodeOfCare) {
   const read = (suffix: string) => episode.extension?.find((entry) => entry.url === `${CONTEXT_BASE}${suffix}`)?.valueString?.trim() || undefined;
@@ -32,6 +35,9 @@ export function mapFhirEpisodeOfCare(
   return {
     id: episode.id?.trim() || "",
     patientId: extractIdFromReference(episode.patient?.reference) || "",
+    sourceConsultationId: extractIdFromReference(episode.extension?.find((entry) => entry.url === ORIGIN_CONSULTATION_URL)?.valueReference?.reference),
+    initialEvaluationId: extractIdFromReference(episode.extension?.find((entry) => entry.url === INITIAL_EVALUATION_URL)?.valueReference?.reference),
+    acceptedTreatmentQuoteId: episode.extension?.find((entry) => entry.url === ACCEPTED_TREATMENT_QUOTE_URL)?.valueString?.trim() || undefined,
     status: episode.status === "onhold" ? "paused" : episode.status,
     startDate: episode.period?.start?.trim() || "",
     endDate: episode.period?.end?.trim() || undefined,

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { clinicalSurfaceMode } from "@/domain/system/clinical-surface-policy";
+import { ClinicalEnvironmentProvider } from "./clinical-environment";
 
 export const metadata: Metadata = {
   title: "Kinesiología Clínica",
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body><ClinicalEnvironmentProvider pilot={clinicalSurfaceMode(process.env) === "pilot"}>{children}</ClinicalEnvironmentProvider></body>
     </html>
   );
 }

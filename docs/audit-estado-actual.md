@@ -1,5 +1,9 @@
 # Auditoría del estado actual
 
+**Consolidación (2026-10-23):** las entradas de este documento conservan evidencia histórica. El incremento actual incluye consultas, citas de evaluación y evaluación inicial sin tratamiento, además de acceso a consulta activa desde Inicio y ficha. Los hallazgos de [la auditoría del 17/10](auditoria-2026-10-17.md) no se consideran cerrados por consolidar Git: siguen pendientes, entre otros, los conflictos entre evaluaciones de pacientes diferentes, su inclusión en la agenda principal, la continuidad/corrección de evaluación inicial y la revocación después del cierre o inicio de tratamiento. El estado operativo posterior y sus límites están en [piloto privado](piloto-privado.md); la evidencia de esta consolidación y el flujo acordado, en [flujo de Git](flujo-git.md). El piloto permanece deshabilitado.
+
+**Actualización (2026-10-15):** se inició un flujo de consulta de servicio separado de paciente/tratamiento, con contactos, avisos iniciales, seguimientos y presupuestos por alcance. La matriz y sus pendientes están en `docs/preparacion-uso-real.md`. La consulta usa `ServiceRequest`; la agenda y evaluación inicial sin tratamiento todavía no están implementadas. HAPI `8081` no estaba disponible desde la sesión para verificar su atomicidad o ejecutar pruebas de integración.
+
 **Fecha:** 2026-09-28
 
 **Estado posterior al incremento (2026-09-29):** se implementaron períodos independientes, cupos/reservas derivados, informe editable antes del guardado definitivo, PDF privado, renovación, cierre parcial y reemplazos. El alcance continúa limitado a datos ficticios de HAPI 8081. La aceptación física del incremento nuevo sigue pendiente; los resultados automáticos actualizados están en la sección final. Las entradas previas describen la evolución desde el baseline.

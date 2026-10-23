@@ -6,7 +6,7 @@ Aplicación privada para organizar pacientes, tratamientos y visitas de kinesiol
 
 ## Estado del proyecto
 
-La aplicación cuenta con una pantalla de inicio autenticada con **Hoy**, **Agenda** y **Pacientes**; administración de pacientes y tratamientos; agenda de visitas; registro de visitas en vivo o de forma diferida; evaluaciones funcionales y procedimientos; corrección o anulación justificada de visitas; y un borrador editable de resumen familiar que prepara texto para compartir por WhatsApp. Los datos clínicos se guardan en HAPI FHIR desde el servidor, nunca directamente desde el navegador.
+La aplicación cuenta con una pantalla de inicio autenticada con **Hoy**, **Agenda** y **Pacientes**; administración de pacientes y tratamientos; agenda y registro de visitas; evaluaciones funcionales; corrección o anulación justificada; y resumen familiar para WhatsApp. El flujo de consulta incluye solicitante, contexto referido, presupuesto versionado, seguimientos visibles y evaluación inicial retrospectiva sin tratamiento. El modo privado está preparado pero deshabilitado: quedan condiciones operativas y de privacidad por verificar. Ver [recorrido y piloto privado](docs/piloto-privado.md).
 
 El acceso usa passkeys para una cuenta profesional provisionada, con sesiones por dispositivo, revocación y códigos de recuperación. El ingreso con passkey se validó en Ubuntu y Android y se comprobó la revocación de sesión. Siguen pendientes las pruebas con un autenticador independiente, la recuperación completa y la revocación de una segunda passkey.
 
@@ -84,5 +84,6 @@ FHIR_BASE_URL=http://localhost:8081/fhir npm run build
 - [Producto y alcance](./docs/product.md)
 - [Arquitectura](./docs/architecture.md)
 - [Privacidad y entornos](./docs/privacy.md)
+- [Preparación para uso real](./docs/preparacion-uso-real.md)
 - [Adaptador FHIR](./docs/fhir-adapter.md)
 - [Índice de documentación](./docs/README.md)

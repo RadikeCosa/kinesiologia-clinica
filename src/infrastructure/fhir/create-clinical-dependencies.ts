@@ -16,6 +16,8 @@ import { createFhirClinicalEvaluationRepository } from "./observation/fhir-clini
 import { createFhirClinicalSymptomRepository } from "./observation/fhir-clinical-symptom.repository";
 import { createFhirPerformedProcedureRepository } from "./procedure/fhir-performed-procedure.repository";
 import { createFhirClinicalAdministrationRepository } from "./administration/fhir-clinical-administration.repository";
+import { createFhirConsultationRepository } from "./consultation/fhir-consultation.repository";
+import { createFhirAgendaCoordinatorRepository } from "./appointment/fhir-agenda-coordinator.repository";
 
 export function createClinicalDependencies() {
   const config = readFhirConfig();
@@ -34,8 +36,10 @@ export function createClinicalDependencies() {
     symptoms: createFhirClinicalSymptomRepository(client),
     procedures: createFhirPerformedProcedureRepository(client),
     scheduledVisits: createFhirScheduledVisitRepository(client),
+    agendaCoordinator: createFhirAgendaCoordinatorRepository(client),
     workflow: createFhirClinicalWorkflowRepository(client),
     administration: createFhirClinicalAdministrationRepository(client),
+    consultations: createFhirConsultationRepository(client),
   };
   return { ...dependencies, periodFlow: dependencies };
 }

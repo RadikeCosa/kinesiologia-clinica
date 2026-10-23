@@ -26,7 +26,7 @@ Dependencies point inward:
 
 ## Current status
 
-The online clinical core, appointments, longitudinal evaluations, corrections/annulments, passkeys and per-device sessions are implemented. Clinical surfaces remain restricted to fictional data at `http://localhost:8081/fhir` and blocked on Vercel. Fresh passkey login on Ubuntu and Moto G15 and session revocation were validated; enrollment/revocation of a second independent authenticator and complete recovery remain pending.
+The online clinical core, appointments, longitudinal evaluations, corrections/annulments, passkeys and per-device sessions are implemented. Clinical surfaces default to fictional data at `http://localhost:8081/fhir` and remain blocked on Vercel. An explicit local pilot mode for `http://localhost:8080/fhir` is implemented but disabled pending operational and privacy acceptance; see `docs/piloto-privado.md`. Tests, seeds and automated cleanup must only use 8081. Never enable pilot readiness without recorded evidence. Fresh passkey login on Ubuntu and Moto G15 and session revocation were validated; enrollment/revocation of a second independent authenticator and complete recovery remain pending.
 
 Treatment periods, derived quotas/reservations, final period reports, PDF downloads, renewal, partial closure and immutable replacement history are implemented. See `docs/periodos-informes.md` for the contract and `docs/audit-estado-actual.md` for automatic results. The new report workflow still requires physical acceptance on Ubuntu and Moto G15 (`docs/pruebas-fisicas-periodos.md`). Reports are immutable through application ports, not against HAPI administrators. Drafts stay in memory. PWA/offline sync and real-data readiness are not implemented or accredited.
 

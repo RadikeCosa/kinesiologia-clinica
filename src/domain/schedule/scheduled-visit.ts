@@ -104,7 +104,7 @@ export function createScheduledVisitFromInput(
   };
 }
 
-export function appointmentsOverlap(first: ScheduledVisit, second: ScheduledVisit): boolean {
+export function appointmentsOverlap(first: Pick<ScheduledVisit, "startsAt" | "endsAt">, second: Pick<ScheduledVisit, "startsAt" | "endsAt">): boolean {
   if (!first.startsAt || !first.endsAt || !second.startsAt || !second.endsAt) return false;
   return new Date(first.startsAt) < new Date(second.endsAt) && new Date(second.startsAt) < new Date(first.endsAt);
 }

@@ -55,7 +55,7 @@ function SymptomIntensityInput({ symptom, onChange }: { symptom: SymptomDraft; o
 }
 
 export type ClinicalFieldErrors = { statusAndResponse?: string; intervention?: string; clinicalEntries?: string };
-export function ClinicalVisitFields({ priorEvaluations = [], initialEvaluations = [], priorSymptoms = [], initialSymptoms = [], initialProcedures = [], initialNote, precautions, lastPlan, errors }: { priorEvaluations?: ClinicalEvaluation[]; initialEvaluations?: ClinicalEvaluation[]; priorSymptoms?: ClinicalSymptom[]; initialSymptoms?: ClinicalSymptom[]; initialProcedures?: PerformedProcedureInput[]; initialNote?: { statusAndResponse?: string; intervention?: string; nextPlan?: string }; precautions?: string; lastPlan?: string; errors?: ClinicalFieldErrors }) {
+export function ClinicalVisitFields({ structuredOnly = false, priorEvaluations = [], initialEvaluations = [], priorSymptoms = [], initialSymptoms = [], initialProcedures = [], initialNote, precautions, lastPlan, errors }: { structuredOnly?: boolean; priorEvaluations?: ClinicalEvaluation[]; initialEvaluations?: ClinicalEvaluation[]; priorSymptoms?: ClinicalSymptom[]; initialSymptoms?: ClinicalSymptom[]; initialProcedures?: PerformedProcedureInput[]; initialNote?: { statusAndResponse?: string; intervention?: string; nextPlan?: string }; precautions?: string; lastPlan?: string; errors?: ClinicalFieldErrors }) {
   const [evaluations, setEvaluations] = useState<Draft[]>(() => initialEvaluations.map((item) => ({ clientId: item.clientId, seriesId: item.seriesId, domain: item.domain, name: item.name, result: item.result, context: item.context })));
   const [symptoms, setSymptoms] = useState<SymptomDraft[]>(() => initialSymptoms.map((item) => ({ clientId: item.clientId, seriesId: item.seriesId, code: item.code, ...(item.name ? { name: item.name } : {}), severity: item.severity, ...(item.context ? { context: item.context } : {}) })));
   const [customSymptomName, setCustomSymptomName] = useState("");
@@ -86,7 +86,7 @@ export function ClinicalVisitFields({ priorEvaluations = [], initialEvaluations 
       <details><summary>Ver contexto completo</summary><p>Este contexto proviene del tratamiento y de la última visita confirmada.</p></details>
     </aside> : null}
 
-    <label>Estado y respuesta <span aria-hidden="true">*</span>
+    {!structuredOnly ? <><label>Estado y respuesta <span aria-hidden="true">*</span>
       <textarea className="auto-textarea" name="statusAndResponse" maxLength={2000} required rows={2} onInput={autoGrow} aria-describedby="status-help" defaultValue={initialNote?.statusAndResponse} />
       <small id="status-help">Cómo se encontraba al comenzar, cambios relevantes y respuesta durante la visita.</small>
       {errors?.statusAndResponse ? <span className="field-error" role="alert">{errors.statusAndResponse}</span> : null}
@@ -97,6 +97,7 @@ export function ClinicalVisitFields({ priorEvaluations = [], initialEvaluations 
       {errors?.intervention ? <span className="field-error" role="alert">{errors.intervention}</span> : null}
     </label>
 
+    </> : null}
     <details className="clinical-module">
       <summary>Evaluaciones{evaluations.length ? ` · ${evaluations.length}` : ""}</summary>
       <div className="clinical-quick-actions">
@@ -155,7 +156,7 @@ export function ClinicalVisitFields({ priorEvaluations = [], initialEvaluations 
     </details>
 
     <details className="clinical-module"><summary>Procedimientos{procedures.length ? ` · ${procedures.length}` : ""}</summary><div className="procedure-options">{Object.entries(procedureLabels).map(([family, label]) => { const selected = procedures.find((item) => item.family === family); return <label key={family}><span><input type="checkbox" checked={Boolean(selected)} onChange={(event) => toggleProcedure(family as ProcedureFamily, event.target.checked)}/> {label}</span>{family === "other" && selected ? <input aria-label="Nombre del otro procedimiento" required placeholder="Nombre breve" value={selected.otherName ?? ""} onChange={(event) => setProcedures((current) => current.map((item) => item.family === "other" ? { ...item, otherName: event.target.value } : item))}/> : null}</label>; })}</div></details>
-    <details className="clinical-module" open={nextPlanOpen} onToggle={(event) => setNextPlanOpen(event.currentTarget.open)}><summary>Próximo paso</summary><label>Continuidad o próximo plan<textarea className="auto-textarea" name="nextPlan" maxLength={2000} rows={2} onInput={autoGrow} defaultValue={initialNote?.nextPlan}/></label></details>
+    {!structuredOnly ? <details className="clinical-module" open={nextPlanOpen} onToggle={(event) => setNextPlanOpen(event.currentTarget.open)}><summary>Próximo paso</summary><label>Continuidad o próximo plan<textarea className="auto-textarea" name="nextPlan" maxLength={2000} rows={2} onInput={autoGrow} defaultValue={initialNote?.nextPlan}/></label></details> : null}
     <input type="hidden" name="clinicalEntries" value={JSON.stringify({ evaluations: evaluations.map(persistedEvaluation), symptoms: symptoms.flatMap(({ severity, ...symptom }) => severity === null ? [] : [{ ...symptom, severity }]), procedures })}/>
   </>;
 }

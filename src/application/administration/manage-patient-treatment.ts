@@ -56,6 +56,7 @@ export async function beginTreatment(raw: unknown, dependencies: Dependencies) {
   if (input.startDate > day(now)) throw new AdministrationStateError("La fecha de inicio no puede ser futura.");
   const patient = await dependencies.patients.getById(input.patientId);
   if (!patient) throw new AdministrationStateError("La ficha del paciente ya no está disponible.");
+  if (patient.activeConsultationId) throw new AdministrationStateError("Esta ficha tiene una consulta de ingreso abierta. Completá su evaluación y aceptación antes de iniciar el tratamiento.");
   const existing = await dependencies.treatments.getById(clientId("treatment", input.clientId));
   if (existing) {
     if (existing.patientId === patient.id) return existing;

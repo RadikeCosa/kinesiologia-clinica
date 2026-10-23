@@ -1,3 +1,4 @@
+import { ClinicalEnvironmentLabel } from "@/app/clinical-environment";
 import Link from "next/link";
 import { canRenderLocalClinicalSurface } from "@/infrastructure/runtime/local-clinical-surface";
 
@@ -40,7 +41,7 @@ export default function Home() {
         ))}
       </section>
 
-      <p className="status access-environment-note">Entorno local · datos ficticios</p>
+      <p className="status access-environment-note">{<ClinicalEnvironmentLabel/>}</p>
 
     </main>
   );

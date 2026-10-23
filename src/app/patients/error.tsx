@@ -1,9 +1,10 @@
 "use client";
+import { ClinicalEnvironmentLabel } from "@/app/clinical-environment";
 
 export default function ActivePatientsError({ reset }: { reset: () => void }) {
   return (
     <main className="shell clinical-shell">
-      <p className="eyebrow">Entorno local · Datos ficticios</p>
+      <p className="eyebrow">{<ClinicalEnvironmentLabel/>}</p>
       <h1>No se pudo cargar la lista</h1>
       <div className="diagnostic-message diagnostic-message-error">
         <p>

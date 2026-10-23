@@ -1,3 +1,4 @@
+import type { ConsultationRepository } from "../consultations/consultation.repository";
 import type { PeriodRepository } from "../periods/period.repository";
 import { admissionIssue, periodCount, reconcilePeriod, PeriodStateError, type TreatmentPeriod } from "@/domain/treatment-period/treatment-period";
 import type { PatientRepository } from "@/application/patients/patient.repository";
@@ -9,7 +10,7 @@ import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
 import { deriveDocumentationTimeliness, deriveStartPunctuality } from "@/domain/visit/visit-timeliness";
 import type { AgendaItemViewModel, ClinicalHomeData, HomePatientViewModel, TodayItemViewModel } from "@/features/clinical-home/clinical-home.types";
 
-type Dependencies = { periods?: PeriodRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
+type Dependencies = { consultations?: Pick<ConsultationRepository, "listActive">; periods?: PeriodRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
 
 function localDate(value: Date) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
@@ -47,7 +48,7 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
   const treatments = await dependencies.treatments.listDirectory();
   const patients = dependencies.patients.listAll ? await dependencies.patients.listAll() : await dependencies.patients.listByIds([...new Set(treatments.map((item) => item.patientId))]);
   const visitsByPatient = await Promise.all(patients.map(async (patient) => [patient.id, await dependencies.visits.listByPatientId(patient.id)] as const));
-  const visits = visitsByPatient.flatMap(([, items]) => items).filter((visit) => visit.status !== "entered-in-error");
+  const visits = visitsByPatient.flatMap(([, items]) => items).filter((visit) => Boolean(visit.treatmentId) && visit.status !== "entered-in-error");
   const [openAppointments, weekAppointments, rangeAppointments, changedAppointments] = await Promise.all([
     dependencies.scheduledVisits.listOpen(), dependencies.scheduledVisits.listBetween(today, weekTo), dependencies.scheduledVisits.listBetween(dataFrom, dataTo),
     dependencies.scheduledVisits.listChangedBetween(changeWindowFrom, changeWindowTo),
@@ -103,5 +104,10 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
   ).map<AgendaItemViewModel>((item) => {
     const status = appointmentStatus(item); return { id: item.id, patientId: item.patientId, patientName: getPatientDisplayName(patientMap.get(item.patientId) ?? { id: item.patientId, givenName: "Paciente", familyName: "" }), treatmentId: item.treatmentId, scheduledDate: item.scheduledDate, scheduledTime: localTime(item.startsAt), durationMinutes: item.durationMinutes, status, statusLabel: STATUS_LABEL[status], version: item.version };
   }).sort((a, b) => `${a.scheduledDate}${a.scheduledTime ?? "99:99"}`.localeCompare(`${b.scheduledDate}${b.scheduledTime ?? "99:99"}`));
-  return { referenceNow: referenceNow.toISOString(), agendaMonth, agendaFrom, agendaTo, patients: homePatients, todayItems, dayItems, agendaItems };
+  const statuses: Record<string, string> = { open: "Abierta", coordinating: "En coordinación", "evaluation-completed": "Evaluación realizada" };
+  const openConsultations = (await dependencies.consultations?.listActive() ?? []).map(item => ({
+    id: item.id, patientName: getPatientDisplayName(patientMap.get(item.patientId) ?? { id: item.patientId, givenName: "Paciente", familyName: "" }), statusLabel: statuses[item.status],
+    followUps: item.followUps.filter(f => f.status === "pending").sort((a,b) => a.dueAt.localeCompare(b.dueAt)).map(f => ({ id: f.id, dueAt: f.dueAt, overdue: new Date(f.dueAt) < referenceNow })),
+  })).sort((a,b) => (a.followUps[0]?.dueAt ?? "9999").localeCompare(b.followUps[0]?.dueAt ?? "9999") || a.patientName.localeCompare(b.patientName, "es"));
+  return { openConsultations, referenceNow: referenceNow.toISOString(), agendaMonth, agendaFrom, agendaTo, patients: homePatients, todayItems, dayItems, agendaItems };
 }

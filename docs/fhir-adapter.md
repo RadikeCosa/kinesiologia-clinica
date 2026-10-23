@@ -101,6 +101,10 @@ No se cargan todos los pacientes para descubrir cuáles están activos.
 
 Las búsquedas siguen el enlace `Bundle.link[relation=next]`, detectan páginas repetidas y tienen un límite defensivo de veinte páginas. Un enlace externo al endpoint configurado es rechazado.
 
+## Coordinación concurrente de agenda
+
+Las altas y reprogramaciones de visitas de tratamiento y de evaluación adquieren una concesión compartida sobre `Schedule/clinical-agenda-coordinator-v1`. El recurso usa control de versión FHIR; cada cita y la nueva versión del coordinador se guardan en una única transacción con `If-Match`. La aplicación vuelve a consultar superposiciones mientras mantiene la concesión. HAPI debe aceptar transacciones condicionales/versionadas para el recurso `Schedule`; el coordinador y su actor `Device` se aprovisionan en cada instancia antes de habilitar agenda. La prueba de carrera valida este contrato en el HAPI ficticio local, no acredita un servidor de producción.
+
 ## Pruebas
 
 ### Unitarias
@@ -163,7 +167,7 @@ La creación usa `PUT Appointment/appointment-{UUID}`. Reprogramar conserva la c
 
 ## Pacientes y tratamientos
 
-La aplicación privada permite crear `Patient` sin un `ServiceRequest` ni un tratamiento. Nombre, apellido, teléfono y dirección se almacenan en los elementos estándar de `Patient`; las indicaciones de acceso usan `patient-home-access-instructions-v1`. El alta usa `PUT Patient/patient-{UUID}` para que un reintento con la misma identidad sea idempotente.
+La ficha de un paciente puede existir sin tratamiento. El alta de una ficha desde la pantalla administrativa conserva su contrato de origen; el nuevo flujo de consulta de ingreso crea/vincula `Patient` y `ServiceRequest` juntos. Nombre, apellido, teléfono y dirección se almacenan en elementos estándar de `Patient`; las indicaciones de acceso usan `patient-home-access-instructions-v1`.
 
 El inicio directo de tratamiento crea `EpisodeOfCare` `active`, con `period.start`, frecuencia, cantidad prevista de sesiones, contexto, precauciones y diagnósticos opcionales. Los diagnósticos se persisten como `Condition` y se enlazan desde `EpisodeOfCare.diagnosis`. No se exige `ServiceRequest`: esa administración queda fuera del flujo clínico privado actual.
 
@@ -210,7 +214,9 @@ Para completar el adaptador mínimo previo a podar `/admin` todavía faltan:
 4. aceptación física de informes y funciones administrativas adicionales necesarias para el corte;
 5. validación de dispositivo, infraestructura privada, backup y reversión.
 
-`ServiceRequest` y `Practitioner` permanecen postergados. `DocumentReference`, `CarePlan` y `Binary` ya se utilizan para períodos e informes.
+`Practitioner` permanece postergado. `ServiceRequest` se usa para el episodio de consulta, no como requisito general de interoperabilidad con derivaciones. `DocumentReference`, `CarePlan` y `Binary` ya se utilizan para períodos e informes.
+
+El adaptador de consulta guarda su contrato local en una extensión versionada de `ServiceRequest`. La referencia a la consulta activa se mantiene en una extensión de `Patient`; crear o cambiar el episodio actualiza ambos recursos dentro de una transacción con `If-Match` sobre la versión del paciente. Esta serialización aún requiere aceptación en la instancia HAPI concreta y no debe considerarse verificada porque pase un test unitario.
 
 ## Contrato de períodos y emisiones
 

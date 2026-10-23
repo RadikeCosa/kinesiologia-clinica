@@ -1,6 +1,9 @@
 export interface Treatment {
   id: string;
   patientId: string;
+  sourceConsultationId?: string;
+  initialEvaluationId?: string;
+  acceptedTreatmentQuoteId?: string;
   currentPeriodId?: string;
   metadataRevision?: number;
   status: "active" | "paused" | "finished";

@@ -1,6 +1,8 @@
 import type { PatientRepository } from "@/application/patients/patient.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { TreatmentRepository } from "@/application/treatments/treatment.repository";
+import type { EvaluationAppointment } from "@/domain/consultation/consultation-appointment";
+import type { AgendaCoordinatorRepository, AgendaLease } from "@/application/schedule/agenda-coordinator.repository";
 import {
   appointmentsOverlap,
   closeScheduledVisitSchema,
@@ -14,7 +16,7 @@ export interface Clock { now(): Date }
 export const systemClock: Clock = { now: () => new Date() };
 
 export class ScheduleOverlapError extends Error {
-  constructor(readonly conflicts: ScheduledVisit[]) {
+  constructor(readonly conflicts: Array<Pick<ScheduledVisit, "id" | "scheduledDate" | "startsAt" | "endsAt">>) {
     super("El horario se superpone con otra visita prevista.");
   }
 }
@@ -25,6 +27,8 @@ type Dependencies = {
   patients: PatientRepository;
   treatments: TreatmentRepository;
   scheduledVisits: ScheduledVisitRepository;
+  consultations?: { listOpenEvaluationAppointments?: () => Promise<EvaluationAppointment[]> };
+  agendaCoordinator?: AgendaCoordinatorRepository;
   clock?: Clock;
 };
 
@@ -33,6 +37,10 @@ function localDate(date: Date) {
     timeZone: "America/Argentina/Buenos_Aires",
     year: "numeric", month: "2-digit", day: "2-digit",
   }).format(date);
+}
+
+function withAgendaLock<T>(dependencies: Dependencies, operation: (lease?: AgendaLease) => Promise<T>) {
+  return dependencies.agendaCoordinator ? dependencies.agendaCoordinator.withLock(operation) : operation();
 }
 
 async function requireActiveContext(patientId: string, treatmentId: string, dependencies: Dependencies) {
@@ -52,9 +60,16 @@ function ensureNotPast(visit: ScheduledVisit, now: Date) {
   }
 }
 
-async function checkOverlap(visit: ScheduledVisit, repository: ScheduledVisitRepository, acknowledge: boolean, excludedId?: string) {
+async function checkOverlap(visit: ScheduledVisit, dependencies: Dependencies, acknowledge: boolean, excludedId?: string) {
   if (!visit.startsAt || acknowledge) return;
-  const conflicts = (await repository.listOpen()).filter((item) => item.id !== excludedId && appointmentsOverlap(item, visit));
+  const [scheduled, evaluations] = await Promise.all([
+    dependencies.scheduledVisits.listOpen(),
+    dependencies.consultations?.listOpenEvaluationAppointments?.() ?? Promise.resolve([]),
+  ]);
+  const conflicts = [
+    ...scheduled.filter((item) => item.id !== excludedId && appointmentsOverlap(item, visit)),
+    ...evaluations.filter((item) => item.patientId === visit.patientId && item.status === "confirmed" && appointmentsOverlap(item, visit)),
+  ];
   if (conflicts.length) throw new ScheduleOverlapError(conflicts);
 }
 
@@ -66,8 +81,10 @@ export async function createScheduledVisit(rawInput: unknown, dependencies: Depe
   if (existing) return dependencies.scheduledVisits.putIfAbsent(visit);
   await requireActiveContext(input.patientId, input.treatmentId, dependencies);
   ensureNotPast(visit, now);
-  await checkOverlap(visit, dependencies.scheduledVisits, input.acknowledgeConflict);
-  return dependencies.scheduledVisits.putIfAbsent(visit);
+  return withAgendaLock(dependencies, async (lease) => {
+    await checkOverlap(visit, dependencies, input.acknowledgeConflict);
+    return dependencies.scheduledVisits.putIfAbsent(visit, lease);
+  });
 }
 
 export async function rescheduleVisit(rawInput: unknown, dependencies: Dependencies) {
@@ -88,11 +105,13 @@ export async function rescheduleVisit(rawInput: unknown, dependencies: Dependenc
   if (original.version !== input.expectedVersion) throw new ScheduleStateError("La cita cambió en otro dispositivo. Recargá la pantalla.");
   await requireActiveContext(original.patientId, original.treatmentId, dependencies);
   ensureNotPast(replacement, now);
-  await checkOverlap(replacement, dependencies.scheduledVisits, input.acknowledgeConflict, original.id);
-  return dependencies.scheduledVisits.replace(
-    { ...original, status: "cancelled", changeReason: input.reason, changeNote: input.note, replacedById: replacement.id },
-    { ...replacement, replacesId: original.id },
-  );
+  return withAgendaLock(dependencies, async (lease) => {
+    await checkOverlap(replacement, dependencies, input.acknowledgeConflict, original.id);
+    return dependencies.scheduledVisits.replace(
+      { ...original, status: "cancelled", changeReason: input.reason, changeNote: input.note, replacedById: replacement.id },
+      { ...replacement, replacesId: original.id }, lease,
+    );
+  });
 }
 
 export async function closeScheduledVisit(
@@ -101,15 +120,17 @@ export async function closeScheduledVisit(
   dependencies: Dependencies,
 ) {
   const input = closeScheduledVisitSchema.parse(rawInput);
-  const visit = await dependencies.scheduledVisits.getById(input.appointmentId);
-  if (!visit) throw new ScheduleStateError("La cita ya no está disponible.");
-  if (visit.status === status && visit.changeReason === input.reason && visit.changeNote === input.note) return visit;
-  if (!["proposed", "booked"].includes(visit.status)) throw new ScheduleStateError("La cita ya no está disponible.");
-  if (visit.version !== input.expectedVersion) throw new ScheduleStateError("La cita cambió en otro dispositivo. Recargá la pantalla.");
-  if (status === "no-show") {
-    const now = (dependencies.clock ?? systemClock).now();
-    const allowedAt = visit.startsAt ? new Date(visit.startsAt) : new Date(`${visit.scheduledDate}T23:59:59-03:00`);
-    if (now < allowedAt) throw new ScheduleStateError("Todavía no corresponde marcar esta visita como no realizada.");
-  }
-  return dependencies.scheduledVisits.close({ ...visit, status, changeReason: input.reason, changeNote: input.note });
+  return withAgendaLock(dependencies, async (lease) => {
+    const visit = await dependencies.scheduledVisits.getById(input.appointmentId);
+    if (!visit) throw new ScheduleStateError("La cita ya no está disponible.");
+    if (visit.status === status && visit.changeReason === input.reason && visit.changeNote === input.note) return visit;
+    if (!["proposed", "booked"].includes(visit.status)) throw new ScheduleStateError("La cita ya no está disponible.");
+    if (visit.version !== input.expectedVersion) throw new ScheduleStateError("La cita cambió en otro dispositivo. Recargá la pantalla.");
+    if (status === "no-show") {
+      const now = (dependencies.clock ?? systemClock).now();
+      const allowedAt = visit.startsAt ? new Date(visit.startsAt) : new Date(`${visit.scheduledDate}T23:59:59-03:00`);
+      if (now < allowedAt) throw new ScheduleStateError("Todavía no corresponde marcar esta visita como no realizada.");
+    }
+    return dependencies.scheduledVisits.close({ ...visit, status, changeReason: input.reason, changeNote: input.note }, lease);
+  });
 }

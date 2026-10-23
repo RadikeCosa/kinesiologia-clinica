@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { closeScheduledVisit, createScheduledVisit, rescheduleVisit, ScheduleOverlapError } from "./manage-scheduled-visits";
 import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
+import type { EvaluationAppointment } from "@/domain/consultation/consultation-appointment";
 
 const now = new Date("2026-09-15T12:00:00.000Z");
 const patient = { id: "patient-fixture", givenName: "Rosa", familyName: "Ficticia" };
@@ -14,6 +15,7 @@ function setup(initial: ScheduledVisit[] = []) {
       clock: { now: () => now },
       patients: { getById: vi.fn(async () => patient), listByIds: vi.fn(async () => [patient]) },
       treatments: { getById: vi.fn(async () => treatment), listActive: vi.fn(async () => [treatment]), listDirectory: vi.fn(async () => [treatment]) },
+      consultations: { listOpenEvaluationAppointments: vi.fn(async (): Promise<EvaluationAppointment[]> => []) },
       scheduledVisits: {
         getById: vi.fn(async (id: string) => records.get(id) ?? null),
         listByPatientId: vi.fn(async () => [...records.values()]),
@@ -59,6 +61,20 @@ describe("scheduled visit use cases", () => {
     const { dependencies } = setup([existing]);
     await expect(createScheduledVisit(createInput, dependencies)).rejects.toBeInstanceOf(ScheduleOverlapError);
     await expect(createScheduledVisit({ ...createInput, acknowledgeConflict: true }, dependencies)).resolves.toBeTruthy();
+  });
+
+  it("warns about an overlapping initial evaluation before scheduling treatment", async () => {
+    const { dependencies } = setup();
+    dependencies.consultations = {
+      listOpenEvaluationAppointments: vi.fn(async () => [{
+        id: "evaluation-appointment-fixture", consultationId: "consultation-fixture", patientId: patient.id,
+        status: "confirmed" as const, scheduledDate: "2026-09-16", startsAt: "2026-09-16T13:30:00.000Z",
+        endsAt: "2026-09-16T14:30:00.000Z", durationMinutes: 60, createdAt: now.toISOString(),
+      }]),
+    };
+    await expect(createScheduledVisit(createInput, dependencies)).rejects.toBeInstanceOf(ScheduleOverlapError);
+    await expect(createScheduledVisit({ ...createInput, acknowledgeConflict: true }, dependencies)).resolves.toBeTruthy();
+    expect(dependencies.consultations.listOpenEvaluationAppointments).toHaveBeenCalledTimes(1);
   });
 
   it("reprograms with history and makes the retry harmless", async () => {

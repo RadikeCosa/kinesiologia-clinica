@@ -2,6 +2,8 @@ import { createFhirTreatmentRepository } from "../episode-of-care/fhir-treatment
 import { treatmentEntry } from "../periods/fhir-period.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
+import type { AgendaLease } from "@/application/schedule/agenda-coordinator.repository";
+import { agendaCoordinatorEntry, refreshAgendaLease } from "./fhir-agenda-coordinator.repository";
 import { readAllResourcesByType } from "@/infrastructure/fhir/core/fhir.bundle";
 import type { FhirClient } from "@/infrastructure/fhir/core/fhir.client";
 import { FhirClientError } from "@/infrastructure/fhir/core/fhir.errors";
@@ -35,20 +37,22 @@ export function createFhirScheduledVisitRepository(client: FhirClient): Schedule
     return mapAll(await readAllResourcesByType<FhirAppointment>({ client, path, resourceType: "Appointment" }));
   }
 
-  async function transact(entries: Array<{ visit: ScheduledVisit; ifMatch?: string }>) {
+  async function transact(entries: Array<{ visit: ScheduledVisit; ifMatch?: string }>, lease?: AgendaLease) {
     const treatments = createFhirTreatmentRepository(client);
     const affected = await Promise.all([...new Set(entries.map(e => e.visit.treatmentId))].map(id => treatments.getById(id)));
     for (const treatment of affected) {
       if (!treatment || entries.some(e => e.visit.treatmentId === treatment.id && ["booked", "proposed"].includes(e.visit.status)) && treatment.status !== "active") throw new ScheduledVisitConflictError("El tratamiento no está activo para agendar visitas.");
     }
+    const coordinator = lease ? await agendaCoordinatorEntry(client, lease) : undefined;
     await client.transaction<FhirBundle>({
       resourceType: "Bundle",
       type: "transaction",
-      entry: [...affected.map(t => treatmentEntry({ ...t!, metadataRevision: (t!.metadataRevision ?? 0) + 1 })), ...entries.map(({ visit, ifMatch }) => ({
+      entry: [...affected.map(t => treatmentEntry({ ...t!, metadataRevision: (t!.metadataRevision ?? 0) + 1 })), ...(coordinator ? [coordinator] : []), ...entries.map(({ visit, ifMatch }) => ({
         resource: mapScheduledVisitToFhir(visit),
         request: { method: "PUT", url: `Appointment/${visit.id}`, ...(ifMatch ? { ifMatch: `W/\"${ifMatch}\"` } : {}) },
       }))],
     });
+    if (lease) await refreshAgendaLease(client, lease);
   }
 
   return {
@@ -67,32 +71,32 @@ export function createFhirScheduledVisitRepository(client: FhirClient): Schedule
       search.append("_lastUpdated", `lt${to}`);
       return read(`Appointment?${search}`);
     },
-    async putIfAbsent(visit) {
+    async putIfAbsent(visit, lease) {
       const existing = await getById(visit.id);
       if (existing) {
         if (!sameIdentity(existing, visit)) throw new ScheduledVisitConflictError();
         return existing;
       }
-      await transact([{ visit }]);
+      await transact([{ visit }], lease);
       const confirmed = await getById(visit.id);
       if (!confirmed || !sameIdentity(confirmed, visit)) throw new ScheduledVisitConflictError();
       return confirmed;
     },
-    async replace(original, replacement) {
+    async replace(original, replacement, lease) {
       const currentOriginal = await getById(original.id);
       const currentReplacement = await getById(replacement.id);
       if (currentOriginal?.replacedById === replacement.id && currentReplacement?.replacesId === original.id) {
         return { original: currentOriginal, replacement: currentReplacement };
       }
       if (!original.version) throw new ScheduledVisitConflictError("Falta la versión vigente de la cita.");
-      await transact([{ visit: original, ifMatch: original.version }, { visit: replacement }]);
+      await transact([{ visit: original, ifMatch: original.version }, { visit: replacement }], lease);
       const [savedOriginal, savedReplacement] = await Promise.all([getById(original.id), getById(replacement.id)]);
       if (!savedOriginal || !savedReplacement) throw new Error("La reprogramación todavía no pudo confirmarse.");
       return { original: savedOriginal, replacement: savedReplacement };
     },
-    async close(visit) {
+    async close(visit, lease) {
       if (!visit.version) throw new ScheduledVisitConflictError("Falta la versión vigente de la cita.");
-      await transact([{ visit, ifMatch: visit.version }]);
+      await transact([{ visit, ifMatch: visit.version }], lease);
       const confirmed = await getById(visit.id);
       if (!confirmed || confirmed.status !== visit.status) throw new Error("El cambio todavía no pudo confirmarse.");
       return confirmed;
