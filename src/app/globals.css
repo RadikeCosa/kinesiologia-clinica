@@ -860,12 +860,6 @@ h1 {
 .visit-card.state-in-progress .home-status { color: white; background: var(--accent); }
 .operational-section > h2 { margin: 0 0 0.7rem; font-size: 1rem; font-weight: 750; }
 .priority-section > h2 { color: var(--accent); }
-.precaution-inline.patient-precautions-disclosure { width: fit-content; max-width: 100%; margin-top: 0.2rem; border: 0; border-radius: 0; background: transparent; }
-.precaution-inline.patient-precautions-disclosure summary { min-height: 2.75rem; width: fit-content; padding: 0; font-size: 0.8rem; }
-.precaution-inline.patient-precautions-disclosure ul { padding: 0 0 0.4rem 1.25rem; font-size: 0.875rem; }
-.precaution-inline.patient-precautions-disclosure summary::before { display: none; }
-.precaution-inline.patient-precautions-disclosure summary::after { content: "+"; margin-left: 0.25rem; }
-.precaution-inline.patient-precautions-disclosure[open] summary::after { content: "−"; }
 .pending-visits { overflow: clip; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface-soft); }
 .pending-visits > summary { display: flex; min-height: 3.5rem; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem; cursor: pointer; list-style: none; }
 .pending-visits > summary::-webkit-details-marker { display: none; }
@@ -921,8 +915,6 @@ h1 {
 .visit-contact-details button span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; text-decoration: none; }
 .visit-contact-missing { display: block; min-height: 2.75rem; color: var(--muted); font-size: 0.86rem; }
 .visit-contact-missing > span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
-.patient-precaution-compact { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0.55rem 0 0; color: #72551d; font-size: 0.78rem; font-weight: 800; }
-.patient-precaution-compact > span { display: inline-grid; width: 1.15rem; height: 1.15rem; place-items: center; border-radius: 999px; color: #624711; background: #fbefce; font-size: 0.72rem; }
 .action-sheet-patient-link { display: inline-flex; margin: 0.75rem 0 1rem; color: var(--accent); font-size: 0.84rem; font-weight: 800; text-underline-offset: 0.2em; }
 .action-sheet-context { color: var(--muted); line-height: 1.5; }
 .action-sheet-list { display: grid; gap: 0.5rem; }
@@ -1238,3 +1230,6 @@ h1 {
   .home-action-sheet .action-sheet-list button, .home-action-sheet .action-sheet-list a { min-height: 2.75rem; padding: 0.65rem 0.85rem; font-size: 0.95rem; }
 }
 .clinical-home-real summary:focus-visible, .clinical-card summary:focus-visible { outline: 3px solid #d49b2d; outline-offset: -3px; border-radius: 0.5rem; }
+
+.patient-precautions-inline { display: grid; gap: 0.15rem; margin-top: 0.45rem; padding-left: 0.6rem; border-left: 3px solid #d9b768; color: #624711; font-size: 0.875rem; line-height: 1.4; overflow-wrap: anywhere; }
+.patient-precautions-inline strong { font-size: 0.78rem; }

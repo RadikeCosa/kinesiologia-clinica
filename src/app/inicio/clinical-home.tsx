@@ -61,7 +61,7 @@ function BeginVisitForm({ patientId, treatmentId, appointmentId, label, blockedR
 
 function PatientPrecautionIndicator({ patient, compact = false }: { patient: HomePatientViewModel; compact?: boolean }) {
   if (!patient.precautions?.length) return null;
-  if (compact) return <p className="patient-precaution-compact"><span aria-hidden="true">!</span> Tiene precauciones</p>;
+  if (compact) return <div className="patient-precautions-inline"><strong>Precauciones</strong><span>{patient.precautions.join(" · ")}</span></div>;
   return <div className="patient-precautions"><strong>Precauciones</strong><span>{patient.precautions.join(" · ")}</span></div>;
 }
 
@@ -239,7 +239,7 @@ function VisitCard({ item, appointment, referenceNow, onDialog }: { item: Presen
   return <ClinicalCard id={`appointment-${item.id}`} className={`visit-card state-${item.displayState}`}
     title={item.patient.displayName} href={`/patients/${item.patientId}`}
     badge={<span className="home-status">{item.statusLabel}</span>}
-    identityDetail={<PatientPrecautionsDisclosure patient={item.patient} compact/>}
+    identityDetail={<PatientPrecautionIndicator patient={item.patient} compact/>}
     actions={actions}>
     <div className="visit-summary-block">
       <strong className="visit-time">{item.scheduledTime ? `${item.scheduledTime} hs` : "Sin horario"}</strong>

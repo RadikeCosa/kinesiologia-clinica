@@ -25,14 +25,13 @@ const test = base.extend<{ visitIds: { today: string; overdue: string } }>({
   },
 });
 
-test("prioriza el día, pliega pendientes y permite consultar las precauciones sin abrir Más", async ({ page, visitIds }) => {
+test("prioriza el día, pliega pendientes y muestra las precauciones sin interacción", async ({ page, visitIds }) => {
   await page.goto("/inicio");
   const pending = page.locator(".pending-visits");
   await expect(pending).not.toHaveAttribute("open", "");
   await expect(page.locator(`#appointment-${visitIds.overdue}`)).not.toBeVisible();
   const current = page.locator(`#appointment-${visitIds.today}`);
   await expect(current.getByRole("link", { name: "Rosa Benítez" })).toBeVisible();
-  await current.locator(".precaution-inline > summary").click();
   await expect(current.getByText("Evitar flexión forzada de rodilla")).toBeVisible();
   await page.locator(".pending-visits > summary").click();
   await expect(page.locator(`#appointment-${visitIds.overdue}`)).toBeVisible();

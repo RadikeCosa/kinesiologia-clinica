@@ -34,7 +34,7 @@ El usuario considera que las tarjetas con los nombres de pacientes no resultan c
 | HOY-02 | Destacar nombre y horario; dejar el avance del tratamiento en un nivel secundario. | Implementado | Alta |
 | HOY-03 | Mostrar la fecha original en cada visita pendiente para distinguir días diferentes. | Implementado | Alta |
 | HOY-04 | Reducir el peso visual de los botones repetidos, conservando una acción principal reconocible. | Implementado | Media |
-| HOY-05 | Integrar un aviso compacto de precauciones junto al nombre, visible cuando existan, con detalle accesible al activarlo; quitar la franja inferior. | Implementado | Media |
+| HOY-05 | Mostrar el texto completo de las precauciones junto al nombre, sin desplegar ni abrir Más; quitar la franja inferior. | Implementado | Media |
 | HOY-06 | Reemplazar el listado de consultas abiertas por «Consultas por atender», con seguimientos de hoy o atrasados y consultas sin próximo paso, según el criterio detallado abajo. | Implementado | Alta |
 | HOY-07 | Mejorar separación de grupos de información y contraste de los textos secundarios. | Implementado | Media |
 | HOY-08 | Permitir cerrar el panel «Más» al hacer clic o tocar el fondo oscurecido, conservando la X y Escape. | Implementado | Media |
@@ -72,7 +72,7 @@ Comportamiento implementado para HOY-08, planteado por el usuario: cerrar el men
 
 Primera ronda implementada en `codex/ux-hoy-ronda-1`, desde `main` publicado en `7509b67`. La comparación con la copia anterior a consolidar Git confirmó que los 46 archivos de aplicación preservados no cambiaron durante la consolidación y que el CSS no se modificó. Se guardaron referencias visuales ficticias antes y después en `.local/ux-review/`, ignoradas por Git. Los fixtures de las pruebas pueden cambiar las cantidades visibles; la comparación acredita la estructura previa, no identidad de los datos entre corridas.
 
-Se implementaron tarjetas compartidas para visitas y consultas, pendientes anteriores plegados, precauciones desplegables junto al nombre, consultas por atender y su listado completo en `/consultas`, y reordenamiento/cierre exterior de paneles de opciones. El clic exterior no descarta los formularios. Se conserva el enlace profundo a una visita pendiente: abre el bloque y devuelve el foco al registro al cerrar el panel.
+Se implementaron tarjetas compartidas para visitas y consultas, pendientes anteriores plegados, precauciones visibles junto al nombre, consultas por atender y su listado completo en `/consultas`, y reordenamiento/cierre exterior de paneles de opciones. El clic exterior no descarta los formularios. Se conserva el enlace profundo a una visita pendiente: abre el bloque y devuelve el foco al registro al cerrar el panel.
 
 Como apoyo al plegado, cada pendiente muestra su fecha original (HOY-03); la legibilidad y separación de grupos (HOY-07) forman parte de la composición compartida. Ambas propuestas quedan incluidas en el resultado para aceptación visual. El contador de Hoy y la tira de fechas excluyen pendientes de días anteriores; el bloque plegable tiene su propia cantidad. El avance de tratamiento muestra sesiones realizadas, evitando anticipar una sesión por encima del cupo.
 
@@ -104,3 +104,5 @@ La [lista técnica de UX de la superficie privada](ux-private-checklist.md) cons
 - Controles con altura mínima de 44 px a tamaño de texto normal, foco visible y semántica nativa para paneles y desplegables.
 - Se conserva la fuente del sistema, sin incorporar fuentes o bibliotecas visuales externas.
 - La adopción del componente en las tarjetas de Agenda y Pacientes se revisará en sus respectivas rondas; no se presenta como terminada.
+
+Ajuste de revisión del 24/10/2026: el usuario considera que el resto de la primera ronda está bien. Las precauciones de las tarjetas de visita se muestran completas, sin interacción, porque suelen ser frases cortas y conviene leerlas antes de actuar. Se conserva una jerarquía secundaria con una marca ámbar y ajuste de línea, sin truncar el contenido. La revisión física en Moto G15 sigue pendiente.
