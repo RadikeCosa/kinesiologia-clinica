@@ -62,3 +62,11 @@ La consolidación conserva los pendientes de la auditoría del 17/10 y de acepta
 ## Publicación y comienzo de la ronda UX/UI
 
 Por instrucción explícita del usuario, los commits de base se publicaron en `origin/main` hasta `7509b67`. Después se creó `codex/ux-hoy-ronda-1` desde esa base limpia. La nueva ronda se conserva en su rama para revisión visual antes de integrar; el push de la base no publica automáticamente el rediseño.
+
+## Cierre de la primera ronda de Hoy
+
+El 24/10/2026, después de confirmar que el recorrido funciona en el Moto G15, el usuario autorizó integrar la ronda completa en `main` local y remoto. La ronda incluye `962e9b5` (tarjetas y consultas por atender), `edda717` (precauciones visibles) y `cfb7545` (recorrido compartido y WhatsApp), más el registro de aceptación física.
+
+La integración utiliza avance rápido desde la base `7509b67`, sin reescribir el historial. La validación del código de la ronda quedó registrada en [revisión UX/UI](revision-ux-ui.md): lint y compilación aprobados, 161 pruebas unitarias, 26 de integración y 46 de interfaz aprobadas en sus últimas corridas. Se conserva documentada la incidencia intermitente del historial de anulaciones; no se declara resuelta por esta ronda. Los cambios de cierre son únicamente de documentación y no requieren repetir las suites ya aprobadas.
+
+La siguiente ronda parte de `main` actualizado, en una nueva rama corta `codex/`. Los checkpoints previos se conservan como respaldo local.

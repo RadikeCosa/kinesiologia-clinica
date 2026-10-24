@@ -127,7 +127,7 @@ Sin orden guardado, se ordena por hora, luego sin horario por nombre, con identi
 
 Al soltar o marcar como próxima se guarda el orden. Ante fallo se recupera el confirmado; ante conflicto se lee el vigente y se informa. Si no se puede verificar el recorrido, se impide reordenar hasta actualizarlo; las acciones clínicas siguen disponibles. Al volver a enfocar la pantalla se actualizan recorrido y datos, sin refrescar durante arrastre o guardado. No hay optimización de rutas, lectura del envío de mensajes ni modo sin conexión.
 
-La aceptación visual conjunta de esta ampliación y la prueba física en Moto G15 quedan pendientes. Las pruebas automatizadas se realizan solo sobre el FHIR ficticio 8081 y no acreditan uso con datos reales ni habilitan el piloto.
+El 24/10/2026 el usuario confirmó acceso HTTPS en Moto G15 y funcionamiento correcto de la prueba guiada del recorrido (arrastre, desplazamiento sobre el contenido y «Marcar como próxima»). Las pruebas automatizadas y esta aceptación usan el entorno ficticio 8081; no acreditan uso con datos reales ni habilitan el piloto.
 
 ### Evidencia automática de esta ampliación
 
@@ -147,4 +147,4 @@ Incidencia conservada: la primera regresión general tuvo 44 aprobadas, una fall
 
 Las pruebas de arrastre esperan la finalización del movimiento y la versión confirmada por el servidor, distinguiendo la tarjeta de su placeholder decorativo. Se bloquea el control mientras termina de soltarse, para evitar perder un segundo movimiento inmediatamente después del primero.
 
-Aceptación humana: pendiente de revisión conjunta en la computadora y prueba física en Moto G15. Ninguna de estas comprobaciones habilita el piloto ni acredita datos reales.
+Aceptación humana del 24/10/2026: el usuario confirmó que probó el recorrido en el Moto G15 y funciona bien; autorizó integrar todos los cambios de esta ronda en main local y remoto. La conformidad con el resto de la primera ronda y las precauciones visibles ya se había registrado. Esta confirmación no acredita las pruebas físicas de informes, recuperación de acceso, mensajería ni otros recorridos que no se probaron explícitamente; sus pendientes se conservan. Ninguna de estas comprobaciones habilita el piloto ni acredita datos reales.
