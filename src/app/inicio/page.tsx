@@ -1,3 +1,4 @@
+import { buenosAiresDate } from "@/domain/route/daily-route";
 import { notFound } from "next/navigation";
 import { getClinicalHome } from "@/application/home/get-clinical-home";
 import { requireClinicalSession } from "@/infrastructure/auth/auth-http";
@@ -14,5 +15,5 @@ export default async function ClinicalHomePage({ searchParams }: { searchParams:
   const { vista, agendar, resolver, mes, fecha, pendientes, semana } = await searchParams;
   const initialTab = vista === "agenda" ? "agenda" : vista === "pacientes" ? "patients" : "today";
   const data = await getClinicalHome(new Date(), createClinicalDependencies(), mes, semana);
-  return <><SessionRefresh /><ClinicalHome key={data.agendaMonth} data={data} initialTab={initialTab} initialPatientId={agendar} initialResolveAppointmentId={resolver} initialSelectedDate={fecha} initialWeekStart={semana} initialShowPending={pendientes === "1"} /></>;
+  return <><SessionRefresh /><ClinicalHome key={`${data.agendaMonth}:${buenosAiresDate(new Date(data.referenceNow))}`} data={data} initialTab={initialTab} initialPatientId={agendar} initialResolveAppointmentId={resolver} initialSelectedDate={fecha} initialWeekStart={semana} initialShowPending={pendientes === "1"} /></>;
 }

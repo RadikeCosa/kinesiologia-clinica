@@ -102,7 +102,7 @@ test("la agenda semanal y el directorio aprovechan el ancho móvil", async ({ pa
   await expect(filters.locator("button")).toHaveCount(5);
   await expect(filters).toHaveCSS("flex-wrap", "nowrap");
   const rosa = page.locator("article.directory-card").filter({ hasText: "Rosa Benítez" });
-  await expect(rosa.getByRole("link", { name: "Rosa Benítez" })).toBeVisible();
+  await expect(rosa.getByRole("link", { name: "Rosa Benítez", exact: true })).toBeVisible();
   await rosa.getByRole("button", { name: /Más opciones para Rosa Benítez/ }).click();
   const options = page.getByRole("dialog", { name: "Más opciones" });
   const mapLink = options.getByRole("link", { name: /Ver mapa/ });

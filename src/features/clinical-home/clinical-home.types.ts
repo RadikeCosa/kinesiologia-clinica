@@ -1,3 +1,4 @@
+import type { DailyRoute } from "@/domain/route/daily-route";
 export type TreatmentStatus = "active" | "paused" | "finished" | "not-started";
 export type TodaySourceState =
   | "scheduled"
@@ -131,6 +132,8 @@ export interface OpenConsultationViewModel {
 }
 
 export interface ClinicalHomeData {
+  dailyRoute?: DailyRoute;
+  dailyRouteUnavailable?: boolean;
   openConsultations?: OpenConsultationViewModel[];
   referenceNow: string;
   agendaMonth: string;

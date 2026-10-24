@@ -1,3 +1,4 @@
+import { createFhirDailyRouteRepository } from "./route/fhir-daily-route.repository";
 import { createFhirPeriodRepository } from "./periods/fhir-period.repository";
 import { createFhirReportRepository } from "./periods/fhir-report.repository";
 import { reportTools } from "../reports/report-tools";
@@ -24,6 +25,7 @@ export function createClinicalDependencies() {
   if (!config) throw new Error("La integración clínica no está configurada correctamente.");
   const client = createFhirClient({ baseUrl: config.baseUrl });
   const dependencies = {
+    dailyRoutes: createFhirDailyRouteRepository(client),
     periods: createFhirPeriodRepository(client),
     reports: createFhirReportRepository(client),
     reportTools,

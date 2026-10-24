@@ -1,3 +1,4 @@
+import type { DailyRouteRepository } from "../route/daily-route.repository";
 import { getOpenConsultations, type OpenConsultationDependencies } from "../consultations/get-open-consultations";
 import type { PeriodRepository } from "../periods/period.repository";
 import { admissionIssue, periodCount, reconcilePeriod, PeriodStateError, type TreatmentPeriod } from "@/domain/treatment-period/treatment-period";
@@ -10,7 +11,7 @@ import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
 import { deriveDocumentationTimeliness, deriveStartPunctuality } from "@/domain/visit/visit-timeliness";
 import type { AgendaItemViewModel, ClinicalHomeData, HomePatientViewModel, TodayItemViewModel } from "@/features/clinical-home/clinical-home.types";
 
-type Dependencies = { consultations?: OpenConsultationDependencies["consultations"]; periods?: PeriodRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
+type Dependencies = { dailyRoutes?: DailyRouteRepository; consultations?: OpenConsultationDependencies["consultations"]; periods?: PeriodRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
 
 function localDate(value: Date) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" }).format(value);
@@ -45,6 +46,8 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
   const weekTo = addDays(today, 6);
   const changeWindowFrom = `${today}T00:00:00-03:00`;
   const changeWindowTo = `${addDays(today, 1)}T00:00:00-03:00`;
+  let dailyRouteUnavailable = false;
+  const dailyRoutePromise = dependencies.dailyRoutes?.get(today).catch(() => { dailyRouteUnavailable = true; return null; });
   const treatments = await dependencies.treatments.listDirectory();
   const patients = dependencies.patients.listAll ? await dependencies.patients.listAll() : await dependencies.patients.listByIds([...new Set(treatments.map((item) => item.patientId))]);
   const visitsByPatient = await Promise.all(patients.map(async (patient) => [patient.id, await dependencies.visits.listByPatientId(patient.id)] as const));
@@ -108,5 +111,6 @@ export async function getClinicalHome(referenceNow: Date, dependencies: Dependen
     consultations: dependencies.consultations,
     patients: { getById: async id => patientMap.get(id) ?? null },
   }) : [];
-  return { openConsultations, referenceNow: referenceNow.toISOString(), agendaMonth, agendaFrom, agendaTo, patients: homePatients, todayItems, dayItems, agendaItems };
+  const dailyRoute = await dailyRoutePromise;
+  return { dailyRoute: dailyRoute ?? undefined, dailyRouteUnavailable, openConsultations, referenceNow: referenceNow.toISOString(), agendaMonth, agendaFrom, agendaTo, patients: homePatients, todayItems, dayItems, agendaItems };
 }

@@ -1233,3 +1233,35 @@ h1 {
 
 .patient-precautions-inline { display: grid; gap: 0.15rem; margin-top: 0.45rem; padding-left: 0.6rem; border-left: 3px solid #d9b768; color: #624711; font-size: 0.875rem; line-height: 1.4; overflow-wrap: anywhere; }
 .patient-precautions-inline strong { font-size: 0.78rem; }
+
+.route-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.route-heading h2 { margin-bottom: 0; }
+.route-heading > button { min-height: 2.75rem; text-align: left; }
+.route-instructions { margin: 0.3rem 0 0.85rem; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+.route-list { list-style: none; padding: 0; margin: 0; }
+.route-sortable { min-width: 0; }
+.route-sortable.is-dragging { position: relative; z-index: 3; }
+.route-sortable.is-dragging .clinical-card { box-shadow: 0 6px 24px #163b332a; outline: 2px solid #147d64; }
+.route-drag-handle { display: grid; place-items: center; flex: none; width: 2.75rem; height: 2.75rem; padding: 0; color: #52736d; border: 0; background: transparent; cursor: grab; touch-action: none; }
+.route-drag-handle:active { cursor: grabbing; }
+.route-drag-handle:disabled { cursor: default; opacity: 0.45; }
+.route-list .clinical-card-badge { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+.visit-utility-actions { flex-wrap: wrap; }
+.visit-whatsapp { display: inline-flex; align-items: center; min-height: 2.75rem; font-size: 0.82rem; font-weight: 650; text-decoration: none; }
+.route-save-status { margin: 0.5rem 0; font-size: 0.85rem; color: var(--muted); }
+.route-save-status:empty { display: none; }
+.route-error { margin: 0.5rem 0 1rem; padding: 0.75rem; border-left: 3px solid #d9b768; background: #fff8e7; color: #624711; }
+.route-error p { margin: 0 0 0.4rem; }
+@media (max-width: 42rem) {
+  .route-list .visit-actions { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+  .route-list .visit-utility-actions { justify-content: space-between; gap: 0.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-sortable, .route-sortable * { animation-duration: 0s !important; transition-duration: 0s !important; }
+}
+.visit-utility-actions { gap: 0.65rem; }
+.visit-card .home-status.route-next { color: #106b55; background: #e0f2eb; }
+@media (max-width: 42rem) {
+  .route-list .visit-clinical-actions { flex: initial; }
+  .route-list .visit-utility-actions { width: 100%; margin-left: 0; }
+}

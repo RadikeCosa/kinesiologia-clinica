@@ -31,7 +31,7 @@ test("prioriza el día, pliega pendientes y muestra las precauciones sin interac
   await expect(pending).not.toHaveAttribute("open", "");
   await expect(page.locator(`#appointment-${visitIds.overdue}`)).not.toBeVisible();
   const current = page.locator(`#appointment-${visitIds.today}`);
-  await expect(current.getByRole("link", { name: "Rosa Benítez" })).toBeVisible();
+  await expect(current.getByRole("link", { name: "Rosa Benítez", exact: true })).toBeVisible();
   await expect(current.getByText("Evitar flexión forzada de rodilla")).toBeVisible();
   await page.locator(".pending-visits > summary").click();
   await expect(page.locator(`#appointment-${visitIds.overdue}`)).toBeVisible();
@@ -114,6 +114,7 @@ test("los nombres largos y el texto ampliado conservan la lectura sin desbordar"
     const card = page.locator(`#appointment-${appointmentId}`);
     await expect(card.getByRole("link", { name: `${patientName} Inventada` })).toBeVisible();
     await expect(card.getByText("Precauciones", { exact: true })).toHaveCount(0);
+    await expect(card.getByRole("link", { name: /Avisar por WhatsApp/ })).toHaveCount(0);
     await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
     const overflow = await page.evaluate(() => [...document.querySelectorAll("body *")].flatMap(node => {
       const rect = node.getBoundingClientRect();

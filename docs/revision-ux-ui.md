@@ -106,3 +106,45 @@ La [lista técnica de UX de la superficie privada](ux-private-checklist.md) cons
 - La adopción del componente en las tarjetas de Agenda y Pacientes se revisará en sus respectivas rondas; no se presenta como terminada.
 
 Ajuste de revisión del 24/10/2026: el usuario considera que el resto de la primera ronda está bien. Las precauciones de las tarjetas de visita se muestran completas, sin interacción, porque suelen ser frases cortas y conviene leerlas antes de actuar. Se conserva una jerarquía secundaria con una marca ámbar y ajuste de línea, sin truncar el contenido. La revisión física en Moto G15 sigue pendiente.
+
+## Recorrido de hoy y contacto rápido — 24/10/2026
+
+Plan autorizado para implementar en la misma rama de UX. La hora acordada es una referencia y el recorrido representa el orden operativo del día; mover una tarjeta nunca reprograma la cita.
+
+| ID | Acuerdo | Estado |
+| --- | --- | --- |
+| HOY-10 | Una lista de pendientes de hoy, con y sin horario, ordenable por arrastre desde un control específico y por teclado. | Implementado; pruebas automáticas aprobadas |
+| HOY-11 | Una sola tarjeta «Próxima»: la primera del recorrido. Visita en curso aparte, sin arrastre. «Marcar como próxima» en Más lleva una visita al principio. | Implementado; pruebas automáticas aprobadas |
+| HOY-12 | «Avisar por WhatsApp» visible cuando hay teléfono; abre el chat sin texto y no acredita envío. Llamada y mapa siguen en Más. | Implementado; pruebas automáticas aprobadas |
+| HOY-13 | Conservar el orden entre recargas y dispositivos, detectar conflictos y permitir restablecer por horario. | Implementado; pruebas automáticas aprobadas |
+| HOY-14 | Permitir comenzar visitas de hoy aunque su hora haya pasado; registrar una visita ya realizada es otra acción, dentro de Más. | Implementado; pruebas automáticas aprobadas |
+
+Se usa dnd-kit (`@dnd-kit/react`, integración actual para listas ordenables), con control de arrastre separado de los enlaces y botones. El resto de la tarjeta conserva el desplazamiento normal. La interacción por teclado y los anuncios usan español. Se aplican las skills existentes de UX, accesibilidad, React y Playwright, sin incorporar otras skills.
+
+Contrato de guardado: puerto de aplicación de recorrido diario, con fecha de Buenos Aires, identificadores de citas y versión; infraestructura persiste un `List` FHIR de trabajo por día (`daily-route-AAAA-MM-DD`). El recurso referencia citas y nunca reemplaza sus horarios. La escritura reutiliza el coordinador versionado de agenda existente y una transacción condicionada para evitar pérdidas incluso al crear el primer recorrido. El contenido FHIR no llega al navegador.
+
+Sin orden guardado, se ordena por hora, luego sin horario por nombre, con identificador como desempate. Con orden guardado, se conservan las posiciones relativas, se excluyen visitas que ya no están pendientes ese día y se agregan las nuevas al final. Las visitas en curso, finalizadas, anuladas/reprogramadas y los registros por completar no se arrastran. Los pendientes anteriores y otros días mantienen sus bloques.
+
+Al soltar o marcar como próxima se guarda el orden. Ante fallo se recupera el confirmado; ante conflicto se lee el vigente y se informa. Si no se puede verificar el recorrido, se impide reordenar hasta actualizarlo; las acciones clínicas siguen disponibles. Al volver a enfocar la pantalla se actualizan recorrido y datos, sin refrescar durante arrastre o guardado. No hay optimización de rutas, lectura del envío de mensajes ni modo sin conexión.
+
+La aceptación visual conjunta de esta ampliación y la prueba física en Moto G15 quedan pendientes. Las pruebas automatizadas se realizan solo sobre el FHIR ficticio 8081 y no acreditan uso con datos reales ni habilitan el piloto.
+
+### Evidencia automática de esta ampliación
+
+Verificación del 24/10/2026, con datos ficticios en 8081:
+
+| Comprobación | Resultado |
+| --- | --- |
+| Lint | Aprobado |
+| Pruebas unitarias | 161 aprobadas; 26 de integración omitidas por diseño |
+| Integración FHIR | 26/26 aprobadas, incluida creación concurrente y rechazo de versiones anteriores del recorrido; las citas conservan su contenido y versión |
+| Compilación de producción y TypeScript | Aprobados, salida aislada en `.next-ux` |
+| Regresión completa de interfaz, última corrida | 46/46 aprobadas: 30 de escritorio y 16 de emulación móvil |
+
+Los seis escenarios nuevos de interfaz verifican orden compartido entre contextos de escritorio y teléfono, recarga/retorno de foco, próxima única, teclado y Escape, mouse, gestos táctiles de Chromium, desplazamiento sobre el contenido sin reordenar, restablecimiento por hora, WhatsApp sin texto, horarios vencidos, error de transporte, conflicto de versión y salida del recorrido al comenzar/finalizar. La comprobación adaptable cubre 320, 356, 390 y 1280 px, nombres largos, ausencia de teléfono y precauciones, y texto ampliado al 200%. Referencias visuales ficticias en `.local/ux-review/after-mobile.png`, `after-desktop.png` y `route-mobile.png`, fuera de Git.
+
+Incidencia conservada: la primera regresión general tuvo 44 aprobadas, una fallida y una no ejecutada por dependencia de la anterior. Tras anular una visita, la ficha mostró una versión previa y no incluyó todavía su enlace en el historial de anuladas. La lectura directa del recurso ficticio y una búsqueda posterior confirmaron el estado anulado. La repetición focal pasó 2/2 y la siguiente corrida general pasó 46/46 sin cambiar el código clínico ni debilitar la prueba. No se acreditó la causa ni se considera resuelta esta incidencia intermitente por el rediseño.
+
+Las pruebas de arrastre esperan la finalización del movimiento y la versión confirmada por el servidor, distinguiendo la tarjeta de su placeholder decorativo. Se bloquea el control mientras termina de soltarse, para evitar perder un segundo movimiento inmediatamente después del primero.
+
+Aceptación humana: pendiente de revisión conjunta en la computadora y prueba física en Moto G15. Ninguna de estas comprobaciones habilita el piloto ni acredita datos reales.
