@@ -1,7 +1,7 @@
 import type { ConsultationRepository } from "./consultation.repository";
 import type { PatientRepository } from "@/application/patients/patient.repository";
 import { getPatientDisplayName } from "@/domain/patient/patient";
-import type { OpenConsultationViewModel } from "@/features/clinical-home/clinical-home.types";
+import type { OpenConsultationViewModel } from "@/application/home/clinical-home.types";
 
 export type OpenConsultationDependencies = {
   consultations: Pick<ConsultationRepository, "listActive"> & Partial<Pick<ConsultationRepository, "getEvaluationAppointment">>;

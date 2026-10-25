@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isLocalClinicalSurfaceEnabled } from "@/domain/system/clinical-surface-policy";
+import { isLocalClinicalSurfaceEnabled } from "@/infrastructure/runtime/clinical-surface-policy";
 
 describe("isLocalClinicalSurfaceEnabled", () => {
   it("allows only the disposable localhost FHIR endpoint", () => {

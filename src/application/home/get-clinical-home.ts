@@ -9,7 +9,7 @@ import type { VisitRepository } from "@/application/visits/visit.repository";
 import { getPatientDisplayName } from "@/domain/patient/patient";
 import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
 import { deriveDocumentationTimeliness, deriveStartPunctuality } from "@/domain/visit/visit-timeliness";
-import type { AgendaItemViewModel, ClinicalHomeData, HomePatientViewModel, TodayItemViewModel } from "@/features/clinical-home/clinical-home.types";
+import type { AgendaItemViewModel, ClinicalHomeData, HomePatientViewModel, TodayItemViewModel } from "./clinical-home.types";
 
 type Dependencies = { dailyRoutes?: DailyRouteRepository; consultations?: OpenConsultationDependencies["consultations"]; periods?: PeriodRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; visits: VisitRepository };
 

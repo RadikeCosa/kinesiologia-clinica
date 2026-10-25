@@ -2,7 +2,7 @@ import { z } from "zod";
 import { buenosAiresDate, reconcileRoute, type DailyRoute } from "@/domain/route/daily-route";
 import { DailyRouteConflictError, type DailyRouteRepository } from "./daily-route.repository";
 import { getClinicalHome } from "../home/get-clinical-home";
-import type { ClinicalHomeData } from "@/features/clinical-home/clinical-home.types";
+import type { ClinicalHomeData } from "@/application/home/clinical-home.types";
 
 type Dependencies = Parameters<typeof getClinicalHome>[1] & { dailyRoutes: DailyRouteRepository };
 

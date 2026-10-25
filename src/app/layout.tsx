@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { clinicalSurfaceMode } from "@/domain/system/clinical-surface-policy";
+import { clinicalSurfaceMode } from "@/infrastructure/runtime/clinical-surface-policy";
 import { ClinicalEnvironmentProvider } from "./clinical-environment";
 
 export const metadata: Metadata = {
