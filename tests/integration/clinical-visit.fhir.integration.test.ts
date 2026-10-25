@@ -1,3 +1,5 @@
+import { createClinicalWorkflow } from "@/application/visits/create-clinical-workflow";
+import { createFhirPeriodRepository as workflowPeriods } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { firstPeriodId } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -30,7 +32,7 @@ describeIntegration("clinical visit FHIR contract", () => {
     metrics: createFhirMetricRepository(client),
     evaluations: createFhirClinicalEvaluationRepository(client),
     procedures: createFhirPerformedProcedureRepository(client),
-    workflow: createFhirClinicalWorkflowRepository(client),
+    workflow: createClinicalWorkflow(createFhirClinicalWorkflowRepository(client), { periods: workflowPeriods(client), treatments: createFhirTreatmentRepository(client), visits: createFhirVisitRepository(client) }),
   };
   const patientId = `fixture-visit-patient-${randomUUID()}`;
   const treatmentId = `fixture-visit-treatment-${randomUUID()}`;

@@ -1,3 +1,4 @@
+import { validateR4 } from "./validate-r4";
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Consultation } from "@/domain/consultation/consultation";
@@ -56,6 +57,7 @@ describeIntegration("consultation intake FHIR contract", () => {
     const saved = await repository.getById(consultationId);
     expect(saved).toMatchObject({ status: "evaluation-completed", initialContext: created.initialContext, quotes: [], appointmentIds: [], followUps: [{ status: "pending" }] });
     const encounter = await client.get<Record<string, unknown>>(`Encounter/${evaluationId}`);
+    expect(await validateR4(encounter)).toEqual([]);
     expect(encounter).not.toHaveProperty("appointment");
     expect(encounter).not.toHaveProperty("episodeOfCare");
     await expect(recordInitialEvaluation(input, deps)).resolves.toMatchObject({ evaluation: { id: evaluationId } });
@@ -115,6 +117,7 @@ describeIntegration("consultation intake FHIR contract", () => {
       plannedSessionCount: 8, plannedFrequency: "2 por semana", statusHistory: [{ status: "active" as const, startedAt: "2026-10-15T12:00:00.000Z" }],
     };
     await repository.startTreatmentFromConsultation({
+      expectedPatientVersion: (await client.get<{meta:{versionId:string}}>(`Patient/${patientId}`)).meta.versionId,
       consultation: { ...evaluated, status: "treatment-started", treatmentId }, treatment, diagnoses: [], expectedVersion: evaluated.version!,
     });
 

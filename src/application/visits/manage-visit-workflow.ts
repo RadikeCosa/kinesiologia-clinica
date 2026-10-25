@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { PatientRepository } from "@/application/patients/patient.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { TreatmentRepository } from "@/application/treatments/treatment.repository";
-import type { ClinicalWorkflowRepository } from "./clinical-workflow.repository";
+import type { VisitWorkflow } from "./clinical-workflow.repository";
 import type { MetricRepository } from "./metric.repository";
 import type { VisitRepository } from "./visit.repository";
 import { metricCodeSchema, type FunctionalMetric, type Visit } from "@/domain/visit/visit";
@@ -34,7 +34,7 @@ type Dependencies = {
   visits: VisitRepository;
   metrics: MetricRepository;
   scheduledVisits: ScheduledVisitRepository;
-  workflow: Pick<ClinicalWorkflowRepository, "start" | "annul" | "finish">;
+  workflow: Pick<VisitWorkflow, "start" | "annul" | "finish">;
   evaluations?: ClinicalEvaluationRepository;
   symptoms?: ClinicalSymptomRepository;
   procedures?: PerformedProcedureRepository;

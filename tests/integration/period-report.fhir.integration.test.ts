@@ -1,3 +1,5 @@
+import { createClinicalWorkflow } from "@/application/visits/create-clinical-workflow";
+import { createFhirPeriodRepository as workflowPeriods } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { finishVisit } from "@/application/visits/manage-visit-workflow";
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
@@ -25,14 +27,14 @@ if(process.env.FHIR_INTEGRATION_BASE_URL && process.env.FHIR_INTEGRATION_BASE_UR
 const suite=process.env.FHIR_INTEGRATION_BASE_URL ? describe : describe.skip;
 suite("periods and immutable reports in HAPI", () => {
  const client=createFhirClient({baseUrl:endpoint});
- const d={ patients:createFhirPatientRepository(client), treatments:createFhirTreatmentRepository(client), visits:createFhirVisitRepository(client), periods:createFhirPeriodRepository(client), reports:createFhirReportRepository(client), administration:createFhirClinicalAdministrationRepository(client), workflow:createFhirClinicalWorkflowRepository(client), metrics:createFhirMetricRepository(client), evaluations:createFhirClinicalEvaluationRepository(client), symptoms:createFhirClinicalSymptomRepository(client), procedures:createFhirPerformedProcedureRepository(client), conditions:createFhirConditionRepository(client), scheduledVisits:createFhirScheduledVisitRepository(client), reportTools };
+ const d={ patients:createFhirPatientRepository(client), treatments:createFhirTreatmentRepository(client), visits:createFhirVisitRepository(client), periods:createFhirPeriodRepository(client), reports:createFhirReportRepository(client), administration:createFhirClinicalAdministrationRepository(client), workflow:createClinicalWorkflow(createFhirClinicalWorkflowRepository(client), { periods: workflowPeriods(client), treatments: createFhirTreatmentRepository(client), visits: createFhirVisitRepository(client) }), metrics:createFhirMetricRepository(client), evaluations:createFhirClinicalEvaluationRepository(client), symptoms:createFhirClinicalSymptomRepository(client), procedures:createFhirPerformedProcedureRepository(client), conditions:createFhirConditionRepository(client), scheduledVisits:createFhirScheduledVisitRepository(client), reportTools };
  const tracked=new Set<string>();
  async function setup(quota=1) {
    const patientId=`fixture-${randomUUID()}`, treatmentId=`fixture-${randomUUID()}`;
    tracked.add(`Patient/${patientId}`); tracked.add(`EpisodeOfCare/${treatmentId}`); tracked.add(`CarePlan/${d.periods.firstId(treatmentId)}`);
    await d.administration.putPatient({id:patientId,givenName:"Persona",familyName:"Ficticia"});
    const treatment: Treatment={id:treatmentId,patientId,status:"active",startDate:"2026-09-01",plannedSessionCount:quota,plannedFrequency:"Semanal"};
-   await d.administration.startTreatment(treatment,[]);
+   await d.administration.startTreatment(treatment,[],(await d.patients.getById(patientId))!.version!);
    return (await d.treatments.getById(treatmentId))!;
  }
  async function visit(t:Treatment,status:Visit["status"]="finished") { const v:Visit={id:`fixture-${randomUUID()}`,patientId:t.patientId,treatmentId:t.id,status,startedAt:"2026-09-20T13:00:00Z",endedAt:status==="finished"?"2026-09-20T14:00:00Z":undefined,clinicalNote:{statusAndResponse:"Evolución ficticia: toleró la actividad.",intervention:"Ejercicio ficticio."}}; tracked.add(`Encounter/${v.id}`); return v; }

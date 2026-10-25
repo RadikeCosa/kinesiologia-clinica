@@ -72,15 +72,12 @@ describe("createVisit", () => {
     await expect(createVisit({ ...withEntries, clinicalEntries: { ...withEntries.clinicalEntries, symptoms: [{ ...symptom, severity: 8 }] } }, ports)).rejects.toBeInstanceOf(VisitConflictError);
   });
 
-  it("persists clinical entries when the legacy workflow port is unavailable", async () => {
+  it("rejects extra metrics on retry without writing", async () => {
     const ports = dependencies();
-    const evaluation = { clientId: "11111111-1111-4111-8111-111111111111", seriesId: "22222222-2222-4222-8222-222222222222", domain: "strength" as const, name: "Evaluación ficticia", result: { kind: "quantity" as const, value: 3, unit: "repeticiones" } };
-    const procedures = ports.procedures;
-    const withEntries = { ...input, clinicalEntries: { evaluations: [evaluation], procedures: [{ family: "manual-therapy" as const }] } };
-    const legacyPorts = { ...ports, workflow: undefined };
-    await createVisit(withEntries, legacyPorts);
-    expect(ports.evaluations.putIfAbsent).toHaveBeenCalledTimes(1);
-    expect(procedures.putIfAbsent).toHaveBeenCalledTimes(1);
+    await createVisit(input, ports);
+    await expect(createVisit({ ...input, metrics: [{ code: "tug_seconds", value: 5 }] }, ports)).rejects.toBeInstanceOf(VisitConflictError);
+    expect(ports.metrics.putIfAbsent).not.toHaveBeenCalled();
+    expect(ports.workflow.completeRetrospective).toHaveBeenCalledTimes(1);
   });
 
   it("does not write when the treatment belongs to another patient", async () => {

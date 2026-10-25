@@ -4,7 +4,7 @@ import type { TreatmentRepository } from "@/application/treatments/treatment.rep
 import type { VisitRepository } from "./visit.repository";
 import type { MetricRepository } from "./metric.repository";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
-import type { ClinicalWorkflowRepository } from "./clinical-workflow.repository";
+import type { VisitWorkflow } from "./clinical-workflow.repository";
 import type { ClinicalEvaluationRepository, ClinicalSymptomRepository, PerformedProcedureRepository } from "./clinical-entry.repository";
 import type { ClinicalEvaluation, ClinicalSymptom, PerformedProcedure, ProcedureFamily } from "@/domain/visit/clinical-entry";
 
@@ -27,10 +27,10 @@ function matchesRequestedVisit(existing: Visit, expected: Visit): boolean {
 export async function createVisit(rawInput: unknown, dependencies: {
   patients: Pick<PatientRepository, "getById">;
   treatments: Pick<TreatmentRepository, "getById">;
-  visits: Pick<VisitRepository, "getById" | "put">;
-  metrics: Pick<MetricRepository, "listByVisitId" | "putIfAbsent">;
+  visits: Pick<VisitRepository, "getById">;
+  metrics: Pick<MetricRepository, "listByVisitId">;
   scheduledVisits?: ScheduledVisitRepository;
-  workflow?: Pick<ClinicalWorkflowRepository, "completeRetrospective">;
+  workflow: Pick<VisitWorkflow, "completeRetrospective">;
   evaluations?: ClinicalEvaluationRepository;
   symptoms?: ClinicalSymptomRepository;
   procedures?: PerformedProcedureRepository;
@@ -73,26 +73,13 @@ export async function createVisit(rawInput: unknown, dependencies: {
   if (existing) {
     if (!matchesRequestedVisit(existing, expected)) throw new VisitConflictError();
     const existingMetrics = await dependencies.metrics.listByVisitId(id);
-    if (existingMetrics.some((item) => !input.metrics.some((metric) => metric.code === item.code && metric.value === item.value))) {
+    if (existingMetrics.length !== input.metrics.length || existingMetrics.some((item) => !input.metrics.some((metric) => metric.code === item.code && metric.value === item.value))) {
       throw new VisitConflictError();
     }
   } else {
     if (treatment.status !== "active") throw new Error("El tratamiento activo no está disponible.");
-    if (dependencies.workflow) {
-      try { await dependencies.workflow.completeRetrospective(expected, metricValues, evaluations, procedures, appointment ? { ...appointment, status: "fulfilled" } : undefined, symptoms); }
-      catch (error) { if ((await dependencies.visits.getById(id))?.status === "finished") return createVisit(rawInput, dependencies); throw error; }
-    } else {
-      if (!dependencies.evaluations || !dependencies.symptoms || !dependencies.procedures) {
-        throw new Error("La visita clínica no tiene repositorios para guardar sus entradas.");
-      }
-      await dependencies.visits.put(expected);
-      for (const evaluation of evaluations) await dependencies.evaluations.putIfAbsent(evaluation);
-      for (const symptom of symptoms) await dependencies.symptoms.putIfAbsent(symptom);
-      for (const procedure of procedures) await dependencies.procedures.putIfAbsent(procedure);
-    }
-  }
-  if (!(appointment && dependencies.workflow && !existing)) {
-    for (const value of metricValues) await dependencies.metrics.putIfAbsent(value);
+    try { await dependencies.workflow.completeRetrospective(expected, metricValues, evaluations, procedures, appointment ? { ...appointment, status: "fulfilled" } : undefined, symptoms); }
+    catch (error) { if ((await dependencies.visits.getById(id))?.status === "finished") return createVisit(rawInput, dependencies); throw error; }
   }
   const [existingEvaluations, existingSymptoms, existingProcedures] = await Promise.all([
     dependencies.evaluations?.listByVisitId(id) ?? Promise.resolve([]), dependencies.symptoms?.listByVisitId(id) ?? Promise.resolve([]), dependencies.procedures?.listByVisitId(id) ?? Promise.resolve([]),

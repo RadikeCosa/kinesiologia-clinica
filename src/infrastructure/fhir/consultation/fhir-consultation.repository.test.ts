@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createFhirClient } from "@/infrastructure/fhir/core/fhir.client";
 import { createFhirConsultationRepository } from "./fhir-consultation.repository";
 import type { Consultation } from "@/domain/consultation/consultation";
@@ -103,7 +103,7 @@ describe("FHIR consultation repository", () => {
     const created = await repository.create({ patient, consultation: consultation("consultation-eval") });
     const appointment: EvaluationAppointment = {
       id: "evaluation-appointment-9e3cd0e7-45b5-45f9-8d82-c7e2842fd99d", consultationId: created.id, patientId: patient.id,
-      status: "confirmed", scheduledDate: "2026-10-20", startsAt: "2026-10-20T10:00:00-03:00", endsAt: "2026-10-20T11:00:00.000Z",
+      status: "confirmed", scheduledDate: "2026-10-20", startsAt: "2026-10-20T10:00:00-03:00", endsAt: "2026-10-20T14:00:00.000Z",
       durationMinutes: 60, createdAt: "2026-10-15T12:00:00.000Z",
     };
     const saved = await repository.saveWithEvaluationAppointments({ consultation: { ...created, appointmentIds: [appointment.id] }, appointments: [appointment], expectedVersion: created.version! });
@@ -149,6 +149,7 @@ describe("FHIR consultation repository", () => {
     const treatment: Treatment = { id: "treatment-39d0211a-b45e-44f7-bae9-26918ddbf822", patientId: patient.id, sourceConsultationId: created.id, initialEvaluationId: "initial-evaluation-1", acceptedTreatmentQuoteId: "quote-treatment-v1", status: "active", startDate: "2026-10-21", plannedSessionCount: 8, plannedFrequency: "2 por semana", statusHistory: [{ status: "active", startedAt: "2026-10-21T12:00:00.000Z" }] };
     const intake = { ...created, initialEvaluationId: "initial-evaluation-1", quotes: [{ id: "quote-treatment-v1", scope: "treatment" as const, revision: 1, amount: 100, currency: "ARS", modality: "visita", communicatedAt: "2026-10-20T12:00:00.000Z", status: "accepted" as const }] };
     const saved = await repository.startTreatmentFromConsultation({
+      expectedPatientVersion: (await client.get<{meta:{versionId:string}}>("Patient/patient-1")).meta.versionId,
       consultation: { ...intake, status: "treatment-started", treatmentId: treatment.id }, treatment, diagnoses: [], expectedVersion: created.version!,
     });
     expect(saved.status).toBe("treatment-started");
@@ -163,5 +164,38 @@ describe("FHIR consultation repository", () => {
     await expect(client.get<Record<string, unknown>>(`CarePlan/${periodId}`)).resolves.toMatchObject({ resourceType: "CarePlan" });
     const savedPatient = await client.get<Record<string, unknown>>("Patient/patient-1");
     expect(savedPatient.extension).not.toEqual(expect.arrayContaining([expect.objectContaining({ url: expect.stringContaining("patient-active-consultation") })]));
+  });
+});
+
+describe("FHIR consultation read boundaries", () => {
+  it("follows every search page for a patient's history", async () => {
+    const paths: string[] = [];
+    const resource = (id: string) => ({ resourceType: "ServiceRequest", id, status: "active", intent: "order", subject: { reference: "Patient/patient-1" }, identifier: [{ system: "https://kinesiologiaadomicilio.local/fhir/NamingSystem/consultation-id-v1", value: id }], extension: [{ url: "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/service-request-consultation-data-v1", valueString: JSON.stringify(consultation(id)) }] });
+    const client = createFhirClient({ baseUrl: "http://localhost:8081/fhir", fetcher: async url => {
+      const next = String(url).includes("page=2"); paths.push(String(url));
+      return new Response(JSON.stringify({ resourceType: "Bundle", type: "searchset", entry: [{ resource: resource(next ? "consultation-b" : "consultation-a") }], ...(!next ? { link: [{ relation: "next", url: "http://localhost:8081/fhir/ServiceRequest?page=2" }] } : {}) }), { status: 200 });
+    } });
+    expect((await createFhirConsultationRepository(client).listByPatientId("patient-1")).map(c => c.id)).toEqual(["consultation-a", "consultation-b"]);
+    expect(paths).toHaveLength(2);
+  });
+
+  it("blocks an inconsistent subject before any save transaction", async () => {
+    const client = clientWithAtomicTransaction(); const repository = createFhirConsultationRepository(client);
+    const created = await repository.create({ patient, consultation: consultation("consultation-invalid") });
+    const transaction = vi.fn(client.transaction);
+    const guarded = createFhirConsultationRepository({ ...client, transaction: <T>(body: unknown) => transaction(body) as Promise<T>, get: async <T>(path: string): Promise<T> => {
+      const resource = await client.get<Record<string, unknown>>(path);
+      return (path.startsWith("ServiceRequest/") ? { ...resource, subject: { reference: "Patient/other" } } : resource) as T;
+    } });
+    await expect(guarded.save(created, created.version!)).rejects.toThrow("inconsistentes");
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed new evaluation appointments before persisting", async () => {
+    const client = clientWithAtomicTransaction(), repository = createFhirConsultationRepository(client);
+    const created = await repository.create({ patient, consultation: consultation("consultation-invalid-time") });
+    const transaction = vi.spyOn(client, "transaction");
+    await expect(repository.saveWithEvaluationAppointments({ consultation: { ...created, appointmentIds: ["fake-appointment"] }, expectedVersion: created.version!, appointments: [{ id: "fake-appointment", patientId: patient.id, consultationId: created.id, status: "confirmed", scheduledDate: "2026-10-20", startsAt: "2026-10-20T13:00:00Z", endsAt: "2026-10-20T12:00:00Z", createdAt: "2026-10-01T12:00:00Z" }] })).rejects.toThrow("inconsistentes");
+    expect(transaction).not.toHaveBeenCalled();
   });
 });

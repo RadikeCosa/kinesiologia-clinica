@@ -39,6 +39,7 @@ export function createFhirReportRepository(client: FhirClient): ReportRepository
   }
   async function search(path: string) { return readAllResourcesByType<Document>({ client, path, resourceType: "DocumentReference" }); }
   const repository: ReportRepository = {
+    async readArchive(id) { const doc = await document(id); return doc ? verified(doc) : null; },
     async get(id) { const doc = await document(id); return doc ? (await verified(doc)).report : null; },
     async pdf(id) { const doc = await document(id); if (!doc) throw new Error("Informe no disponible."); return (await verified(doc)).pdf; },
     async byOperation(op) { if (!/^[a-f0-9-]{36}$/.test(op)) return null; const docs = await search(`DocumentReference?${new URLSearchParams({ identifier: `${SYSTEM}|${op}`, _count: "2" })}`); if (docs.length > 1) throw new ReportIntegrityError(); return docs[0] ? (await verified(docs[0])).report : null; },

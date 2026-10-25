@@ -232,7 +232,7 @@ describe("consulta de ingreso", () => {
       consentContactId: "patient-contact", consentMethod: "verbal", consentAt: "2026-10-21T11:00:00.000Z", consentConfirmed: true,
     }, {
       ...services,
-      patients: { getById: vi.fn(async () => ({ id: "patient-1", givenName: "Paciente", familyName: "Ficticio", activeConsultationId: consultation.id })) },
+      patients: { getById: vi.fn(async () => ({ id: "patient-1", givenName: "Paciente", familyName: "Ficticio", version: "1", activeConsultationId: consultation.id })) },
       treatments: { getById: vi.fn(async () => null), listDirectory: vi.fn(async () => []), listByPatientId: vi.fn(async () => []) },
     });
     expect(started.treatment.status).toBe("active");

@@ -1,9 +1,5 @@
-import { prepareVisitPeriod } from "@/application/periods/guard-visit-period";
-import { createFhirPeriodRepository } from "../periods/fhir-period.repository";
-import { createFhirTreatmentRepository } from "../episode-of-care/fhir-treatment.repository";
-import { createFhirVisitRepository } from "./fhir-visit.repository";
 import { periodEntry } from "../periods/period.mapper";
-import type { ClinicalWorkflowRepository } from "@/application/visits/clinical-workflow.repository";
+import type { ClinicalWorkflowRepository, PreparedVisit } from "@/application/visits/clinical-workflow.repository";
 import type { ScheduledVisit } from "@/domain/schedule/scheduled-visit";
 import type { FunctionalMetric, Visit } from "@/domain/visit/visit";
 import type { FhirClient } from "@/infrastructure/fhir/core/fhir.client";
@@ -32,17 +28,16 @@ function symptomEntry(value: ClinicalSymptom): TransactionEntry { return { resou
 function procedureEntry(value: PerformedProcedure): TransactionEntry { return { resource: mapPerformedProcedureToFhir(value), request: { method: "PUT", url: `Procedure/${value.id}`, ...(version(value.version) ? { ifMatch: version(value.version) } : {}) } }; }
 
 export function createFhirClinicalWorkflowRepository(client: FhirClient): ClinicalWorkflowRepository {
-  const ports = { periods: createFhirPeriodRepository(client), treatments: createFhirTreatmentRepository(client), visits: createFhirVisitRepository(client) };
-  async function transact(visit: Visit, operation: "admit" | "change", entries: TransactionEntry[]) {
-    const prepared = await prepareVisitPeriod(visit, operation, ports);
-    await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [periodEntry(prepared.period), visitEntry(prepared.visit), ...entries] });
+  async function transact(visit: PreparedVisit, entries: TransactionEntry[]) {
+    const { preparedPeriod, ...record } = visit;
+    await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [periodEntry(preparedPeriod), visitEntry(record), ...entries] });
   }
   return {
-    start: (visit, appointment) => transact(visit, "admit", [ ...(appointment ? [appointmentEntry(appointment)] : [])]),
-    annul: (visit, appointment) => transact(visit, "change", [ ...(appointment ? [appointmentEntry(appointment)] : [])]),
-    finish: (visit, metrics, evaluations, procedures, symptoms = []) => transact(visit, "change", [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry)]),
-    completeRetrospective: (visit, metrics, evaluations, procedures, appointment, symptoms = []) => transact(visit, "admit", [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry), ...(appointment ? [appointmentEntry(appointment)] : [])]),
-    correct: (visit, metrics, evaluations, procedures, symptoms = []) => transact(visit, "change", [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry)]),
-    annulFinished: (visit, metrics, evaluations, procedures, appointment, symptoms = []) => transact(visit, "change", [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry), ...(appointment ? [appointmentEntry(appointment)] : [])]),
+    start: (visit, appointment) => transact(visit, [ ...(appointment ? [appointmentEntry(appointment)] : [])]),
+    annul: (visit, appointment) => transact(visit, [ ...(appointment ? [appointmentEntry(appointment)] : [])]),
+    finish: (visit, metrics, evaluations, procedures, symptoms = []) => transact(visit, [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry)]),
+    completeRetrospective: (visit, metrics, evaluations, procedures, appointment, symptoms = []) => transact(visit, [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry), ...(appointment ? [appointmentEntry(appointment)] : [])]),
+    correct: (visit, metrics, evaluations, procedures, symptoms = []) => transact(visit, [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry)]),
+    annulFinished: (visit, metrics, evaluations, procedures, appointment, symptoms = []) => transact(visit, [ ...metrics.map(metricEntry), ...evaluations.map(evaluationEntry), ...procedures.map(procedureEntry), ...symptoms.map(symptomEntry), ...(appointment ? [appointmentEntry(appointment)] : [])]),
   };
 }

@@ -17,6 +17,7 @@ const LEGACY = { statusAndResponse: "", subjective: "clinical-subjective:v1:", o
 export interface FhirEncounter extends FhirResource {
   resourceType: "Encounter";
   status: string;
+  class?: { system: string; code: string };
   subject?: { reference?: string };
   episodeOfCare?: Array<{ reference?: string }>;
   period?: { start?: string; end?: string };
@@ -61,7 +62,7 @@ export function mapFhirEncounter(resource: FhirEncounter): Visit {
   };
 }
 
-export function mapVisitToFhir(visit: Visit): FhirEncounter {
+export function mapVisitToFhir(visit: Visit): FhirEncounter & { class: { system: string; code: "HH" } } {
   const extension: NonNullable<FhirEncounter["extension"]> = NOTE_FIELDS.flatMap((field) => {
     const value = visit.clinicalNote?.[field];
     return value ? [{ url: `${BASE}${SUFFIX[field]}`, valueString: value }] : [];
@@ -77,6 +78,7 @@ export function mapVisitToFhir(visit: Visit): FhirEncounter {
     resourceType: "Encounter",
     id: visit.id,
     status: visit.status,
+    class: { system: "http://terminology.hl7.org/CodeSystem/v3-ActCode", code: "HH" },
     subject: { reference: `Patient/${visit.patientId}` },
     episodeOfCare: [{ reference: `EpisodeOfCare/${visit.treatmentId}` }],
     ...(visit.appointmentId ? { appointment: [{ reference: `Appointment/${visit.appointmentId}` }] } : {}),

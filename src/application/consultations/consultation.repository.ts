@@ -14,7 +14,7 @@ export interface ConsultationRepository {
   getEvaluationAppointment(id: string): Promise<EvaluationAppointment | null>;
   completeInitialEvaluation(input: { consultation: Consultation; appointment?: EvaluationAppointment; evaluation: InitialEvaluation; expectedVersion: string }): Promise<Consultation>;
   getInitialEvaluation(id: string): Promise<InitialEvaluation | null>;
-  startTreatmentFromConsultation(input: { consultation: Consultation; treatment: Treatment; diagnoses: Diagnosis[]; expectedVersion: string }): Promise<Consultation>;
+  startTreatmentFromConsultation(input: { consultation: Consultation; treatment: Treatment; diagnoses: Diagnosis[]; expectedPatientVersion: string; expectedVersion: string }): Promise<Consultation>;
   listActive(): Promise<Consultation[]>;
   listByPatientId(patientId: string): Promise<Consultation[]>;
   listOpenEvaluationAppointments?(): Promise<EvaluationAppointment[]>;

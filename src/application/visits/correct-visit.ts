@@ -5,7 +5,7 @@ import { visitClinicalEntriesSchema, type ClinicalEvaluation, type ClinicalSympt
 import type { Visit } from "@/domain/visit/visit";
 import type { ScheduledVisitRepository } from "@/application/schedule/scheduled-visit.repository";
 import type { ClinicalEvaluationRepository, ClinicalSymptomRepository, PerformedProcedureRepository } from "./clinical-entry.repository";
-import type { ClinicalWorkflowRepository } from "./clinical-workflow.repository";
+import type { VisitWorkflow } from "./clinical-workflow.repository";
 import type { MetricRepository } from "./metric.repository";
 import type { VisitRepository } from "./visit.repository";
 import { VisitStateError } from "./manage-visit-workflow";
@@ -34,7 +34,7 @@ type Dependencies = {
   symptoms: ClinicalSymptomRepository;
   procedures: PerformedProcedureRepository;
   scheduledVisits: ScheduledVisitRepository;
-  workflow: Pick<ClinicalWorkflowRepository, "correct" | "annulFinished">;
+  workflow: Pick<VisitWorkflow, "correct" | "annulFinished">;
   clock?: Clock;
 };
 

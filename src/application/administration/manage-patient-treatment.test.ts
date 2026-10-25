@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { beginTreatment, changeTreatmentStatus, possiblePhoneMatch, updatePatient, updateTreatment } from "./manage-patient-treatment";
 
-const patient = { id: "patient-a", givenName: "Ana", familyName: "Ficticia", phone: "+54 299 555 0101", address: "Dirección ficticia" };
+const patient = { version: "1", id: "patient-a", givenName: "Ana", familyName: "Ficticia", phone: "+54 299 555 0101", address: "Dirección ficticia" };
 function dependencies(overrides: Record<string, unknown> = {}) {
   return { patients: { getById: vi.fn().mockResolvedValue(patient), listByIds: vi.fn().mockResolvedValue([patient]), listAll: vi.fn().mockResolvedValue([patient]) }, treatments: { getById: vi.fn().mockResolvedValue(null), listActive: vi.fn().mockResolvedValue([]), listDirectory: vi.fn().mockResolvedValue([]), listByPatientId: vi.fn().mockResolvedValue([]) }, scheduledVisits: { listByPatientId: vi.fn().mockResolvedValue([]) }, administration: { putPatient: vi.fn(), startTreatment: vi.fn(), putTreatment: vi.fn() }, clock: { now: () => new Date("2026-09-22T12:00:00-03:00") }, ...overrides };
 }

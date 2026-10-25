@@ -1,3 +1,4 @@
+import { createClinicalWorkflow } from "@/application/visits/create-clinical-workflow";
 import { createFhirDailyRouteRepository } from "./route/fhir-daily-route.repository";
 import { createFhirPeriodRepository } from "./periods/fhir-period.repository";
 import { createFhirReportRepository } from "./periods/fhir-report.repository";
@@ -43,5 +44,6 @@ export function createClinicalDependencies() {
     administration: createFhirClinicalAdministrationRepository(client),
     consultations: createFhirConsultationRepository(client),
   };
-  return { ...dependencies, periodFlow: dependencies };
+  const workflow = createClinicalWorkflow(dependencies.workflow, dependencies);
+  return { ...dependencies, workflow, periodFlow: dependencies };
 }

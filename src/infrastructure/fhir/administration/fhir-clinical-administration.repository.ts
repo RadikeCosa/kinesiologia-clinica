@@ -7,6 +7,7 @@ import type { ClinicalAdministrationRepository } from "@/application/administrat
 import type { Diagnosis } from "@/domain/condition/condition";
 import type { Patient } from "@/domain/patient/patient";
 import type { Treatment } from "@/domain/treatment/treatment";
+import type { FhirResource } from "../core/fhir.types";
 import type { FhirClient } from "@/infrastructure/fhir/core/fhir.client";
 
 const BASE = "https://kinesiologiaadomicilio.local/fhir/StructureDefinition/";
@@ -40,18 +41,30 @@ export function treatmentResource(treatment: Treatment) {
 function entry(resource: unknown, url: string, expectedVersion?: string) { return { resource, request: { method: "PUT", url, ...(version(expectedVersion) ? { ifMatch: version(expectedVersion) } : {}) } }; }
 export function createFhirClinicalAdministrationRepository(client: FhirClient): ClinicalAdministrationRepository {
   const periods = createFhirPeriodRepository(client), treatments = createFhirTreatmentRepository(client), visits = createFhirVisitRepository(client);
+  async function patientEntry(patientId: string, expectedVersion: string) {
+    if (!expectedVersion) throw new PeriodStateError("Falta la versión del paciente. Recargá la pantalla.");
+    const patient = await client.get<FhirResource>(`Patient/${patientId}`);
+    if (patient.meta?.versionId !== expectedVersion) throw new PeriodStateError("La ficha cambió. Recargá la pantalla.");
+    const coordinated = patient as FhirResource & { extension?: Array<{ url: string; valueString?: string }> };
+    const url = `${BASE}patient-treatment-coordination-v1`;
+    return entry({ ...patient, extension: [...(coordinated.extension ?? []).filter(e => e.url !== url), { url, valueString: expectedVersion }] }, `Patient/${patientId}`, expectedVersion);
+  }
   return {
     async putPatient(patient, expectedVersion) {
       const linked = expectedVersion ? await treatments.listByPatientId!(patient.id) : [];
       await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [entry(patientResource(patient), `Patient/${patient.id}`, expectedVersion), ...linked.map(t => entry(treatmentResource({ ...t, metadataRevision: (t.metadataRevision ?? 0) + 1 }), `EpisodeOfCare/${t.id}`, t.version))] });
     },
-    async startTreatment(treatment, diagnoses) {
+    async startTreatment(treatment, diagnoses, expectedPatientVersion) {
+      const patient = await patientEntry(treatment.patientId, expectedPatientVersion);
       const period = { id: firstPeriodId(treatment.id), patientId: treatment.patientId, treatmentId: treatment.id, ordinal: 1, quota: treatment.plannedSessionCount, frequency: treatment.plannedFrequency, phase: "open" as const, available: true, clinicalRevision: 0 };
-      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...diagnoses.map(item => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource({ ...treatment, currentPeriodId: period.id }), `EpisodeOfCare/${treatment.id}`), entry(mapPeriodToFhir(period), `CarePlan/${period.id}`)] });
+      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [patient, ...diagnoses.map(item => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource({ ...treatment, currentPeriodId: period.id }), `EpisodeOfCare/${treatment.id}`), entry(mapPeriodToFhir(period), `CarePlan/${period.id}`)] });
     },
-    async putTreatment(treatment, diagnoses, expectedVersion) {
+    async putTreatment(treatment, diagnoses, expectedVersion, expectedPatientVersion) {
       const current = await treatments.getById(treatment.id);
       if (!current || current.version !== expectedVersion) throw new PeriodStateError("El tratamiento cambió. Recargá la pantalla.");
+      const reactivating = treatment.status === "active" && current.status !== "active";
+      if (reactivating && !expectedPatientVersion) throw new PeriodStateError("Falta la versión del paciente. Recargá la pantalla.");
+      const patient = reactivating ? await patientEntry(treatment.patientId, expectedPatientVersion!) : undefined;
       // Materialization is a separate guarded transaction, so refresh its new treatment version.
       let period = await periods.current(current);
       if (!period.version) {
@@ -69,7 +82,7 @@ export function createFhirClinicalAdministrationRepository(client: FhirClient): 
       if (treatment.status === "finished" && current.status !== "finished") throw new PeriodStateError("Finalizá desde el período con su informe actualizado.");
       if (treatment.status !== "active" && count.reserved) throw new PeriodStateError("Primero resolvé la visita en curso.");
       period = reconcilePeriod({ ...period, quota: treatment.plannedSessionCount, frequency: treatment.plannedFrequency, available: treatment.status === "active", clinicalRevision: period.clinicalRevision + 1 }, allVisits);
-      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...diagnoses.map(item => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource({ ...treatment, currentPeriodId: period.id }), `EpisodeOfCare/${treatment.id}`, expectedVersion), periodEntry(period)] });
+      await client.transaction({ resourceType: "Bundle", type: "transaction", entry: [...(patient ? [patient] : []), ...diagnoses.map(item => entry(conditionResource(item), `Condition/${item.id}`)), entry(treatmentResource({ ...treatment, currentPeriodId: period.id }), `EpisodeOfCare/${treatment.id}`, expectedVersion), periodEntry(period)] });
     },
   };
 }

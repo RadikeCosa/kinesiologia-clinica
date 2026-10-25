@@ -1,3 +1,4 @@
+import type { ConditionRepository } from "../conditions/condition.repository";
 import { changePeriod, type PeriodDependencies } from "../periods/manage-periods";
 import { periodCount, reconcilePeriod, validQuota } from "@/domain/treatment-period/treatment-period";
 import type { PeriodRepository } from "../periods/period.repository";
@@ -17,7 +18,7 @@ export const patientInputSchema = z.object({ clientId: id, givenName: text, fami
 export const treatmentInputSchema = z.object({ clientId: id, patientId: z.string().min(1), startDate: z.iso.date(), plannedSessionCount: z.coerce.number().int().min(1).max(500), plannedFrequency: text, initialFunctionalStatus: optionalText, therapeuticGoals: optionalText, frameworkPlan: optionalText, precautions: z.array(z.string().trim().min(1).max(300)).max(20).default([]), diagnoses: z.array(z.object({ clientId: id, text, kind: z.enum(["medical_reference", "kinesiologic_diagnosis"]) })).max(20).default([]) });
 
 export class AdministrationStateError extends Error {}
-type Dependencies = { periodFlow?: PeriodDependencies; periods?: PeriodRepository; visits?: VisitRepository; patients: PatientRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; administration: ClinicalAdministrationRepository; clock?: { now(): Date } };
+type Dependencies = { periodFlow?: PeriodDependencies; periods?: PeriodRepository; visits?: VisitRepository; patients: PatientRepository; conditions: ConditionRepository; treatments: TreatmentRepository; scheduledVisits: ScheduledVisitRepository; administration: ClinicalAdministrationRepository; clock?: { now(): Date } };
 function day(now: Date) { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" }).format(now); }
 function normalizePhone(value: string) { return value.replace(/\D/g, ""); }
 function clientId(prefix: string, raw: string) { return `${prefix}-${raw}`; }
@@ -59,13 +60,17 @@ export async function beginTreatment(raw: unknown, dependencies: Dependencies) {
   if (patient.activeConsultationId) throw new AdministrationStateError("Esta ficha tiene una consulta de ingreso abierta. Completá su evaluación y aceptación antes de iniciar el tratamiento.");
   const existing = await dependencies.treatments.getById(clientId("treatment", input.clientId));
   if (existing) {
-    if (existing.patientId === patient.id) return existing;
+    const matches = existing.patientId === patient.id && existing.startDate === input.startDate && existing.plannedSessionCount === input.plannedSessionCount && existing.plannedFrequency === input.plannedFrequency && JSON.stringify(existing.clinicalContext ?? {}) === JSON.stringify({ initialFunctionalStatus: input.initialFunctionalStatus, therapeuticGoals: input.therapeuticGoals, frameworkPlan: input.frameworkPlan }) && JSON.stringify(existing.precautions ?? []) === JSON.stringify(input.precautions) && JSON.stringify(existing.diagnosisReferences ?? []) === JSON.stringify(input.diagnoses.map(d => ({ kind: d.kind, conditionId: clientId("condition", d.clientId) })));
+    const diagnoses = await dependencies.conditions.listByIds(input.diagnoses.map(d => clientId("condition", d.clientId)));
+    if (matches && diagnoses.length === input.diagnoses.length && input.diagnoses.every(d => diagnoses.some(saved => saved.id === clientId("condition", d.clientId) && saved.patientId === patient.id && saved.text === d.text))) return existing;
     throw new AdministrationStateError("La operación se reintentó con datos diferentes.");
   }
+  if (!patient.version) throw new AdministrationStateError("Falta la versión del paciente. Recargá la pantalla.");
   const active = (dependencies.treatments.listByPatientId ? await dependencies.treatments.listByPatientId(patient.id) : (await dependencies.treatments.listDirectory()).filter((item) => item.patientId === patient.id)).find((item) => item.status === "active");
   if (active) throw new AdministrationStateError("Este paciente ya tiene un tratamiento activo.");
   const treatment: Treatment = { id: clientId("treatment", input.clientId), patientId: patient.id, status: "active", startDate: input.startDate, plannedSessionCount: input.plannedSessionCount, plannedFrequency: input.plannedFrequency, clinicalContext: { initialFunctionalStatus: input.initialFunctionalStatus, therapeuticGoals: input.therapeuticGoals, frameworkPlan: input.frameworkPlan }, precautions: input.precautions, diagnosisReferences: input.diagnoses.map((item) => ({ kind: item.kind, conditionId: clientId("condition", item.clientId) })), statusHistory: [{ status: "active", startedAt: now.toISOString() }] };
-  await dependencies.administration.startTreatment(treatment, input.diagnoses.map((item) => ({ id: clientId("condition", item.clientId), patientId: patient.id, text: item.text, recordedAt: now.toISOString() })));
+  try { await dependencies.administration.startTreatment(treatment, input.diagnoses.map((item) => ({ id: clientId("condition", item.clientId), patientId: patient.id, text: item.text, recordedAt: now.toISOString() })), patient.version); }
+  catch (error) { if (await dependencies.treatments.getById(treatment.id)) return beginTreatment(raw, dependencies); throw error; }
   return treatment;
 }
 
@@ -110,10 +115,18 @@ export async function changeTreatmentStatus(treatmentId: string, expectedVersion
     await changePeriod({ patientId: treatment.patientId, treatmentId, periodId: period.id, expectedVersion: period.version, event: "finish", endDate }, dependencies.periodFlow);
     return (await dependencies.treatments.getById(treatmentId))!;
   }
+  let expectedPatientVersion: string | undefined;
+  if (status === "active" && treatment.status !== "active") {
+    const patient = await dependencies.patients.getById(treatment.patientId);
+    if (!patient?.version || patient.activeConsultationId) throw new AdministrationStateError("No se pudo verificar la ficha sin consulta abierta. Recargá la pantalla.");
+    expectedPatientVersion = patient.version;
+    const treatments = dependencies.treatments.listByPatientId ? await dependencies.treatments.listByPatientId(patient.id) : await dependencies.treatments.listDirectory();
+    if (treatments.some(t => t.patientId === patient.id && t.id !== treatment.id && t.status === "active")) throw new AdministrationStateError("Este paciente ya tiene un tratamiento activo.");
+  }
   const history = [...(treatment.statusHistory ?? [{ status: treatment.status, startedAt: treatment.startDate }])];
   const last = history.at(-1); if (last && !last.endedAt) last.endedAt = now.toISOString();
   history.push({ status, startedAt: now.toISOString(), note });
   const next: Treatment = { ...treatment, status, endDate: status === "finished" ? endDate : undefined, statusHistory: history };
-  await dependencies.administration.putTreatment(next, [], treatment.version);
+  await dependencies.administration.putTreatment(next, [], treatment.version, expectedPatientVersion);
   return next;
 }

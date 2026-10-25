@@ -2,6 +2,7 @@ import type { PeriodReport } from "@/domain/treatment-period/period-report";
 import type { TreatmentPeriod } from "@/domain/treatment-period/treatment-period";
 import type { Treatment } from "@/domain/treatment/treatment";
 export interface ReportRepository {
+  readArchive(id: string): Promise<{ report: PeriodReport; pdf: Uint8Array } | null>;
   get(id: string): Promise<PeriodReport | null>;
   byOperation(operationId: string): Promise<PeriodReport | null>;
   list(patientId: string): Promise<PeriodReport[]>;

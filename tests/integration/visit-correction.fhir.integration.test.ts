@@ -1,3 +1,5 @@
+import { createClinicalWorkflow } from "@/application/visits/create-clinical-workflow";
+import { createFhirPeriodRepository as workflowPeriods } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { firstPeriodId } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -33,7 +35,7 @@ describeIntegration("visit correction and annulment on fictional HAPI data", () 
     patients: createFhirPatientRepository(client), treatments: createFhirTreatmentRepository(client),
     visits: createFhirVisitRepository(client), metrics: createFhirMetricRepository(client),
     evaluations: createFhirClinicalEvaluationRepository(client), symptoms: createFhirClinicalSymptomRepository(client), procedures: createFhirPerformedProcedureRepository(client),
-    scheduledVisits: createFhirScheduledVisitRepository(client), workflow: createFhirClinicalWorkflowRepository(client),
+    scheduledVisits: createFhirScheduledVisitRepository(client), workflow: createClinicalWorkflow(createFhirClinicalWorkflowRepository(client), { periods: workflowPeriods(client), treatments: createFhirTreatmentRepository(client), visits: createFhirVisitRepository(client) }),
   };
   const visitId = `visit-${clientVisitId}`;
 

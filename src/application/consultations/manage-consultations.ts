@@ -288,7 +288,7 @@ export async function startTreatmentFromConsultation(raw: unknown, dependencies:
   }
   if (!current || current.version !== command.expectedVersion || current.status !== "evaluation-completed" || current.patientId !== input.patientId || !current.initialEvaluationId) throw new ConsultationInputError("La consulta debe tener una evaluación registrada y vigente antes de iniciar tratamiento.");
   const patient = await dependencies.patients.getById(current.patientId);
-  if (!patient || patient.activeConsultationId !== current.id) throw new ConsultationInputError("No se pudo verificar la consulta activa en la ficha del paciente.");
+  if (!patient?.version || patient.activeConsultationId !== current.id) throw new ConsultationInputError("No se pudo verificar la consulta activa en la ficha del paciente.");
   const evaluation = await dependencies.consultations.getInitialEvaluation(current.initialEvaluationId);
   if (!evaluation || evaluation.consultationId !== current.id || evaluation.patientId !== patient.id) throw new ConsultationInputError("No se pudo verificar la evaluación inicial registrada.");
   const acceptedTreatmentQuote = acceptedQuote(current, "treatment");
@@ -322,7 +322,7 @@ export async function startTreatmentFromConsultation(raw: unknown, dependencies:
     ...(actor.representationBasis ? { representationBasis: actor.representationBasis } : {}),
   });
   const consultation: Consultation = { ...evidence, status: "treatment-started", treatmentId: treatment.id };
-  const saved = await dependencies.consultations.startTreatmentFromConsultation({ consultation, treatment, diagnoses, expectedVersion: command.expectedVersion });
+  const saved = await dependencies.consultations.startTreatmentFromConsultation({ consultation, treatment, diagnoses, expectedPatientVersion: patient.version, expectedVersion: command.expectedVersion });
   return { consultation: saved, treatment };
 }
 

@@ -1,3 +1,5 @@
+import { createClinicalWorkflow } from "@/application/visits/create-clinical-workflow";
+import { createFhirPeriodRepository as workflowPeriods } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { firstPeriodId } from "@/infrastructure/fhir/periods/fhir-period.repository";
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
@@ -50,7 +52,7 @@ describeIntegration("scheduled visit and encounter FHIR contract", () => {
     const dependencies = {
       patients: createFhirPatientRepository(client), treatments: createFhirTreatmentRepository(client),
       scheduledVisits: createFhirScheduledVisitRepository(client), visits: createFhirVisitRepository(client),
-      metrics: createFhirMetricRepository(client), workflow: createFhirClinicalWorkflowRepository(client),
+      metrics: createFhirMetricRepository(client), workflow: createClinicalWorkflow(createFhirClinicalWorkflowRepository(client), { periods: workflowPeriods(client), treatments: createFhirTreatmentRepository(client), visits: createFhirVisitRepository(client) }),
       clock: { now: () => new Date("2026-09-15T12:00:00.000Z") },
     };
     const createInput = { clientAppointmentId: appointmentIds[0], patientId, treatmentId, date: "2026-09-16", time: "10:00", durationMinutes: 60, acknowledgeConflict: true };

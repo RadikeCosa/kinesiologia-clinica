@@ -1,3 +1,4 @@
+import { consultationDataV1, appointmentDataV1, evaluationDataV1, readDataV1, ClinicalDataContractError } from "./consultation-data.schema";
 import type { Consultation, ConsultationStatus } from "@/domain/consultation/consultation";
 import { isActiveConsultationStatus } from "@/domain/consultation/consultation";
 import type { ConsultationRepository } from "@/application/consultations/consultation.repository";
@@ -48,29 +49,29 @@ type FhirInitialEvaluationEncounter = {
   resourceType: "Encounter"; id?: string; status?: string;
   class?: { system?: string; code?: string };
   subject?: { reference?: string }; appointment?: Array<{ reference?: string }>;
-  period?: { start?: string; end?: string }; recorded?: string;
+  period?: { start?: string; end?: string };
   extension?: Array<{ url?: string; valueString?: string }>;
   meta?: { versionId?: string; lastUpdated?: string };
 };
 
 function serializeInitialEvaluation(evaluation: InitialEvaluation): FhirInitialEvaluationEncounter {
-  return {
+  const resource: FhirInitialEvaluationEncounter = {
     resourceType: "Encounter", id: evaluation.id, status: "finished",
     class: { system: "http://terminology.hl7.org/CodeSystem/v3-ActCode", code: "HH" },
     subject: { reference: `Patient/${evaluation.patientId}` },
     appointment: evaluation.appointmentId ? [{ reference: `Appointment/${evaluation.appointmentId}` }] : undefined,
-    period: { start: evaluation.startedAt, end: evaluation.endedAt }, recorded: evaluation.recordedAt,
-    extension: [{ url: INITIAL_EVALUATION_DATA_URL, valueString: JSON.stringify(evaluation) }],
+    period: { start: evaluation.startedAt, end: evaluation.endedAt },
+    extension: [{ url: INITIAL_EVALUATION_DATA_URL, valueString: JSON.stringify({ ...evaluation, schemaVersion: 1 }) }],
   };
+  parseInitialEvaluation(resource);
+  return resource;
 }
 
 function parseInitialEvaluation(resource: FhirInitialEvaluationEncounter): InitialEvaluation | null {
-  const raw = resource.extension?.find((item) => item.url === INITIAL_EVALUATION_DATA_URL)?.valueString;
-  if (!raw) return null;
-  try {
-    const evaluation = JSON.parse(raw) as InitialEvaluation;
-    return { ...evaluation, version: resource.meta?.versionId };
-  } catch { return null; }
+  const evaluation = readDataV1(resource.extension, INITIAL_EVALUATION_DATA_URL, evaluationDataV1);
+  if (!evaluation) return null;
+  if (resource.resourceType !== "Encounter" || resource.id !== evaluation.id || resource.subject?.reference !== `Patient/${evaluation.patientId}` || resource.status !== "finished" || resource.appointment?.[0]?.reference !== (evaluation.appointmentId ? `Appointment/${evaluation.appointmentId}` : undefined) || resource.period?.start !== evaluation.startedAt || resource.period?.end !== evaluation.endedAt) throw new ClinicalDataContractError();
+  return { ...evaluation, version: resource.meta?.versionId };
 }
 
 function initialEvaluationEntryResources(evaluation: InitialEvaluation) {
@@ -92,7 +93,7 @@ function initialEvaluationEntryResources(evaluation: InitialEvaluation) {
 }
 
 function serializeEvaluationAppointment(appointment: EvaluationAppointment): FhirEvaluationAppointment {
-  return {
+  const resource: FhirEvaluationAppointment = {
     resourceType: "Appointment", id: appointment.id,
     status: appointment.status === "not-performed" ? "noshow" : appointment.status === "realized" ? "fulfilled" : appointment.status === "confirmed" ? "booked" : appointment.status,
     ...(appointment.startsAt ? { start: appointment.startsAt, end: appointment.endsAt, minutesDuration: appointment.durationMinutes } : {
@@ -102,17 +103,19 @@ function serializeEvaluationAppointment(appointment: EvaluationAppointment): Fhi
     participant: [{ actor: { reference: `Patient/${appointment.patientId}` }, status: "accepted" }],
     supportingInformation: [{ reference: `ServiceRequest/${appointment.consultationId}` }],
     serviceType: [{ text: "Evaluación inicial de kinesiología" }],
-    extension: [{ url: APPOINTMENT_DATA_URL, valueString: JSON.stringify(appointment) }],
+    extension: [{ url: APPOINTMENT_DATA_URL, valueString: JSON.stringify({ ...appointment, schemaVersion: 1 }) }],
   };
+  parseEvaluationAppointment(resource);
+  return resource;
 }
 
 function parseEvaluationAppointment(resource: FhirEvaluationAppointment): EvaluationAppointment | null {
-  const raw = resource.extension?.find((item) => item.url === APPOINTMENT_DATA_URL)?.valueString;
-  if (!raw) return null;
-  try {
-    const appointment = JSON.parse(raw) as EvaluationAppointment;
-    return { ...appointment, version: resource.meta?.versionId };
-  } catch { return null; }
+  const appointment = readDataV1(resource.extension, APPOINTMENT_DATA_URL, appointmentDataV1);
+  if (!appointment) return null;
+  const status = appointment.status === "confirmed" ? "booked" : appointment.status === "realized" ? "fulfilled" : appointment.status === "not-performed" ? "noshow" : appointment.status;
+  const sameTime = (a?: string, b?: string) => a === b || Boolean(a && b && new Date(a).getTime() === new Date(b).getTime());
+  if (resource.resourceType !== "Appointment" || resource.id !== appointment.id || resource.status !== status || !resource.participant?.some(p => p.actor?.reference === `Patient/${appointment.patientId}`) || !resource.supportingInformation?.some(r => r.reference === `ServiceRequest/${appointment.consultationId}`) || !sameTime(resource.start, appointment.startsAt) || !sameTime(resource.end, appointment.endsAt)) throw new ClinicalDataContractError();
+  return { ...appointment, version: resource.meta?.versionId };
 }
 
 export class ConsultationConflictError extends Error {}
@@ -131,21 +134,21 @@ function fhirStatus(status: ConsultationStatus) {
   return status === "closed" || status === "treatment-started" ? "completed" : "active";
 }
 function serialize(consultation: Consultation): FhirServiceRequest {
-  return {
+  const resource: FhirServiceRequest = {
     resourceType: "ServiceRequest", id: consultation.id, status: fhirStatus(consultation.status), intent: "order",
     code: { coding: [{ system: CODE_SYSTEM, code: "intake-consultation" }], text: "Consulta de ingreso" },
     subject: { reference: `Patient/${consultation.patientId}` }, authoredOn: consultation.createdAt,
     identifier: [{ system: SYSTEM, value: consultation.id }],
-    extension: [{ url: DATA_URL, valueString: JSON.stringify(consultation) }],
+    extension: [{ url: DATA_URL, valueString: JSON.stringify({ ...consultation, schemaVersion: 1 }) }],
   };
+  parse(resource);
+  return resource;
 }
 function parse(resource: FhirServiceRequest): Consultation | null {
-  const raw = resource.extension?.find((extension) => extension.url === DATA_URL)?.valueString;
-  if (!raw) return null;
-  try {
-    const consultation = JSON.parse(raw) as Consultation;
-    return { ...consultation, version: resource.meta?.versionId, updatedAt: resource.meta?.lastUpdated };
-  } catch { return null; }
+  const consultation = readDataV1(resource.extension, DATA_URL, consultationDataV1);
+  if (!consultation) return null;
+  if (resource.resourceType !== "ServiceRequest" || resource.id !== consultation.id || resource.subject?.reference !== `Patient/${consultation.patientId}` || resource.status !== fhirStatus(consultation.status) || !resource.identifier?.some(i => i.system === SYSTEM && i.value === consultation.id)) throw new ClinicalDataContractError();
+  return { ...consultation, version: resource.meta?.versionId, updatedAt: resource.meta?.lastUpdated };
 }
 function patientExtensions(patient: FhirPatient, activeConsultationId?: string) {
   const extensions = (patient.extension ?? []).filter((item) => item.url !== ACTIVE_URL);
@@ -182,7 +185,9 @@ export function createFhirConsultationRepository(client: FhirClient): Consultati
     const activeId = patient.extension?.find((item) => item.url === ACTIVE_URL)?.valueString;
     const current = activeId ? await getOptionalConsultation(activeId) : null;
     if (activeId && !current) throw new ConsultationConflictError("No se pudo verificar la consulta activa. Recargá antes de continuar.");
-    if (current && isActiveConsultationStatus(parse(current)?.status ?? "closed")) {
+    const parsedCurrent = current ? parse(current) : null;
+    if (current && !parsedCurrent) throw new ClinicalDataContractError();
+    if (current && parsedCurrent && isActiveConsultationStatus(parsedCurrent.status)) {
       if (current.id !== consultation.id) throw new ConsultationConflictError("Este paciente ya tiene una consulta de ingreso abierta.");
       if (expectedConsultationVersion && current.meta?.versionId !== expectedConsultationVersion) throw new ConsultationConflictError("La consulta cambió en otro dispositivo. Recargá la pantalla.");
     } else if (expectedConsultationVersion) {
@@ -234,7 +239,7 @@ export function createFhirConsultationRepository(client: FhirClient): Consultati
       return persistWithLock(rawPatient, consultation);
     },
     async getById(id) {
-      try { const result = parse(await client.get<FhirServiceRequest>(`ServiceRequest/${id}`)); return result; }
+      try { const result = parse(await client.get<FhirServiceRequest>(`ServiceRequest/${id}`)); if (!result) throw new ClinicalDataContractError(); return result; }
       catch (error) { if (error instanceof FhirClientError && error.status === 404) return null; throw error; }
     },
     async save(consultation, expectedVersion) {
@@ -281,11 +286,12 @@ export function createFhirConsultationRepository(client: FhirClient): Consultati
       try { return parseInitialEvaluation(await client.get<FhirInitialEvaluationEncounter>(`Encounter/${id}`)); }
       catch (error) { if (error instanceof FhirClientError && error.status === 404) return null; throw error; }
     },
-    async startTreatmentFromConsultation({ consultation, treatment, diagnoses, expectedVersion }) {
+    async startTreatmentFromConsultation({ consultation, treatment, diagnoses, expectedVersion, expectedPatientVersion }) {
       if (consultation.patientId !== treatment.patientId || consultation.status !== "treatment-started") {
         throw new ConsultationConflictError("El tratamiento no coincide con la consulta y su período inicial.");
       }
       const patient = await getPatient(consultation.patientId);
+      if (!expectedPatientVersion || patient.meta?.versionId !== expectedPatientVersion) throw new ConsultationConflictError("La ficha cambió. Recargá la pantalla.");
       const firstPeriod = { id: firstPeriodId(treatment.id), treatmentId: treatment.id, patientId: treatment.patientId, ordinal: 1, quota: treatment.plannedSessionCount, frequency: treatment.plannedFrequency, phase: "open" as const, available: true, clinicalRevision: 0 };
       const episode = treatmentResource({ ...treatment, currentPeriodId: firstPeriod.id });
       const entries: Array<{ resource: unknown; request: { method: "PUT"; url: string; ifMatch?: string } }> = [
@@ -304,10 +310,9 @@ export function createFhirConsultationRepository(client: FhirClient): Consultati
       return resources.flatMap(resource => { const value = parse(resource); return value && isActiveConsultationStatus(value.status) ? [value] : []; });
     },
     async listByPatientId(patientId) {
-      const bundle = await client.get<FhirBundle>(`ServiceRequest?subject=Patient%2F${encodeURIComponent(patientId)}&_count=200`);
-      return (bundle.entry ?? []).flatMap((entry) => {
-        const value = entry.resource as FhirServiceRequest | undefined;
-        const parsed = value?.resourceType === "ServiceRequest" ? parse(value) : null;
+      const resources = await readAllResourcesByType<FhirServiceRequest>({ client, path: `ServiceRequest?subject=Patient%2F${encodeURIComponent(patientId)}&_count=200`, resourceType: "ServiceRequest" });
+      return resources.flatMap((value) => {
+        const parsed = parse(value);
         return parsed ? [parsed] : [];
       });
     },
