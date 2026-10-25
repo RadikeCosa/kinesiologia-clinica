@@ -144,7 +144,7 @@ El piloto local agrega:
 - métricas funcionales opcionales en `Observation`, con ID estable por visita y tipo de métrica;
 - relectura desde HAPI de la visita y las métricas antes de mostrar confirmación.
 
-El formulario permite iniciar y finalizar en vivo o confirmar los horarios efectivos de una visita ya realizada mediante carga diferida. Que el horario acordado haya pasado no define por sí solo el modo de captura. La acción y las rutas clínicas están limitadas al entorno local ficticio `8081` y exigen una sesión vigente. El piloto no ofrece borradores ni acceso a datos reales.
+El formulario permite iniciar y finalizar en vivo o confirmar los horarios efectivos de una visita ya realizada mediante carga diferida. Que el horario acordado haya pasado no define por sí solo el modo de captura. La acción y las rutas clínicas exigen sesión vigente y la política de entorno. El modo habitual es ficticio `8081`; el piloto privado `8080` requiere los flags y aceptación de `piloto-privado.md`, que este incremento no habilita. No hay borradores persistentes.
 
 La prueba `clinical-visit.fhir.integration.test.ts` escribe solo datos ficticios en `8081`, repite una visita y verifica que se conserva un único `Encounter` y una única métrica.
 
@@ -221,3 +221,15 @@ El adaptador de consulta guarda su contrato local en una extensión versionada d
 ## Contrato de períodos y emisiones
 
 Ver [periodos-informes.md](periodos-informes.md) para mapeo de CarePlan, pertenencia de Encounter, creación condicional de DocumentReference, archivos Binary, huella sourceFingerprintV1, hashes de integridad y control de versiones. La descarga recibe el identificador del informe y no expone HAPI. Las pruebas `period-report.fhir.integration.test.ts` usan fixtures de identidad propia y los eliminan en una transacción, sin intervenir registros ajenos.
+
+## Contratos de lectura versionados y validación R4
+
+Las nuevas visitas escriben `Encounter.class` como Coding `v3-ActCode|HH`; las lecturas mantienen compatibilidad con encuentros históricos que no lo tengan. Las pruebas de integración llaman a `Encounter/$validate` en HAPI ficticio `8081` para visita, corrección, anulación y evaluación inicial; una prueba negativa exige que se detecte la ausencia de `class`. La evaluación inicial conserva `recordedAt` en su extensión, sin el elemento no estándar `Encounter.recorded`.
+
+`service-request-consultation-data-v1`, `consultation-evaluation-appointment-data-v1` e `initial-evaluation-data-v1` contienen contratos locales v1. La URL de extensión define la versión; las nuevas escrituras incluyen además `schemaVersion: 1`. Se acepta el formato histórico v1 sin ese marcador. Los metadatos de transporte `version` y `updatedAt` se ignoran en el JSON: la versión y actualización autoritativas son `meta.versionId` y `meta.lastUpdated` de FHIR.
+
+El JSON validado conserva la semántica privada de consulta/evaluación; los campos FHIR proyectan identidad, estado, paciente y relaciones. Deben coincidir con el JSON. Los esquemas validan antes de confirmar escrituras y al leer. Extensiones duplicadas, versiones desconocidas, datos inválidos o relaciones inconsistentes detienen la operación con un error seguro, sin descartar silenciosamente información. Recursos ajenos a este contrato se omiten de búsquedas generales. Una evolución incompatible necesita un nuevo lector/migración explícitos; no se reinterpretará como v1.
+
+El historial por paciente sigue todas las páginas mediante el helper común. Reintentar una visita finalizada no escribe métricas ni otras entradas: exige igualdad completa y los cambios deben pasar por la corrección clínica. Todas las altas de visita requieren workflow transaccional; no existe alternativa de escrituras separadas.
+
+Los informes archivados no se reescriben ni migran. Estas garantías y las pruebas usan datos ficticios y no autorizan intervenir el servidor privado.
