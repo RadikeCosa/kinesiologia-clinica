@@ -9,34 +9,8 @@ import type { AuthConfig } from "./auth.config";
 export const hashSecret = (value: string) => createHash("sha256").update(value).digest("hex");
 export const createToken = () => randomBytes(32).toString("base64url");
 
-export interface StoredPasskey {
-  id: string;
-  publicKey: Uint8Array;
-  counter: number;
-  transports: string[];
-  label: string;
-  createdAt: number;
-  lastUsedAt: number | null;
-}
-
-export interface StoredSession {
-  id: string;
-  tokenHash: string;
-  credentialId: string;
-  label: string;
-  createdAt: number;
-  lastSeenAt: number;
-  expiresAt: number;
-  revokedAt: number | null;
-}
-
-export interface StoredChallenge {
-  challenge: string;
-  purpose: "registration" | "login" | "recovery";
-  actor: string;
-  recoveryHash: string | null;
-  expiresAt: number;
-}
+import type { AuthStorePort, StoredPasskey, StoredSession, StoredChallenge } from "@/application/auth/auth.ports";
+export type { StoredPasskey, StoredSession, StoredChallenge } from "@/application/auth/auth.ports";
 
 function createDatabase(path: string) {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -68,6 +42,10 @@ function createDatabase(path: string) {
       code_hash TEXT PRIMARY KEY, used_at INTEGER
     );
   `);
+  for (const table of ["professional", "challenges"]) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+    if (!columns.some(column => column.name === "generation")) db.exec(`ALTER TABLE ${table} ADD COLUMN generation INTEGER NOT NULL DEFAULT 0`);
+  }
   db.prepare("INSERT OR IGNORE INTO professional (id, webauthn_user_id) VALUES (1, ?)").run(randomBytes(32));
   return db;
 }
@@ -83,10 +61,13 @@ export function openAuthStore(config: AuthConfig) {
   return new AuthStore(db);
 }
 
-export class AuthStore {
+export class AuthStore implements AuthStorePort {
   constructor(private readonly db: Database.Database) {}
 
-  atomic<T>(operation: () => T): T { return this.db.transaction(operation)(); }
+  atomic<T>(operation: () => T): T { return this.db.transaction(operation).immediate(); }
+
+  generation(): number { return (this.db.prepare("SELECT generation FROM professional WHERE id = 1").get() as { generation: number }).generation; }
+  advanceGeneration() { this.db.prepare("UPDATE professional SET generation = generation + 1 WHERE id = 1").run(); }
 
   getUserId(): Uint8Array {
     const row = this.db.prepare("SELECT webauthn_user_id AS value FROM professional WHERE id = 1").get() as { value: Buffer };
@@ -114,24 +95,24 @@ export class AuthStore {
   }
 
   updateCounter(id: string, counter: number) {
-    this.db.prepare("UPDATE passkeys SET counter = ?, last_used_at = ? WHERE id = ?").run(counter, Date.now(), id);
+    if (!this.db.prepare("UPDATE passkeys SET counter = ?, last_used_at = ? WHERE id = ?").run(counter, Date.now(), id).changes) throw new Error("La credencial ya no está vigente.");
   }
 
-  saveChallenge(token: string, challenge: StoredChallenge) {
+  saveChallenge(token: string, challenge: Omit<StoredChallenge, "generation"> & { generation?: number }) {
     this.db.prepare("DELETE FROM challenges WHERE expires_at < ?").run(Date.now());
-    this.db.prepare("INSERT INTO challenges (token_hash, challenge, purpose, actor, recovery_hash, expires_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(hashSecret(token), challenge.challenge, challenge.purpose, challenge.actor, challenge.recoveryHash, challenge.expiresAt);
+    this.db.prepare("INSERT INTO challenges (token_hash, challenge, purpose, actor, recovery_hash, expires_at, generation) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(hashSecret(token), challenge.challenge, challenge.purpose, challenge.actor, challenge.recoveryHash, challenge.expiresAt, challenge.generation ?? this.generation());
   }
 
   consumeChallenge(token: string, purpose: StoredChallenge["purpose"]): StoredChallenge | null {
     const transaction = this.db.transaction(() => {
       const row = this.db.prepare("SELECT * FROM challenges WHERE token_hash = ? AND purpose = ?").get(hashSecret(token), purpose) as {
-        challenge: string; purpose: StoredChallenge["purpose"]; actor: string; recovery_hash: string | null; expires_at: number;
+        challenge: string; purpose: StoredChallenge["purpose"]; actor: string; recovery_hash: string | null; expires_at: number; generation: number;
       } | undefined;
       if (!row) return null;
       this.db.prepare("DELETE FROM challenges WHERE token_hash = ?").run(hashSecret(token));
       if (row.expires_at < Date.now()) return null;
-      return { challenge: row.challenge, purpose: row.purpose, actor: row.actor, recoveryHash: row.recovery_hash, expiresAt: row.expires_at };
+      return { challenge: row.challenge, purpose: row.purpose, actor: row.actor, recoveryHash: row.recovery_hash, expiresAt: row.expires_at, generation: row.generation };
     });
     return transaction();
   }
@@ -149,19 +130,19 @@ export class AuthStore {
     const row = this.db.prepare("SELECT id, token_hash, credential_id, label, created_at, last_seen_at, expires_at, revoked_at FROM sessions WHERE token_hash = ?").get(hashSecret(token)) as {
       id: string; token_hash: string; credential_id: string; label: string; created_at: number; last_seen_at: number; expires_at: number; revoked_at: number | null;
     } | undefined;
-    if (!row || row.revoked_at || row.expires_at <= Date.now()) return null;
+    if (!row || row.revoked_at || row.expires_at <= Date.now() || !this.getPasskey(row.credential_id)) return null;
     return { id: row.id, tokenHash: row.token_hash, credentialId: row.credential_id, label: row.label, createdAt: row.created_at, lastSeenAt: row.last_seen_at, expiresAt: row.expires_at, revokedAt: row.revoked_at };
   }
 
   touchSession(id: string) {
     const now = Date.now();
     const expiresAt = now + 30 * 24 * 60 * 60 * 1000;
-    this.db.prepare("UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ? AND revoked_at IS NULL AND expires_at > ?").run(now, expiresAt, id, now);
+    this.db.prepare("UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ? AND revoked_at IS NULL AND expires_at > ? AND EXISTS (SELECT 1 FROM passkeys WHERE passkeys.id = sessions.credential_id)").run(now, expiresAt, id, now);
     return expiresAt;
   }
 
   listSessions(): StoredSession[] {
-    const rows = this.db.prepare("SELECT id, token_hash, credential_id, label, created_at, last_seen_at, expires_at, revoked_at FROM sessions WHERE revoked_at IS NULL AND expires_at > ? ORDER BY last_seen_at DESC").all(Date.now()) as Array<{
+    const rows = this.db.prepare("SELECT id, token_hash, credential_id, label, created_at, last_seen_at, expires_at, revoked_at FROM sessions WHERE revoked_at IS NULL AND expires_at > ? AND EXISTS (SELECT 1 FROM passkeys WHERE passkeys.id = sessions.credential_id) ORDER BY last_seen_at DESC").all(Date.now()) as Array<{
       id: string; token_hash: string; credential_id: string; label: string; created_at: number; last_seen_at: number; expires_at: number; revoked_at: number | null;
     }>;
     return rows.map((row) => ({ id: row.id, tokenHash: row.token_hash, credentialId: row.credential_id, label: row.label, createdAt: row.created_at, lastSeenAt: row.last_seen_at, expiresAt: row.expires_at, revokedAt: row.revoked_at }));
@@ -201,6 +182,6 @@ export class AuthStore {
   }
 
   hasActiveSessionId(id: string) {
-    return Boolean(this.db.prepare("SELECT 1 FROM sessions WHERE id = ? AND revoked_at IS NULL AND expires_at > ?").get(id, Date.now()));
+    return Boolean(this.db.prepare("SELECT 1 FROM sessions WHERE id = ? AND revoked_at IS NULL AND expires_at > ? AND EXISTS (SELECT 1 FROM passkeys WHERE passkeys.id = sessions.credential_id)").get(id, Date.now()));
   }
 }

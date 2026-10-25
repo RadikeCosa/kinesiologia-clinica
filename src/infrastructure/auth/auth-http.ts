@@ -10,10 +10,12 @@ import { openAuthStore, type AuthStore, type StoredSession } from "./auth-store"
 export const SESSION_COOKIE = "clinical_session";
 export const CHALLENGE_COOKIE = "clinical_challenge";
 
-export function getAuthContext(): { config: AuthConfig; store: AuthStore } {
+import { authenticator } from "./webauthn";
+
+export function getAuthContext() {
   const config = readAuthConfig();
   if (!config) throw new Error("El acceso privado no está configurado.");
-  return { config, store: openAuthStore(config) };
+  return { config, store: openAuthStore(config), authenticator };
 }
 
 export function sessionFromRequest(request: NextRequest, store: AuthStore): StoredSession | null {

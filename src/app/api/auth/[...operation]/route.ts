@@ -14,42 +14,42 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const operation = operationKey((await params).operation);
   let context: ReturnType<typeof getAuthContext>;
   try { context = getAuthContext(); } catch { return json({ error: "El acceso privado no está configurado." }, 503); }
-  const { config, store } = context;
+  const { config, store, authenticator } = context;
   if (!isAllowedOrigin(request, config)) return json({ error: "Origen no permitido." }, 403);
   let body: Record<string, unknown>;
   try { body = await readSmallJson(request); } catch { return json({ error: "Solicitud inválida." }, 400); }
   const session = sessionFromRequest(request, store);
   try {
     if (operation === "registration/options") {
-      const result = await beginRegistration({ store, config, bootstrapToken: typeof body.bootstrapToken === "string" ? body.bootstrapToken : undefined, sessionId: session?.id });
+      const result = await beginRegistration({ store, config, authenticator, bootstrapToken: typeof body.bootstrapToken === "string" ? body.bootstrapToken : undefined, sessionId: session?.id });
       return setChallengeCookie(json(result.options), config, result.challengeToken);
     }
     if (operation === "registration/verify") {
       const challengeToken = request.cookies.get(CHALLENGE_COOKIE)?.value;
       if (!challengeToken || !body.response || typeof body.response !== "object") return json({ error: "Solicitud inválida." }, 400);
-      const result = await finishRegistration({ store, config, challengeToken, response: body.response as RegistrationResponseJSON, label: typeof body.label === "string" ? body.label : "Dispositivo" });
+      const result = await finishRegistration({ store, config, authenticator, challengeToken, response: body.response as RegistrationResponseJSON, label: typeof body.label === "string" ? body.label : "Dispositivo" });
       const response = clearChallengeCookie(json({ ok: true, recoveryCodes: result.recoveryCodes }));
       return setSessionCookie(response, config, result.token);
     }
     if (operation === "login/options") {
-      const result = await beginLogin(store, config);
+      const result = await beginLogin(store, config, authenticator);
       return setChallengeCookie(json(result.options), config, result.challengeToken);
     }
     if (operation === "login/verify") {
       const challengeToken = request.cookies.get(CHALLENGE_COOKIE)?.value;
       if (!challengeToken || !body.response || typeof body.response !== "object") return json({ error: "Solicitud inválida." }, 400);
-      const result = await finishLogin({ store, config, challengeToken, response: body.response as AuthenticationResponseJSON });
+      const result = await finishLogin({ store, config, authenticator, challengeToken, response: body.response as AuthenticationResponseJSON });
       const response = clearChallengeCookie(json({ ok: true }));
       return setSessionCookie(response, config, result.token);
     }
     if (operation === "recovery/options") {
-      const result = await beginRecovery({ store, config, code: typeof body.code === "string" ? body.code : "" });
+      const result = await beginRecovery({ store, config, authenticator, code: typeof body.code === "string" ? body.code : "" });
       return setChallengeCookie(json(result.options), config, result.challengeToken);
     }
     if (operation === "recovery/verify") {
       const challengeToken = request.cookies.get(CHALLENGE_COOKIE)?.value;
       if (!challengeToken || !body.response || typeof body.response !== "object") return json({ error: "Solicitud inválida." }, 400);
-      const result = await finishRecovery({ store, config, challengeToken, response: body.response as RegistrationResponseJSON, label: typeof body.label === "string" ? body.label : "Dispositivo recuperado" });
+      const result = await finishRecovery({ store, config, authenticator, challengeToken, response: body.response as RegistrationResponseJSON, label: typeof body.label === "string" ? body.label : "Dispositivo recuperado" });
       const response = clearChallengeCookie(json({ ok: true, recoveryCodes: result.recoveryCodes }));
       return setSessionCookie(response, config, result.token);
     }

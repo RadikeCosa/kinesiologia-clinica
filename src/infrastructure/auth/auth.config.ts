@@ -2,9 +2,9 @@ import "server-only";
 
 import { isAbsolute, resolve } from "node:path";
 
-export interface AuthConfig {
-  origin: string;
-  rpID: string;
+import type { AuthConfig as ApplicationAuthConfig } from "@/application/auth/auth.ports";
+
+export interface AuthConfig extends ApplicationAuthConfig {
   dbPath: string;
   bootstrapToken?: string;
 }
